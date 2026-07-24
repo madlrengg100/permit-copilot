@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+node_modules/
+.env
+dist/
+*.tsbuildinfo
+
+.app_token
+.env.local

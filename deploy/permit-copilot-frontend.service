@@ -1,0 +1,21 @@
+[Unit]
+Description=Permit Copilot production frontend
+After=network-online.target permit-copilot-backend.service
+Wants=network-online.target
+Requires=permit-copilot-backend.service
+
+[Service]
+Type=simple
+User=madlrengg100
+Group=madlrengg100
+WorkingDirectory=/home/madlrengg100/permit-copilot/frontend
+Environment=NODE_ENV=production
+Environment=HOST=0.0.0.0
+Environment=PORT=5173
+ExecStart=/home/madlrengg100/.local/node/bin/node /home/madlrengg100/permit-copilot/frontend/server.mjs
+Restart=always
+RestartSec=3
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

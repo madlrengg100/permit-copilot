@@ -1,0 +1,10 @@
+.git
+.env
+.app_token
+**/.env.local
+**/.venv
+**/node_modules
+**/dist
+**/__pycache__
+**/*.py[cod]
+**/tsconfig.tsbuildinfo
