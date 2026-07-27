@@ -126,6 +126,138 @@ def _camera_heading(geometry: dict | None) -> float:
     return round((edge_bearing + 90) % 360, 1)
 
 
+def _outer_rings(geometry: dict | None) -> list[list[list[float]]]:
+    if not geometry:
+        return []
+    coords = geometry.get("coordinates") or []
+    if geometry.get("type") == "MultiPolygon":
+        return [poly[0] for poly in coords if poly]
+    if geometry.get("type") == "Polygon":
+        return [coords[0]] if coords else []
+    return []
+
+
+def _bbox(geometry: dict | None):
+    """가장 넓은 외곽 링의 경위도 bbox (minlon, minlat, maxlon, maxlat)."""
+    rings = _outer_rings(geometry)
+    if not rings:
+        return None
+    ring = max(rings, key=len)
+    lons = [p[0] for p in ring]
+    lats = [p[1] for p in ring]
+    return min(lons), min(lats), max(lons), max(lats)
+
+
+def _centroid(geometry: dict | None):
+    rings = _outer_rings(geometry)
+    if not rings:
+        return None
+    ring = max(rings, key=len)
+    n = len(ring)
+    return sum(p[0] for p in ring) / n, sum(p[1] for p in ring) / n
+
+
+def _meters_ew(dlon: float, lat: float) -> float:
+    return abs(dlon) * 111320.0 * math.cos(math.radians(lat))
+
+
+def _meters_ns(dlat: float) -> float:
+    return abs(dlat) * 111320.0
+
+
+def _build_dimensions(
+    diagnosis: dict, anchor_lon: float, anchor_lat: float
+) -> dict | None:
+    """필지 가로·세로, 이격, 면적을 지도에 그릴 치수선/라벨로 만든다.
+    검은 텍스트 박스를 대신해 VWorld 측정선 모양으로 지도에 직접 얹는다.
+    """
+    parcel = diagnosis.get("parcel") or {}
+    geometry = parcel.get("geometry")
+    box = _bbox(geometry)
+    if not box:
+        return None
+    minlon, minlat, maxlon, maxlat = box
+    mid_lat = (minlat + maxlat) / 2
+
+    width_m = _meters_ew(maxlon - minlon, mid_lat)
+    depth_m = _meters_ns(maxlat - minlat)
+    # 치수선을 필지 밖으로 살짝 빼 읽기 쉽게 한다(대략 필지 폭의 6%)
+    pad_lat = (maxlat - minlat) * 0.06
+    pad_lon = (maxlon - minlon) * 0.06
+
+    segments = [
+        {  # 가로(동서) — 남쪽 변 아래에
+            "positions": [[minlon, minlat - pad_lat], [maxlon, minlat - pad_lat]],
+            "label": f"가로 약 {width_m:,.0f}m",
+        },
+        {  # 세로(남북) — 서쪽 변 왼쪽에
+            "positions": [[minlon - pad_lon, minlat], [minlon - pad_lon, maxlat]],
+            "label": f"세로 약 {depth_m:,.0f}m",
+        },
+    ]
+
+    labels = []
+    mass = diagnosis.get("massing") or {}
+    # 면적 라벨을 **팝업 앵커와 정확히 같은 높이**에 둔다(아래 show_panel 의
+    # anchor height = mass_top + 2 와 동일). 높이가 다르면 그 차이가 확대할수록
+    # 화면에서 벌어져 라벨이 접기 버튼에서 떨어진다.
+    _mass_top = 0.0 if mass.get("exceeds_far_limit") else float(mass.get("mass_height_m") or 0)
+    top_h = _mass_top + 2
+
+    # 대지면적 — 필지 중심(내부점)에. representative_point 는 오목한 필지에서도
+    # 폴리곤 안에 떨어진다.
+    if parcel.get("area_m2"):
+        try:
+            pcen = shape(geometry).representative_point()
+            plon, plat = pcen.x, pcen.y
+        except Exception:
+            cen = _centroid(geometry)
+            plon, plat = (cen if cen else (0, 0))
+        labels.append(
+            {
+                "lon": plon, "lat": plat, "height": top_h,
+                "text": f"대지면적 {parcel['area_m2'] / 3.3058:,.0f}평({parcel['area_m2']:,.0f}㎡)",
+            }
+        )
+
+    if mass.get("building_area_m2"):
+        # 건축면적 — 건물(매스) 중심(anchor)에. 대지면적과 지리적으로 떨어져 겹치지 않는다.
+        labels.append(
+            {
+                "lon": anchor_lon,
+                "lat": anchor_lat,
+                "height": top_h,
+                "text": f"건축면적 {mass['building_area_m2'] / 3.3058:,.0f}평({mass['building_area_m2']:,.0f}㎡)",
+            }
+        )
+
+    # 이격거리 — 값이 있을 때만(아산 계획관리는 0이라 생략됨)
+    sc = diagnosis.get("site_constraints") or {}
+    front = sc.get("front_setback_m") or 0
+    adjacent = sc.get("adjacent_setback_m") or 0
+    setback = max(float(front), float(adjacent))
+    if setback > 0:
+        segments.append(
+            {
+                "positions": [[minlon, maxlat + pad_lat], [maxlon, maxlat + pad_lat]],
+                "label": f"이격 {setback:g}m",
+            }
+        )
+
+    # 도로 접촉 길이 — 접촉 세그먼트 기하가 없어 라벨만(남쪽 변 중앙 아래)
+    road = (diagnosis.get("road_access") or {}).get("roads") or []
+    if road and road[0].get("contact_length_m"):
+        labels.append(
+            {
+                "lon": (minlon + maxlon) / 2,
+                "lat": minlat - pad_lat * 2.2,
+                "text": f"도로 접촉 {road[0]['contact_length_m']}m",
+            }
+        )
+
+    return {"type": "show_dimensions", "segments": segments, "labels": labels}
+
+
 def build_map_commands(diagnosis: dict) -> list[dict]:
     """진단 결과 -> 지도 명령 시퀀스."""
     commands: list[dict] = []
@@ -135,6 +267,15 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
     land_use = diagnosis.get("land_use", {})
     regulation = diagnosis.get("regulation", {})
     mass = diagnosis.get("massing")
+    conversion = diagnosis.get("land_conversion", {})
+    existing_buildings = diagnosis.get("existing_buildings", {})
+    conversion_charge = diagnosis.get("conversion_charge")
+    development_charge = diagnosis.get("development_charge")
+    road_access = diagnosis.get("road_access", {})
+    regulatory_screen = diagnosis.get("regulatory_screen", {})
+    permit_requirements = diagnosis.get("permit_requirements", {})
+    legal_sources = diagnosis.get("legal_sources", {})
+    site_constraints = diagnosis.get("site_constraints", {})
     verdict = diagnosis.get("verdict", "unknown")
 
     if not location:
@@ -199,10 +340,18 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
     #    불허 필지에 건물을 세워 보여주면 가능한 것처럼 읽히므로 그리지 않는다.
     footprint_geometry = None
     anchor_lon, anchor_lat = lon, lat
-    if mass and parcel and parcel.get("geometry") and verdict != "not_allowed":
-        footprint_geometry = inset_for_area(
-            parcel["geometry"], mass["bcr_applied_pct"] / 100.0
-        )
+    if (
+        mass
+        and mass.get("layout_feasible", True)
+        and parcel
+        and parcel.get("geometry")
+        and verdict != "not_allowed"
+    ):
+        footprint_geometry = site_constraints.get("footprint_geometry")
+        if not footprint_geometry and not site_constraints:
+            footprint_geometry = inset_for_area(
+                parcel["geometry"], mass["bcr_applied_pct"] / 100.0
+            )
         top_footprint_geometry = None
         top_ratio = mass.get("top_floor_ratio", 1.0)
         if footprint_geometry and 0 < top_ratio < 0.999:
@@ -229,10 +378,16 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
                 "label": (
                     f"최대 건축면적 {mass['building_area_m2']:,.0f}㎡"
                     if mass.get("exceeds_far_limit")
-                    else f"{mass['floors']}층 · 연면적 {mass['gross_floor_area_m2']:,.0f}㎡"
+                    else f"신축 추정 {mass['floors']}층 · 연면적 {mass['gross_floor_area_m2']:,.0f}㎡"
                 ),
             }
         )
+
+    # 4.5) 치수선·면적 라벨 — 검은 텍스트 박스 대신 지도에 직접 얹는다.
+    #      건축면적은 매스 중심(anchor), 대지면적은 필지 중심에 배치한다.
+    dims = _build_dimensions(diagnosis, anchor_lon, anchor_lat)
+    if dims:
+        commands.append(dims)
 
     # 5) 정보 패널
     #    anchor 는 패널을 매스 꼭대기 위에 띄우기 위한 지도상 기준점이다.
@@ -251,9 +406,33 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
     anchor = {"lon": anchor_lon, "lat": anchor_lat, "height": mass_top + 2}
 
     limit_exceeded = bool(mass and mass.get("exceeds_far_limit"))
-    panel_verdict = "limit_exceeded" if limit_exceeded else verdict
-    panel_label = "요청값 적용 불가" if limit_exceeded else VERDICT_LABEL[verdict]
-    panel_color = "#C62828" if limit_exceeded else VERDICT_COLOR[verdict]
+    layout_infeasible = bool(mass and mass.get("layout_feasible") is False)
+    panel_verdict = (
+        "limit_exceeded" if limit_exceeded
+        else "site_infeasible" if layout_infeasible
+        else verdict
+    )
+    panel_label = (
+        "요청값 적용 불가" if limit_exceeded
+        else "실질 배치 불가" if layout_infeasible
+        else (
+            "전용·개별규제 확인 필요"
+            if verdict == "unknown"
+            and regulation.get("reason")
+            and conversion.get("status") == "RESTRICTED_REVIEW"
+            else "개별규제 확인 필요"
+        )
+        if verdict == "unknown" and regulation.get("reason")
+        else VERDICT_LABEL[verdict]
+    )
+    panel_color = (
+        "#C62828"
+        if limit_exceeded
+        or layout_infeasible
+        else "#616161"
+        if verdict == "unknown" and regulation.get("reason")
+        else VERDICT_COLOR[verdict]
+    )
 
     commands.append(
         {
@@ -265,14 +444,28 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
             "address": location.get("matched_address", ""),
             "zone": regulation.get("zone") or (land_use.get("zones") or [""])[0],
             "districts": land_use.get("districts", []),
+            "jimok": (parcel or {}).get("jimok", ""),
             "building_use": regulation.get("building_use", ""),
             "site_area_m2": (parcel or {}).get("area_m2"),
+            "jiga_won_per_m2": (parcel or {}).get("jiga_won_per_m2"),
             "bcr_max_pct": regulation.get("bcr_max_pct"),
             "far_max_pct": regulation.get("far_max_pct"),
             "legal_basis": regulation.get("legal_basis", ""),
             "constraints": regulation.get("constraints", []),
             "zone_use_overview": regulation.get("zone_use_overview", {}),
             "massing": mass,
+            "land_conversion": conversion,
+            "existing_buildings": existing_buildings,
+            "conversion_charge": conversion_charge,
+            "development_charge": development_charge,
+            "road_access": road_access,
+            "regulatory_screen": regulatory_screen,
+            "permit_requirements": permit_requirements,
+            "legal_sources": legal_sources,
+            "site_constraints": {
+                k: v for k, v in site_constraints.items()
+                if k != "footprint_geometry"
+            },
         }
     )
 

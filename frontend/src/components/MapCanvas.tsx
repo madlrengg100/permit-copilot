@@ -1,13 +1,14 @@
 import jQuery from "jquery";
 import { useEffect, useRef, useState } from "react";
 import { MapBridge, type MapCommand } from "../lib/mapBridge";
+import { MapCompass } from "./MapCompass";
 
 interface Props {
   vworldKey: string;
   commands: MapCommand[];
   /** 지도가 준비되면 bridge 를 넘긴다. 패널을 건물 위에 띄우는 데 쓴다. */
   onReady?: (bridge: MapBridge) => void;
-  onMapSelect?: (lon: number, lat: number) => void;
+  onMapSelect?: (lon: number, lat: number, jibun: string, pnu: string) => void;
 }
 
 /**
@@ -340,19 +341,74 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
   const [locMsg, setLocMsg] = useState("");
   const [viewMode, setViewMode] = useState<"2d" | "3d">("3d");
   const [toolsOpen, setToolsOpen] = useState(false);
+  // 주제도 오버레이 켜짐 상태 (진단하면 자동 ON, 버튼으로 토글)
+  const [cadastreOn, setCadastreOn] = useState(true);
+  const [zoningOn, setZoningOn] = useState(true);
+  // 경사도 격자 — 가장 무거운 분석(격자점 수천 개 표고 샘플링)이라 기본 OFF.
+  // 진단 응답이 느려지지 않게 자동 표시하지 않고, 버튼으로 필요할 때만 켠다.
+  const [slopeOn, setSlopeOn] = useState(false);
+  const [slopeInfo, setSlopeInfo] = useState<{
+    maxSlope: number;
+    avgSlope: number;
+    minElev: number;
+    maxElev: number;
+  } | null>(null);
+  // 나침반·해 방향 위젯에 넘길 준비된 bridge
+  const [readyBridge, setReadyBridge] = useState<MapBridge | null>(null);
+  // 측정 도구가 켜져 있으면 지도 클릭이 필지 선택(새 진단)으로 새 나가지 않게 막는다.
+  const measuringRef = useRef(false);
 
   useEffect(() => {
     onMapSelectRef.current = onMapSelect;
   }, [onMapSelect]);
 
+  // VWorld 3D 내장 측정 도구를 구동한다.
+  //   거리  vw.MeasureLine.start()
+  //   면적  vw.MeasureArea.start()
+  //   높이  ws3d.viewer.map.startMeasureHeight(...)
+  //   지우기 vw.NavigationZoom.erase() (그린 측정 그래픽 제거)
+  // (기존 코드는 vw.NavigationZoom[action] 을 불렀는데 그 이름의 측정 함수가
+  //  없어 항상 '준비되지 않았습니다'만 떴다 — 실제 API 로 교정)
   function runMapTool(action: "measureLine" | "measureArea" | "measureHeight" | "erase"): void {
     stopCameraAnimations();
-    const navigation = (window as any).vw?.NavigationZoom;
-    if (typeof navigation?.[action] !== "function") {
-      setLocMsg("지도 측정 도구가 아직 준비되지 않았습니다.");
-      return;
+    const vw = (window as any).vw;
+    const ws3d = (window as any).ws3d;
+    const stopAll = () => {
+      try { vw?.MeasureLine?.stop?.(); } catch { /* 진행 중 측정 없음 */ }
+      try { vw?.MeasureArea?.stop?.(); } catch { /* 〃 */ }
+      try { ws3d?.viewer?.map?.stopMeasureHeight?.(); } catch { /* 〃 */ }
+    };
+    try {
+      if (action === "measureLine") {
+        if (!vw?.MeasureLine?.start) throw new Error("거리 측정 도구를 찾지 못했습니다.");
+        stopAll();
+        vw.MeasureLine.start();
+        measuringRef.current = true;
+        setLocMsg("거리 측정: 지도를 클릭해 점을 찍고 더블클릭으로 끝냅니다.");
+      } else if (action === "measureArea") {
+        if (!vw?.MeasureArea?.start) throw new Error("면적 측정 도구를 찾지 못했습니다.");
+        stopAll();
+        vw.MeasureArea.start();
+        measuringRef.current = true;
+        setLocMsg("면적 측정: 꼭짓점을 클릭하고 더블클릭으로 끝냅니다.");
+      } else if (action === "measureHeight") {
+        if (!ws3d?.viewer?.map?.startMeasureHeight) throw new Error("높이 측정 도구를 찾지 못했습니다.");
+        stopAll();
+        ws3d.viewer.map.startMeasureHeight({ continueMode: true, measureZero: true });
+        measuringRef.current = true;
+        setLocMsg("높이 측정: 지도에서 두 점을 클릭합니다.");
+      } else {
+        stopAll();
+        try { vw?.NavigationZoom?.erase?.(); } catch { /* 지울 그래픽 없음 */ }
+        measuringRef.current = false;
+        setLocMsg("측정 표시를 지웠습니다.");
+      }
+    } catch (error) {
+      setLocMsg(
+        "측정 도구를 시작하지 못했습니다: " +
+          (error instanceof Error ? error.message : String(error)),
+      );
     }
-    navigation[action]();
   }
 
   useEffect(() => {
@@ -364,6 +420,9 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
         bridgeRef.current = new MapBridge(viewer, vworldKey);
         setStatus("ready");
         onReady?.(bridgeRef.current);
+        // 나침반·해 방향은 <MapCompass>로 직접 그린다(오른쪽 위). VWorld 내장
+        // #naviTopPannel3d 는 이 엔진 설정에서 렌더되지 않아 사용하지 않는다.
+        setReadyBridge(bridgeRef.current);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -380,9 +439,39 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
   useEffect(() => {
     if (!bridgeRef.current || status !== "ready") return;
     return bridgeRef.current.onMapClick(
-      (lon, lat) => onMapSelectRef.current?.(lon, lat),
+      (lon, lat, jibun, pnu) => {
+        // 측정 중 클릭은 측정 도구가 가져가야 한다 — 필지 선택으로 새 진단이
+        // 시작되면 측정이 끊긴다.
+        if (measuringRef.current) return;
+        onMapSelectRef.current?.(lon, lat, jibun, pnu);
+      },
       setLocMsg,
     );
+  }, [status]);
+
+  // VWorld가 필지 선택·카메라 이동 뒤 내부 캔버스 높이를 초기 렌더 크기로
+  // 되돌리는 경우가 있다. 부모 영역 크기를 관찰해 Cesium 뷰어를 즉시 맞춘다.
+  useEffect(() => {
+    if (status !== "ready") return;
+    const container = document.getElementById("vmap");
+    const viewer = (window as any).ws3d?.viewer;
+    if (!container || !viewer) return;
+    const resize = () => {
+      try {
+        viewer.resize?.();
+        viewer.scene?.requestRender?.();
+      } catch {
+        /* 엔진 전환 중 일시적 resize 실패는 다음 관찰에서 다시 맞춘다. */
+      }
+    };
+    const observer = new ResizeObserver(() => resize());
+    observer.observe(container);
+    resize();
+    window.addEventListener("resize", resize);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", resize);
+    };
   }, [status]);
 
   /**
@@ -427,6 +516,100 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
 
     bridgeRef.current.execute(pending);
     appliedRef.current = commands.length;
+    // 필지 선택 결과가 지도 객체와 팝업을 동시에 추가한 직후 VWorld 내부
+    // 캔버스가 축소되는 것을 막는다.
+    requestAnimationFrame(() => {
+      const viewer = (window as any).ws3d?.viewer;
+      viewer?.resize?.();
+      viewer?.scene?.requestRender?.();
+    });
+
+    // 자연어로 켠/끈 레이어 명령(set_layers) 처리 — 토글 상태 + bridge 동시 반영.
+    for (const cmd of pending) {
+      if (cmd.type !== "set_layers") continue;
+      if (typeof cmd.cadastre === "boolean") {
+        setCadastreOn(cmd.cadastre);
+        void bridgeRef.current?.setCadastreOverlay(cmd.cadastre)
+          .then((count) => {
+            setLocMsg(cmd.cadastre ? `지적도 경계 ${count}개를 표시했습니다.` : "지적도를 껐습니다.");
+            window.setTimeout(() => setLocMsg(""), 5000);
+          })
+          .catch((error: unknown) => {
+            const detail = error instanceof Error ? error.message : String(error);
+            setLocMsg(`지적도를 불러오지 못했습니다: ${detail}`);
+          });
+      }
+      if (typeof cmd.zoning === "boolean") {
+        setZoningOn(cmd.zoning);
+        void bridgeRef.current?.setZoningOverlay(cmd.zoning).catch(() => {});
+      }
+      if (typeof cmd.slope === "boolean") {
+        setSlopeOn(cmd.slope);
+        if (cmd.slope) {
+          // 지형이 아직이면 한 번 재시도
+          const run = () => {
+            const r = bridgeRef.current?.setSlopeGrid(true);
+            if (r && r.cells > 0)
+              setSlopeInfo({ maxSlope: r.maxSlope, avgSlope: r.avgSlope, minElev: r.minElev, maxElev: r.maxElev });
+            else window.setTimeout(() => {
+              const r2 = bridgeRef.current?.setSlopeGrid(true);
+              if (r2 && r2.cells > 0)
+                setSlopeInfo({ maxSlope: r2.maxSlope, avgSlope: r2.avgSlope, minElev: r2.minElev, maxElev: r2.maxElev });
+            }, 2500);
+          };
+          run();
+        } else {
+          bridgeRef.current?.setSlopeGrid(false);
+          setSlopeInfo(null);
+        }
+      }
+      if (typeof cmd.dimensions === "boolean") {
+        bridgeRef.current?.setDimensionsVisible(cmd.dimensions);
+      }
+    }
+
+    // 자연어로 실행한 지도 도구(측정·내 위치)
+    for (const cmd of pending) {
+      if (cmd.type === "set_tool_menu") {
+        setToolsOpen(cmd.open);
+        continue;
+      }
+      if (cmd.type !== "run_tool") continue;
+      if (cmd.action === "my_location") {
+        goToMyLocation();
+      } else {
+        const map: Record<string, "measureLine" | "measureArea" | "measureHeight" | "erase"> = {
+          measure_line: "measureLine",
+          measure_area: "measureArea",
+          measure_height: "measureHeight",
+          erase: "erase",
+        };
+        const a = map[cmd.action];
+        if (a) runMapTool(a);
+      }
+    }
+
+    // 새 진단이 들어오면(fly_to 포함) 주제도 오버레이를 자동으로 갱신한다.
+    // 지형 상대 Entity가 자리 잡도록 잠깐 뒤에 그린다.
+    const fly = pending.find((c) => c.type === "fly_to");
+    if (fly && fly.type === "fly_to") {
+      const { lon, lat } = fly;
+      window.setTimeout(() => {
+        if (zoningOn) void bridgeRef.current?.setZoningOverlay(true, lon, lat).catch(() => {});
+        if (cadastreOn) void bridgeRef.current?.setCadastreOverlay(true, lon, lat).catch(() => {});
+      }, 1500);
+      // 경사도는 지형 표고가 실제로 와야 계산되므로, 여러 번 재시도한다.
+      if (slopeOn) {
+        let tries = 0;
+        const trySlope = () => {
+          tries += 1;
+          const r = bridgeRef.current?.setSlopeGrid(true);
+          if (r && r.cells > 0) setSlopeInfo({ maxSlope: r.maxSlope, avgSlope: r.avgSlope, minElev: r.minElev, maxElev: r.maxElev });
+          else if (tries < 4) window.setTimeout(trySlope, 2500);
+        };
+        window.setTimeout(trySlope, 2500);
+      }
+    }
 
     // 비행이 끝난 뒤 실제 카메라 위치를 남긴다. 화면과 로그가 어긋나면
     // 누가 카메라를 되돌렸는지 추적할 근거가 된다.
@@ -491,6 +674,62 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
           >
             {viewMode === "3d" ? "2D 지적도" : "3D 지도"}
             </button>
+            <button
+              className={cadastreOn ? "is-active" : ""}
+              onClick={() => {
+                const next = !cadastreOn;
+                setCadastreOn(next);
+                void bridgeRef.current?.setCadastreOverlay(next)
+                  .then((count) => {
+                    setLocMsg(next ? `지적도 경계 ${count}개를 표시했습니다.` : "지적도를 껐습니다.");
+                    window.setTimeout(() => setLocMsg(""), 5000);
+                  })
+                  .catch((error: unknown) => {
+                    const detail = error instanceof Error ? error.message : String(error);
+                    setLocMsg(`지적도를 불러오지 못했습니다: ${detail}`);
+                  });
+              }}
+              title="연속지적도(지적선) 켜기/끄기"
+            >
+              지적도 {cadastreOn ? "ON" : "OFF"}
+            </button>
+            <button
+              className={zoningOn ? "is-active" : ""}
+              onClick={() => {
+                const next = !zoningOn;
+                setZoningOn(next);
+                void bridgeRef.current?.setZoningOverlay(next).catch(() => {});
+              }}
+              title="용도지역 주제도 켜기/끄기"
+            >
+              용도지역 {zoningOn ? "ON" : "OFF"}
+            </button>
+            <button
+              className={slopeOn ? "is-active" : ""}
+              onClick={() => {
+                const next = !slopeOn;
+                setSlopeOn(next);
+                if (!next) {
+                  bridgeRef.current?.setSlopeGrid(false);
+                  setSlopeInfo(null);
+                  return;
+                }
+                // 켤 때는 즉시 시도하고, 지형이 아직이면 잠시 뒤 한 번 더.
+                const attempt = () => {
+                  const r = bridgeRef.current?.setSlopeGrid(true);
+                  if (r && r.cells > 0) setSlopeInfo({ maxSlope: r.maxSlope, avgSlope: r.avgSlope, minElev: r.minElev, maxElev: r.maxElev });
+                  else window.setTimeout(attempt2, 2500);
+                };
+                const attempt2 = () => {
+                  const r = bridgeRef.current?.setSlopeGrid(true);
+                  if (r && r.cells > 0) setSlopeInfo({ maxSlope: r.maxSlope, avgSlope: r.avgSlope, minElev: r.minElev, maxElev: r.maxElev });
+                };
+                attempt();
+              }}
+              title="필지 위 격자별 경사도 색 표시 (VWorld 지형 기반 참고치)"
+            >
+              경사도 {slopeOn ? "ON" : "OFF"}
+            </button>
           </div>
 
           <div className={`map-tool-menu${toolsOpen ? " is-open" : ""}`}>
@@ -511,6 +750,23 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
             </div>
           </div>
         </>
+      )}
+      {status === "ready" && <MapCompass bridge={readyBridge} />}
+      {slopeOn && slopeInfo && (
+        <div className="slope-legend">
+          <div className="slope-legend-title">
+            표고 {slopeInfo.minElev}–{slopeInfo.maxElev}m · 경사 최대 {slopeInfo.maxSlope}° / 평균{" "}
+            {slopeInfo.avgSlope}°
+          </div>
+          <div className="slope-legend-scale">
+            <span style={{ background: "#2E7D32" }}>&lt;5°</span>
+            <span style={{ background: "#9CCC65" }}>5–10°</span>
+            <span style={{ background: "#FDD835", color: "#000" }}>10–15°</span>
+            <span style={{ background: "#FB8C00" }}>15–20°</span>
+            <span style={{ background: "#E53935" }}>≥20°</span>
+          </div>
+          <div className="slope-legend-note">VWorld 지형 기반 참고치 · 공부용 평균경사도 아님</div>
+        </div>
       )}
       {locMsg && <div className="my-location-msg">{locMsg}</div>}
       {status === "error" && (

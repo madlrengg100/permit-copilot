@@ -12,7 +12,9 @@ WorkingDirectory=/home/madlrengg100/permit-copilot/frontend
 Environment=NODE_ENV=production
 Environment=HOST=0.0.0.0
 Environment=PORT=5173
-ExecStart=/home/madlrengg100/.local/node/bin/node /home/madlrengg100/permit-copilot/frontend/server.mjs
+# SELinux 환경에서 systemd가 홈 디렉터리의 node를 직접 exec하면 203/EXEC가 난다.
+# 로그인 셸을 통해 실행하면 사용자 컨텍스트로 정상 전환된다.
+ExecStart=/bin/bash -lc 'exec /home/madlrengg100/.local/node/bin/node /home/madlrengg100/permit-copilot/frontend/server.mjs'
 Restart=always
 RestartSec=3
 TimeoutStopSec=15

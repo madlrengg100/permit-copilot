@@ -7,3 +7,20 @@ dist/
 
 .app_token
 .env.local
+backend/data/source/
+backend/data/processed/
+
+# 조례 수집 캐시·로그 (재생성 가능)
+backend/scripts/.cache_ordin/
+backend/scripts/.cache_build/
+backend/scripts/out/
+
+# 벡터 색인 (build_ordinance_index.py 로 재생성 가능, 대용량)
+backend/app/data/ordinance_index.npz
+backend/app/data/ordinance_index_chunks.json
+backend/app/data/ordinance_index_vocab.json
+
+# 실제 키가 든 env 백업 — 절대 커밋 금지 (.env.example 템플릿만 추적)
+.env.backup*
+.env.*.bak
+*.env.backup*

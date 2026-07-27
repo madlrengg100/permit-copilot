@@ -21,7 +21,10 @@ USE_MATRIX: dict[str, dict[str, list[str]]] = {
             "제1종전용주거지역", "제2종전용주거지역", "제1종일반주거지역",
             "제2종일반주거지역", "제3종일반주거지역", "준주거지역",
         ],
-        "permitted": ["근린상업지역", "일반상업지역", "자연녹지지역", "계획관리지역"],
+        "permitted": [
+            "근린상업지역", "일반상업지역", "자연녹지지역", "계획관리지역",
+            "생산관리지역", "보전관리지역",
+        ],
     },
     "공동주택": {
         "allowed": [
@@ -73,16 +76,38 @@ USE_MATRIX: dict[str, dict[str, list[str]]] = {
     },
 }
 
-# 용도지구/구역 중 별도 심의·제한이 걸리는 것
-CONSTRAINT_NOTES: dict[str, str] = {
-    "지구단위계획구역": "지구단위계획으로 용도·밀도·높이가 별도 지정되므로 계획 내용 확인 필요",
-    "경관지구": "높이·형태·색채 제한. 경관심의 대상 여부 확인 필요",
-    "고도지구": "최고 높이가 별도 지정되어 용적률 상한을 못 쓸 수 있음",
-    "방화지구": "건축물 주요 구조부 내화구조 의무",
-    "개발제한구역": "원칙적으로 건축 불가. 예외 허가 대상만 가능",
-    "문화재보호구역": "현상변경 허가 및 문화재청 협의 필요",
-    "학교환경위생정화구역": "숙박·유흥시설 등 금지시설 존재",
-}
+# 용도지구/구역 중 별도 심의·제한이 걸리는 것.
+# 토지이용계획(getLandUseAttr)의 실제 명칭은 조례·연도에 따라 변형이 많다
+# (경관지구→중점경관관리구역, 문화재보호구역→문화유산보호구역 등). 그래서
+# 이름을 정확히 일치시키지 않고, 지역지구명에 아래 키워드가 들어가면 매칭한다.
+_CONSTRAINT_KEYWORDS: list[tuple[str, str]] = [
+    ("지구단위계획", "지구단위계획으로 용도·밀도·높이가 별도 지정되므로 계획 내용 확인 필요"),
+    ("경관", "높이·형태·색채 제한. 경관심의 대상 여부 확인 필요"),
+    ("고도지구", "최고 높이가 별도 지정되어 용적률 상한을 못 쓸 수 있음"),
+    ("방화지구", "건축물 주요 구조부 내화구조 의무"),
+    ("개발제한", "원칙적으로 건축 불가. 예외 허가 대상만 가능"),
+    ("문화재", "현상변경 허가 및 문화재청(국가유산청) 협의 필요"),
+    ("문화유산", "현상변경 허가 및 국가유산청 협의 필요"),
+    ("문화유산보호", "현상변경 허가 및 국가유산청 협의 필요"),
+    ("학교", "정화구역이면 숙박·유흥시설 등 금지시설 존재 — 교육환경 확인 필요"),
+    ("상수원보호", "건축·행위 제한. 상수원보호구역 규제 확인 필요"),
+    ("군사", "군사기지·시설보호구역이면 국방부(관할 부대) 협의 필요"),
+    ("비행안전", "고도 제한. 공항 주변 비행안전구역 확인 필요"),
+    ("가축사육제한", "가축분뇨법상 축사 제한 — 축산 시설이면 확인 필요"),
+]
+
+
+def _match_constraints(districts: list[str]) -> list[dict]:
+    """지역지구명 목록 -> 심의·제한 노트. 같은 노트는 한 번만."""
+    out: list[dict] = []
+    used_notes: set[str] = set()
+    for d in districts:
+        for kw, note in _CONSTRAINT_KEYWORDS:
+            if kw in d and note not in used_notes:
+                out.append({"name": d, "note": note})
+                used_notes.add(note)
+                break
+    return out
 
 
 def uses_for_zone(zone: str) -> dict:
@@ -149,9 +174,7 @@ def lookup_zoning_rules(
         verdict = "not_allowed"
         reason = f"{zone}에서 {building_use}은(는) 건축할 수 없는 용도입니다."
 
-    constraints = [
-        {"name": d, "note": CONSTRAINT_NOTES[d]} for d in districts if d in CONSTRAINT_NOTES
-    ]
+    constraints = _match_constraints(districts)
     if constraints and verdict in ("allowed", "conditional"):
         verdict = "conditional"
 

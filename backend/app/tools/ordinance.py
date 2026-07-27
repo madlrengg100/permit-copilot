@@ -19,6 +19,9 @@ from functools import lru_cache
 from pathlib import Path
 
 _DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "ordinances.json"
+# 전국 자동 수집본(collect_ordinances.py 산출). 수작업 검증본이 없는 지자체만
+# 보완적으로 병합한다. review_status=="auto_extracted" 인 것만 신뢰해 쓴다.
+_AUTO_DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "ordinances_auto.json"
 
 # 도시지역 밖에서는 시·군 도시·군계획조례가 실제 적용 밀도를 정하므로,
 # 조례를 확인하지 못한 상태에서 시행령 상한으로 자동 계산하지 않는다.
@@ -31,10 +34,56 @@ NON_URBAN_ZONES = {
 }
 
 
+def _merge_auto(data: dict) -> None:
+    """자동 수집본을 수작업 검증본 위에 '보완'으로 병합한다(수작업 우선).
+
+    - 수작업본에 이미 있는 지자체는 건드리지 않는다(검증값 우선).
+    - review_status=="auto_extracted" 인 지자체만 신뢰해 쓴다(needs_review 제외).
+    - 자동본 스키마(zones/_meta)를 수작업본 스키마(zone별 dict + _source)로 변환.
+    """
+    if not _AUTO_DATA_PATH.exists():
+        return
+    try:
+        with _AUTO_DATA_PATH.open(encoding="utf-8") as f:
+            auto = json.load(f)
+    except (OSError, ValueError):
+        return
+    for org, rec in auto.items():
+        if org.startswith("_") or org in data:
+            continue
+        meta = rec.get("_meta") or {}
+        if meta.get("review_status") != "auto_extracted":
+            continue
+        zones = rec.get("zones") or {}
+        if not zones:
+            continue
+        entry: dict = {
+            "_source": {
+                "ordinance": meta.get("ordinance_name") or f"{org} 도시계획조례",
+                "ordinance_no": meta.get("ordinance_no"),
+                "articles": meta.get("articles") or "",
+                "effective_date": meta.get("effective_date"),
+                "url": meta.get("source_url"),
+                "collection": "auto",  # 자동 수집본임을 표시(감사 추적)
+                "confidence": meta.get("extraction_confidence"),
+            }
+        }
+        for zone, vals in zones.items():
+            entry[zone] = {
+                "bcr_max_pct": vals.get("bcr_max_pct"),
+                "far_max_pct": vals.get("far_max_pct"),
+                "far_min_pct": vals.get("far_min_pct"),
+                "note": f"{meta.get('ordinance_name') or org} 자동 수집값(국가법령정보센터 API).",
+            }
+        data[org] = entry
+
+
 @lru_cache(maxsize=1)
 def _load() -> dict:
     with _DATA_PATH.open(encoding="utf-8") as f:
-        return json.load(f)
+        data = json.load(f)
+    _merge_auto(data)
+    return data
 
 
 # 수집된 지자체 목록 (_meta 제외)
@@ -66,6 +115,7 @@ _ALIASES: list[tuple[str, str]] = [
     ("대구광역시", "대구광역시"), ("대구시", "대구광역시"), ("대구", "대구광역시"),
     ("경기도 성남시", "경기도 성남시"), ("성남시", "경기도 성남시"), ("성남", "경기도 성남시"),
     # 비도시 지자체 — 개발행위허가 기준이 실질적 관문인 지역
+    ("충청북도 청주시", "충청북도 청주시"), ("청주시", "충청북도 청주시"), ("청주", "충청북도 청주시"),
     ("충청북도 음성군", "충청북도 음성군"), ("음성군", "충청북도 음성군"), ("음성", "충청북도 음성군"),
     ("경상북도 경산시", "경상북도 경산시"), ("경산시", "경상북도 경산시"), ("경산", "경상북도 경산시"),
     ("경상북도 영천시", "경상북도 영천시"), ("영천시", "경상북도 영천시"), ("영천", "경상북도 영천시"),
@@ -97,14 +147,44 @@ def separate_ordinance_warning(address: str, jurisdiction: str | None) -> str | 
     return None
 
 
+@lru_cache(maxsize=1)
+def _dynamic_aliases() -> list[tuple[str, str]]:
+    """수집된 전체 지자체명에서 주소 매칭용 별칭을 자동 생성한다.
+
+    - 전체명(공백 제거)은 항상 별칭.
+    - 마지막 토큰(시/군/구)이 전국에서 유일하면 짧은 별칭(예: '부천시','부천')도 허용.
+    - 동명(예: '고성군'이 강원·경남에 모두)일 때는 짧은 별칭을 만들지 않고
+      광역명이 포함된 전체명으로만 매칭해 오매핑을 막는다.
+    """
+    keys = [k for k in _load() if not k.startswith("_")]
+    last_counts: dict[str, int] = {}
+    for k in keys:
+        last_counts[k.split()[-1]] = last_counts.get(k.split()[-1], 0) + 1
+    out: list[tuple[str, str]] = []
+    for k in keys:
+        out.append((re.sub(r"\s+", "", k), k))  # 전체명
+        last = k.split()[-1]
+        if last_counts[last] == 1:  # 전국 유일 지명만 짧은 별칭
+            out.append((last, k))
+            stem = re.sub(r"(특별자치시|특별자치도|광역시|특별시|시|군|구)$", "", last)
+            if len(stem) >= 2:
+                out.append((stem, k))
+    return out
+
+
 def detect_jurisdiction(address: str) -> str | None:
     """주소에서 조례 데이터가 있는 지자체를 찾는다. 없으면 None."""
     if not address:
         return None
     available = set(jurisdictions())
     normalized = re.sub(r"\s+", "", address)
+    # 1) 수작업 별칭 우선(계양구→인천 등 예외 처리 포함).
     for alias, canonical in sorted(_ALIASES, key=lambda p: -len(p[0])):
         if canonical in available and re.sub(r"\s+", "", alias) in normalized:
+            return canonical
+    # 2) 전국 자동 별칭 — 긴 별칭부터(전체명 > 시·군명) 매칭.
+    for alias, canonical in sorted(_dynamic_aliases(), key=lambda p: -len(p[0])):
+        if alias in normalized:
             return canonical
     return None
 

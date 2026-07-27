@@ -1,4 +1,5 @@
 import os
+from urllib.parse import unquote
 
 # --- LLM ---
 #
@@ -79,6 +80,11 @@ VWORLD_DOMAIN = os.getenv("VWORLD_DOMAIN", "http://localhost:5173")
 # 키가 없으면 목(mock) 응답으로 동작 — API 키 없이도 전체 로직 검증 가능
 USE_MOCK = not VWORLD_KEY
 
+# 공공데이터포털은 Encoding/Decoding 키를 모두 표시한다. 환경변수에는 어느
+# 형식이 들어와도 HTTP 클라이언트가 사용할 원문 키로 한 번만 정규화한다.
+DATA_GO_KR_SERVICE_KEY = unquote(os.getenv("DATA_GO_KR_SERVICE_KEY", ""))
+LAW_OPEN_API_OC = os.getenv("LAW_OPEN_API_OC", "")
+
 # VWorld 데이터 레이어 ID
 LAYER_PARCEL = "LP_PA_CBND_BUBUN"   # 연속지적도(부번)
 # 용도지역 레이어는 국토계획법의 4개 대분류별로 분리되어 있다. 일부만 조회하면
@@ -100,6 +106,17 @@ LAYERS_ZONING = (
     LAYER_ZONING_NATURE,
 )
 LAYER_ZONING = LAYER_ZONING_URBAN   # 하위 호환
+
+# --- 토지이용계획(토지이음) ---
+# 공공데이터포털 국토교통부 '토지이용계획정보 서비스'. 필지(PNU) 하나로
+# 용도지역·용도지구·지구단위계획 등 '지역지구 등 지정여부' 전체를 조회한다.
+# 키는 data.go.kr 에서 발급(활용신청 → 서비스키). 없으면 조회를 건너뛴다.
+LANDUSE_KEY = os.getenv("LANDUSE_KEY", "").strip()
+# 엔드포인트는 서비스 버전에 따라 다를 수 있어 환경변수로도 바꿀 수 있게 둔다.
+LANDUSE_BASE = os.getenv(
+    "LANDUSE_BASE",
+    "http://apis.data.go.kr/1611000/nsdi/LandUseService/attr/getLandUseAttr",
+)
 
 # 층고 가정 (연면적 -> 층수 환산 및 3D 매스 높이)
 FLOOR_HEIGHT_M = 3.3

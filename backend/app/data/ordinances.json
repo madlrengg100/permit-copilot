@@ -1041,5 +1041,458 @@
       "note": null,
       "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
     }
+  },
+  "충청북도 청주시": {
+    "_source": {
+      "url": "https://www.law.go.kr/LSW/ordinInfoP.do?ordinSeq=2038849",
+      "ordinance": "청주시 도시계획 조례",
+      "ordinance_no": "충청북도청주시조례 제1665호",
+      "effective_date": "2025-05-16",
+      "articles": "제61조(용도지역에서의 건폐율), 제67조(용도지역에서의 용적률)",
+      "note": "국가법령정보센터 청주시 도시계획 조례 원문 기준.",
+      "applies_to_districts": "청주시 전역"
+    },
+    "계획관리지역": {
+      "bcr_max_pct": 40,
+      "far_min_pct": null,
+      "far_max_pct": 100,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "생산관리지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 80,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "보전관리지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 80,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "농림지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 80,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "자연환경보전지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 80,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    }
+  },
+  "충청북도 음성군": {
+    "_source": {
+      "url": "https://law.go.kr/LSW/ordinInfoP.do?ordinSeq=1816239",
+      "ordinance": "음성군 군계획 조례",
+      "ordinance_no": "충청북도음성군조례 제2903호",
+      "effective_date": "2023-06-02",
+      "articles": "제49조(용도지역 안에서의 건폐율), 제58조(용도지역 안에서의 용적률)",
+      "note": "조례상 전 용도지역이 국토계획법 시행령 법정 상한을 그대로 채택. law.go.kr 원문 확인.",
+      "applies_to_districts": "음성군 전역"
+    },
+    "제1종전용주거지역": {
+      "bcr_max_pct": 50,
+      "far_min_pct": null,
+      "far_max_pct": 100,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "제2종전용주거지역": {
+      "bcr_max_pct": 50,
+      "far_min_pct": null,
+      "far_max_pct": 150,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "제1종일반주거지역": {
+      "bcr_max_pct": 60,
+      "far_min_pct": null,
+      "far_max_pct": 200,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "제2종일반주거지역": {
+      "bcr_max_pct": 60,
+      "far_min_pct": null,
+      "far_max_pct": 250,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "제3종일반주거지역": {
+      "bcr_max_pct": 50,
+      "far_min_pct": null,
+      "far_max_pct": 300,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "준주거지역": {
+      "bcr_max_pct": 70,
+      "far_min_pct": null,
+      "far_max_pct": 500,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "중심상업지역": {
+      "bcr_max_pct": 90,
+      "far_min_pct": null,
+      "far_max_pct": 1500,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "일반상업지역": {
+      "bcr_max_pct": 80,
+      "far_min_pct": null,
+      "far_max_pct": 1300,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "근린상업지역": {
+      "bcr_max_pct": 70,
+      "far_min_pct": null,
+      "far_max_pct": 900,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "유통상업지역": {
+      "bcr_max_pct": 80,
+      "far_min_pct": null,
+      "far_max_pct": 1100,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "전용공업지역": {
+      "bcr_max_pct": 70,
+      "far_min_pct": null,
+      "far_max_pct": 300,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "일반공업지역": {
+      "bcr_max_pct": 70,
+      "far_min_pct": null,
+      "far_max_pct": 350,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "준공업지역": {
+      "bcr_max_pct": 70,
+      "far_min_pct": null,
+      "far_max_pct": 400,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "보전녹지지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 80,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "생산녹지지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 100,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "자연녹지지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 100,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "계획관리지역": {
+      "bcr_max_pct": 40,
+      "far_min_pct": null,
+      "far_max_pct": 100,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "생산관리지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 80,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "보전관리지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 80,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "농림지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 80,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "자연환경보전지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 80,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    }
+  },
+  "경상북도 영천시": {
+    "_source": {
+      "url": "https://law.go.kr/LSW/ordinInfoP.do?ordinSeq=2000711",
+      "ordinance": "영천시 도시계획 조례",
+      "ordinance_no": "경상북도 영천시 조례 제1342호",
+      "effective_date": "2024-12-27",
+      "articles": "제56조(용도지역 안에서의 건폐율), 제62조(용도지역 안에서의 용적률)",
+      "note": "조례상 전 용도지역이 법정 상한을 그대로 채택. law.go.kr 원문 확인.",
+      "applies_to_districts": "영천시 전역"
+    },
+    "제1종전용주거지역": {
+      "bcr_max_pct": 50,
+      "far_min_pct": null,
+      "far_max_pct": 100,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "제2종전용주거지역": {
+      "bcr_max_pct": 50,
+      "far_min_pct": null,
+      "far_max_pct": 150,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "제1종일반주거지역": {
+      "bcr_max_pct": 60,
+      "far_min_pct": null,
+      "far_max_pct": 200,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "제2종일반주거지역": {
+      "bcr_max_pct": 60,
+      "far_min_pct": null,
+      "far_max_pct": 250,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "제3종일반주거지역": {
+      "bcr_max_pct": 50,
+      "far_min_pct": null,
+      "far_max_pct": 300,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "준주거지역": {
+      "bcr_max_pct": 70,
+      "far_min_pct": null,
+      "far_max_pct": 500,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "중심상업지역": {
+      "bcr_max_pct": 90,
+      "far_min_pct": null,
+      "far_max_pct": 1500,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "일반상업지역": {
+      "bcr_max_pct": 80,
+      "far_min_pct": null,
+      "far_max_pct": 1300,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "근린상업지역": {
+      "bcr_max_pct": 70,
+      "far_min_pct": null,
+      "far_max_pct": 900,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "유통상업지역": {
+      "bcr_max_pct": 80,
+      "far_min_pct": null,
+      "far_max_pct": 1100,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "전용공업지역": {
+      "bcr_max_pct": 70,
+      "far_min_pct": null,
+      "far_max_pct": 300,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "일반공업지역": {
+      "bcr_max_pct": 70,
+      "far_min_pct": null,
+      "far_max_pct": 350,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "준공업지역": {
+      "bcr_max_pct": 70,
+      "far_min_pct": null,
+      "far_max_pct": 400,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "보전녹지지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 80,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "생산녹지지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 100,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "자연녹지지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 100,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "계획관리지역": {
+      "bcr_max_pct": 40,
+      "far_min_pct": null,
+      "far_max_pct": 100,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "생산관리지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 80,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "보전관리지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 80,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "농림지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 80,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "자연환경보전지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 80,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    }
+  },
+  "경상북도 경산시": {
+    "_source": {
+      "url": "https://law.go.kr/LSW/ordinInfoP.do?ordinSeq=1839779",
+      "ordinance": "경산시 도시계획 조례",
+      "ordinance_no": "경상북도 경산시조례 제1436호",
+      "effective_date": "2023-07-19",
+      "articles": "제79조(용도지역 안에서의 건폐율), 제84조(용도지역 안에서의 용적률)",
+      "note": "상업·준주거 등은 법정 상한보다 낮게 설정(일반상업 800%, 중심상업 1000%, 준주거 건폐율 60% 등). law.go.kr 원문 확인.",
+      "applies_to_districts": "경산시 전역"
+    },
+    "제1종전용주거지역": {
+      "bcr_max_pct": 50,
+      "far_min_pct": null,
+      "far_max_pct": 100,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "제2종전용주거지역": {
+      "bcr_max_pct": 50,
+      "far_min_pct": null,
+      "far_max_pct": 150,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "제1종일반주거지역": {
+      "bcr_max_pct": 60,
+      "far_min_pct": null,
+      "far_max_pct": 200,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "제2종일반주거지역": {
+      "bcr_max_pct": 60,
+      "far_min_pct": null,
+      "far_max_pct": 250,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "제3종일반주거지역": {
+      "bcr_max_pct": 50,
+      "far_min_pct": null,
+      "far_max_pct": 300,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조.",
+      "note": "아파트는 용적률 280% 이하로 제한(조례 특례)"
+    },
+    "준주거지역": {
+      "bcr_max_pct": 60,
+      "far_min_pct": null,
+      "far_max_pct": 400,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "중심상업지역": {
+      "bcr_max_pct": 70,
+      "far_min_pct": null,
+      "far_max_pct": 1000,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "일반상업지역": {
+      "bcr_max_pct": 70,
+      "far_min_pct": null,
+      "far_max_pct": 800,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "근린상업지역": {
+      "bcr_max_pct": 70,
+      "far_min_pct": null,
+      "far_max_pct": 600,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "유통상업지역": {
+      "bcr_max_pct": 70,
+      "far_min_pct": null,
+      "far_max_pct": 700,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "전용공업지역": {
+      "bcr_max_pct": 70,
+      "far_min_pct": null,
+      "far_max_pct": 300,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "일반공업지역": {
+      "bcr_max_pct": 70,
+      "far_min_pct": null,
+      "far_max_pct": 350,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "준공업지역": {
+      "bcr_max_pct": 70,
+      "far_min_pct": null,
+      "far_max_pct": 400,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "보전녹지지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 80,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "생산녹지지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 100,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "자연녹지지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 100,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "보전관리지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 80,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "생산관리지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 80,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "계획관리지역": {
+      "bcr_max_pct": 40,
+      "far_min_pct": null,
+      "far_max_pct": 100,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "농림지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 80,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    },
+    "자연환경보전지역": {
+      "bcr_max_pct": 20,
+      "far_min_pct": null,
+      "far_max_pct": 80,
+      "far_min_reason": "조례는 상한('이하')만 규정하고 용적률 하한은 규정하지 않음. 법정 하한은 영 제85조제1항 참조."
+    }
   }
 }

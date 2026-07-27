@@ -32,6 +32,21 @@ export async function fetchConfig(): Promise<{ vworld_key: string; mock_mode: bo
   return res.json();
 }
 
+export async function setSessionParcelSelection(
+  sessionId: string,
+  selection: { lon: number; lat: number; address: string; pnu: string },
+): Promise<void> {
+  const res = await fetch(`${BASE}/api/session/${encodeURIComponent(sessionId)}/selection`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(APP_TOKEN ? { "X-App-Token": APP_TOKEN } : {}),
+    },
+    body: JSON.stringify(selection),
+  });
+  if (!res.ok) throw new Error(`선택 필지 세션 저장 오류 ${res.status}`);
+}
+
 /** 질의를 보내고 SSE 이벤트를 순서대로 뱉는 async generator. */
 export async function* streamChat(
   sessionId: string,
