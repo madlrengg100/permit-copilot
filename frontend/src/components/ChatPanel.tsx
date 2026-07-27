@@ -1,4 +1,114 @@
 import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
+
+/** 인라인 서식: **볼드**, `코드`, [링크](https://...). */
+function renderInline(text: string): ReactNode[] {
+  return text.split(/(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\(https?:\/\/[^)]+\))/g).map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) return <strong key={i}>{part.slice(2, -2)}</strong>;
+    if (part.startsWith("`") && part.endsWith("`")) return <code key={i}>{part.slice(1, -1)}</code>;
+    const link = part.match(/^\[([^\]]+)\]\((https?:\/\/[^)]+)\)$/);
+    if (link) {
+      return <a key={i} href={link[2]} target="_blank" rel="noreferrer">{link[1]}</a>;
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
+/**
+ * 답변 텍스트의 마크다운을 렌더링한다(라이브러리 없이 최소 구현).
+ * 지원: 제목(#), 불릿(- / *), 번호목록, 인용(>), 구분선(---), 인라인 볼드·코드.
+ */
+function renderMarkdownCore(text: string): ReactNode {
+  const lines = text.split("\n");
+  const blocks: ReactNode[] = [];
+  let list: ReactNode[] = [];
+  let ordered = false;
+  let orderedStart = 1;
+
+  const flush = () => {
+    if (!list.length) return;
+    const items = list;
+    blocks.push(
+      ordered ? (
+        <ol key={`l${blocks.length}`} className="md-list" start={orderedStart}>{items}</ol>
+      ) : (
+        <ul key={`l${blocks.length}`} className="md-list">{items}</ul>
+      ),
+    );
+    list = [];
+  };
+
+  lines.forEach((raw, i) => {
+    const t = raw.trim();
+    const bullet = t.match(/^[-*]\s+(.*)/);
+    const numbered = t.match(/^(\d+)\.\s+(.*)/);
+    if (bullet) {
+      if (list.length && ordered) flush();
+      ordered = false;
+      list.push(<li key={i}>{renderInline(bullet[1])}</li>);
+      return;
+    }
+    if (numbered) {
+      if (list.length && !ordered) flush();
+      if (!list.length) orderedStart = Number(numbered[1]);
+      ordered = true;
+      list.push(<li key={i}>{renderInline(numbered[2])}</li>);
+      return;
+    }
+    flush();
+    if (!t) return; // 빈 줄
+    const heading = t.match(/^(#{1,4})\s+(.*)/);
+    if (heading) {
+      blocks.push(<div key={i} className="md-h">{renderInline(heading[2])}</div>);
+      return;
+    }
+    if (/^-{3,}$/.test(t)) {
+      blocks.push(<hr key={i} className="md-hr" />);
+      return;
+    }
+    if (t.startsWith(">")) {
+      blocks.push(<blockquote key={i} className="md-quote">{renderInline(t.replace(/^>\s?/, ""))}</blockquote>);
+      return;
+    }
+    blocks.push(<p key={i} className="md-p">{renderInline(t)}</p>);
+  });
+  flush();
+  return blocks;
+}
+
+function renderMarkdown(text: string): ReactNode {
+  const lines = text.split("\n");
+  const start = lines.findIndex((line) =>
+    /^#{1,4}\s+\d+\.\s+국가법령정보센터 원문 확인\s*$/.test(line.trim()),
+  );
+  if (start < 0) return renderMarkdownCore(text);
+
+  let end = lines.length;
+  for (let i = start + 1; i < lines.length; i += 1) {
+    if (/^#{1,4}\s+/.test(lines[i].trim())) {
+      end = i;
+      break;
+    }
+  }
+  const sourceLines = lines.slice(start + 1, end).filter((line) => line.trim());
+  const sourceCount = sourceLines.filter((line) => /^\s*-\s+\[/.test(line)).length;
+
+  return (
+    <>
+      {renderMarkdownCore(lines.slice(0, start).join("\n"))}
+      <details className="law-sources">
+        <summary>
+          <span className="law-summary-closed">▾ 법령 원문 {sourceCount}건 펼치기</span>
+          <span className="law-summary-open">▴ 법령 원문 {sourceCount}건 닫기</span>
+        </summary>
+        <div className="law-sources-body">
+          {renderMarkdownCore(sourceLines.join("\n"))}
+        </div>
+      </details>
+      {renderMarkdownCore(lines.slice(end).join("\n"))}
+    </>
+  );
+}
 
 export interface ChatMessage {
   role: "user" | "assistant" | "status";
@@ -67,7 +177,7 @@ export function ChatPanel({ messages, busy, onSend, onAction, draftSeed }: Props
 
         {messages.map((m, i) => (
           <div key={i} className={`bubble bubble-${m.role}`}>
-            {m.text}
+            {m.role === "assistant" ? renderMarkdown(m.text) : m.text}
             {m.options && (
               <div className="address-options">
                 {m.options.map((option) => (

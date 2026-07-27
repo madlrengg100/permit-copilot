@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
+import logging
 import os
-from typing import AsyncIterator, Optional
+from typing import AsyncIterator, List, Optional
 
 from fastapi import FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,9 +16,10 @@ from pydantic import BaseModel
 from .config import LLM_BASE_NAME, LLM_MODEL, LLM_PROVIDER, USE_MOCK, VWORLD_KEY
 from .llm import make_client
 from .orchestrator import Orchestrator
-from .tools import vworld
+from .tools import ogc, vworld
 
 app = FastAPI(title="공간정보 기반 인허가 사전진단")
+logger = logging.getLogger(__name__)
 
 # 접근 허용 출처. 외부 노출 시 ALLOWED_ORIGINS 에 실제 주소를 넣는다.
 #   ALLOWED_ORIGINS="http://34.50.55.150:5173,http://localhost:5173"
@@ -60,6 +63,18 @@ _sessions: dict[str, Orchestrator] = {}
 class ChatRequest(BaseModel):
     session_id: str
     message: str
+
+
+class ParcelSelectionRequest(BaseModel):
+    lon: float
+    lat: float
+    address: str = ""
+    pnu: str = ""
+
+
+class SpatialOverlapRequest(BaseModel):
+    parcel_geometry: dict
+    layer_ids: Optional[List[str]] = None
 
 
 def _provider_label() -> str:
@@ -168,7 +183,63 @@ async def parcels(
     east: float = Query(...), north: float = Query(...),
 ) -> dict:
     """2D 모드용 주변 연속지적도 경계."""
-    return {"geometries": await vworld.get_parcels_bbox(west, south, east, north)}
+    features = await vworld.get_parcel_features_bbox(west, south, east, north)
+    return {
+        "features": features,
+        # 구버전 프런트엔드 호환용. 새 화면은 features의 지번도 함께 사용한다.
+        "geometries": [item["geometry"] for item in features],
+    }
+
+
+@app.get("/api/zoning-area")
+async def zoning_area(
+    west: float = Query(...), south: float = Query(...),
+    east: float = Query(...), north: float = Query(...),
+) -> dict:
+    """주제도 오버레이용 — 범위 내 용도지역 폴리곤 + 지적편집도 색."""
+    from .agents.map_control import zone_color
+
+    polys = await vworld.get_zoning_polygons_bbox(west, south, east, north)
+    return {
+        "polygons": [
+            {"zone": p["zone"], "color": zone_color(p["zone"]), "geometry": p["geometry"]}
+            for p in polys
+        ]
+    }
+
+
+@app.get("/api/spatial-layers")
+async def spatial_layers() -> dict:
+    """서버에 등록된 규제 공간레이어와 연결 준비 상태."""
+    registry = ogc.LayerRegistry()
+    return {
+        "items": [
+            {
+                "id": layer.id,
+                "title": layer.title,
+                "provider": layer.provider,
+                "enabled": layer.enabled,
+                "wfs_ready": layer.ready,
+                "wms_ready": bool(
+                    layer.enabled and layer.wms_url and layer.type_name
+                ),
+            }
+            for layer in registry.list()
+        ]
+    }
+
+
+@app.post("/api/spatial-overlaps")
+async def spatial_overlaps(req: SpatialOverlapRequest) -> dict:
+    """선택 필지와 등록된 규제구역의 교차 면적·비율을 계산한다."""
+    try:
+        results = await ogc.inspect_layers(
+            req.parcel_geometry,
+            req.layer_ids,
+        )
+    except ogc.OGCError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"results": results}
 
 
 @app.post("/api/chat")
@@ -182,12 +253,42 @@ async def chat(
     orch = _sessions.setdefault(req.session_id, Orchestrator(client))
 
     async def stream() -> AsyncIterator[str]:
+        # 진단 도구가 tool_start 직후 수 초간 이벤트를 몰아서 내보내는 구간이 있다.
+        # 그 침묵 동안 프록시(server.mjs)가 SSE 연결을 끊어 'network error' 가 났다.
+        # 오케스트레이터를 큐로 돌리고, 데이터가 없으면 2초마다 SSE 주석(': ')을
+        # 하트비트로 흘려 연결을 살려 둔다(클라이언트는 주석을 무시한다).
+        queue: asyncio.Queue = asyncio.Queue()
+
+        async def produce() -> None:
+            try:
+                async for event in orch.ask(req.message):
+                    await queue.put(("event", event))
+            except Exception as exc:  # noqa: BLE001
+                await queue.put(("error", exc))
+            finally:
+                await queue.put(("done", None))
+
+        task = asyncio.create_task(produce())
         try:
-            async for event in orch.ask(req.message):
-                yield f"event: {event['event']}\ndata: {json.dumps(event['data'], ensure_ascii=False)}\n\n"
-        except Exception as exc:
-            payload = json.dumps({"message": friendly_error(exc)}, ensure_ascii=False)
-            yield f"event: error\ndata: {payload}\n\n"
+            while True:
+                try:
+                    kind, payload = await asyncio.wait_for(queue.get(), timeout=2.0)
+                except asyncio.TimeoutError:
+                    yield ": keepalive\n\n"  # 침묵 구간 연결 유지
+                    continue
+                if kind == "event":
+                    yield (
+                        f"event: {payload['event']}\n"
+                        f"data: {json.dumps(payload['data'], ensure_ascii=False)}\n\n"
+                    )
+                elif kind == "error":
+                    msg = json.dumps({"message": friendly_error(payload)}, ensure_ascii=False)
+                    yield f"event: error\ndata: {msg}\n\n"
+                    break
+                else:  # done
+                    break
+        finally:
+            task.cancel()
         yield "event: done\ndata: {}\n\n"
 
     return StreamingResponse(
@@ -195,6 +296,32 @@ async def chat(
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@app.post("/api/session/{session_id}/selection")
+async def set_session_selection(
+    session_id: str,
+    req: ParcelSelectionRequest,
+    x_app_token: Optional[str] = Header(default=None),
+) -> dict:
+    """마우스로 클릭한 필지를 대화 세션의 최우선 활성 필지로 저장한다."""
+    if APP_TOKEN and x_app_token != APP_TOKEN:
+        raise HTTPException(status_code=401, detail="유효하지 않은 앱 토큰입니다.")
+    orch = _sessions.setdefault(session_id, Orchestrator(client))
+    orch.set_selected_parcel(
+        lon=req.lon,
+        lat=req.lat,
+        address=req.address,
+        pnu=req.pnu,
+        from_mouse=True,
+    )
+    logger.info(
+        "parcel_selection session=%s pnu=%s address=%s",
+        session_id,
+        req.pnu,
+        req.address,
+    )
+    return {"ok": True, "address": req.address, "pnu": req.pnu}
 
 
 @app.delete("/api/session/{session_id}")

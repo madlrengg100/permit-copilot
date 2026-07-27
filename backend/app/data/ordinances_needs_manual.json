@@ -1,0 +1,58 @@
+{
+  "_meta": {
+    "note": "자동 수집으로 건폐율·용적률을 못 채운 시/군 목록. 원본 API 손상 등으로 자동 불가 → 수작업 입력 또는 헤드리스 스크레이퍼 필요. 값을 지어내지 않음.",
+    "count": 7,
+    "how_to_fill": "ELIS/law.go.kr 원문에서 확인 후 ordinances.json(수작업 검증본)에 지자체 항목 추가. 추가 즉시 로더가 자동본보다 우선 적용."
+  },
+  "jurisdictions": [
+    {
+      "jurisdiction": "경기도 군포시",
+      "ordinance_name": "군포시 도시계획 조례",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2077621&amp;type=HTML&amp;mobileYn=",
+      "reason": "law.go.kr 구조화 API 파일 손상(XML 언마샬 오류) 또는 조문 구조 예외 — 자동 파싱 불가",
+      "review_status": "needs_manual"
+    },
+    {
+      "jurisdiction": "경기도 부천시",
+      "ordinance_name": "",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2144525&amp;type=HTML&amp;mobileYn=",
+      "reason": "law.go.kr 구조화 API 파일 손상(XML 언마샬 오류) 또는 조문 구조 예외 — 자동 파싱 불가",
+      "review_status": "needs_manual"
+    },
+    {
+      "jurisdiction": "경상남도 창원시",
+      "ordinance_name": "창원시 도시계획 조례",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2110201&amp;type=HTML&amp;mobileYn=",
+      "reason": "law.go.kr 구조화 API 파일 손상(XML 언마샬 오류) 또는 조문 구조 예외 — 자동 파싱 불가",
+      "review_status": "needs_manual"
+    },
+    {
+      "jurisdiction": "부산광역시 기장군",
+      "ordinance_name": "부산광역시 기장군 도시계획 조례",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2069525&amp;type=HTML&amp;mobileYn=",
+      "reason": "law.go.kr 구조화 API 파일 손상(XML 언마샬 오류) 또는 조문 구조 예외 — 자동 파싱 불가",
+      "review_status": "needs_manual"
+    },
+    {
+      "jurisdiction": "울산광역시",
+      "ordinance_name": "울산광역시 도시계획 조례",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2120867&amp;type=HTML&amp;mobileYn=",
+      "reason": "law.go.kr 구조화 API 파일 손상(XML 언마샬 오류) 또는 조문 구조 예외 — 자동 파싱 불가",
+      "review_status": "needs_manual"
+    },
+    {
+      "jurisdiction": "울산광역시 울주군",
+      "ordinance_name": "울산광역시 울주군 도시계획 조례",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2138197&amp;type=HTML&amp;mobileYn=",
+      "reason": "law.go.kr 구조화 API 파일 손상(XML 언마샬 오류) 또는 조문 구조 예외 — 자동 파싱 불가",
+      "review_status": "needs_manual"
+    },
+    {
+      "jurisdiction": "전남광주통합특별시 해남군",
+      "ordinance_name": "해남군 군계획 조례",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2092395&amp;type=HTML&amp;mobileYn=",
+      "reason": "law.go.kr 구조화 API 파일 손상(XML 언마샬 오류) 또는 조문 구조 예외 — 자동 파싱 불가",
+      "review_status": "needs_manual"
+    }
+  ]
+}

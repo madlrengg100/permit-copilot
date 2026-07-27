@@ -1,0 +1,55 @@
+{
+  "layers": [
+    {
+      "id": "agricultural_promotion",
+      "title": "농업진흥지역",
+      "provider": "농림축산식품부",
+      "enabled": true,
+      "source_type": "vworld_wfs",
+      "wfs_url": "https://api.vworld.kr/req/wfs",
+      "wms_url": "https://api.vworld.kr/req/wms",
+      "type_name": "lt_c_agrixue101",
+      "version": "1.1.0",
+      "crs": "EPSG:4326",
+      "property_names": {
+        "name": "alias",
+        "code": "ucode"
+      }
+    },
+    {
+      "id": "forest_class",
+      "title": "산지구분",
+      "provider": "산림청",
+      "enabled": true,
+      "source_type": "local_sqlite",
+      "local_path": "/home/madlrengg100/permit-copilot/backend/data/processed/forest/forest_class.sqlite",
+      "wfs_url": "",
+      "wms_url": "",
+      "type_name": "forest_class",
+      "version": "local",
+      "crs": "EPSG:4326",
+      "source_date": "2026-07",
+      "property_names": {
+        "name": "name",
+        "code": "code"
+      }
+    },
+    {
+      "id": "disaster_risk_zone",
+      "title": "재해위험지구",
+      "provider": "국토교통부 국가공간정보센터",
+      "enabled": false,
+      "source_type": "wfs",
+      "wfs_url": "",
+      "wms_url": "",
+      "type_name": "",
+      "version": "1.1.0",
+      "crs": "EPSG:4326",
+      "source_date": "",
+      "property_names": {
+        "name": "uname",
+        "code": "ucode"
+      }
+    }
+  ]
+}

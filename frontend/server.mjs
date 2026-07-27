@@ -21,6 +21,15 @@ const mimeTypes = {
 };
 
 function proxyApi(req, res) {
+  // SSE(text/event-stream) 스트리밍이 끊기지 않게 하는 게 핵심이다.
+  //  1) 응답 소켓의 Nagle 알고리즘을 꺼서(setNoDelay) 작은 청크(백엔드가 2초마다
+  //     보내는 ': keepalive')를 즉시 클라이언트로 흘린다. 버퍼링되면 소켓이 노는
+  //     것처럼 보여 keep-alive 타임아웃(기본 5초)에 걸려 진단 도중 끊긴다.
+  //  2) 이 응답에는 소켓 타임아웃을 걸지 않는다(setTimeout(0)).
+  //  3) 헤더를 즉시 내보내고(flushHeaders) 청크가 올 때마다 바로 write 한다.
+  res.socket?.setNoDelay?.(true);
+  res.setTimeout?.(0);
+
   const upstream = proxyRequest(
     {
       hostname: backendHost,
@@ -31,9 +40,14 @@ function proxyApi(req, res) {
     },
     (upstreamResponse) => {
       res.writeHead(upstreamResponse.statusCode || 502, upstreamResponse.headers);
-      upstreamResponse.pipe(res);
+      res.flushHeaders?.();
+      upstreamResponse.on("data", (chunk) => res.write(chunk));
+      upstreamResponse.on("end", () => res.end());
+      upstreamResponse.on("error", () => res.end());
     },
   );
+  upstream.on("socket", (socket) => socket.setNoDelay?.(true));
+  upstream.setTimeout?.(0);
   upstream.on("error", (error) => {
     if (!res.headersSent) res.writeHead(502, { "content-type": "text/plain; charset=utf-8" });
     res.end(`백엔드 연결 실패: ${error.message}`);
@@ -59,9 +73,14 @@ function serveFile(req, res) {
   createReadStream(file).pipe(res);
 }
 
-createServer((req, res) => {
+const server = createServer((req, res) => {
   if (req.url === "/api" || req.url?.startsWith("/api/")) proxyApi(req, res);
   else serveFile(req, res);
-}).listen(port, host, () => {
+});
+// 긴 SSE 진단(9초+)이 keep-alive 유휴 타임아웃에 걸려 끊기지 않도록 넉넉히 둔다.
+server.keepAliveTimeout = 120000;
+server.headersTimeout = 125000;
+server.requestTimeout = 0;
+server.listen(port, host, () => {
   console.info(`Production frontend listening on http://${host}:${port}`);
 });

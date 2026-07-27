@@ -10,6 +10,7 @@ VWORLD_KEY 가 없으면 목 데이터를 돌려주므로 키 없이도 파이�
 
 from __future__ import annotations
 
+import asyncio
 import re
 
 import httpx
@@ -87,26 +88,85 @@ async def _get(path: str, params: dict) -> dict:
     return data
 
 
+async def get_individual_land_price(pnu: str) -> dict | None:
+    """PNU로 최신 개별공시지가(원/㎡)를 조회한다.
+
+    연속지적도 레이어는 최근 응답에서 ``jiga`` 속성을 주지 않으므로,
+    VWorld NED 개별공시지가 전용 API를 별도로 사용한다.
+    """
+    if not pnu:
+        return None
+    if USE_MOCK:
+        return {"price_won_per_m2": 1_000_000, "year": "2026", "date": "2026-04-30"}
+    try:
+        params = {
+            "pnu": pnu,
+            "format": "json",
+            "numOfRows": "20",
+            "pageNo": "1",
+            "key": VWORLD_KEY,
+            "domain": VWORLD_DOMAIN,
+        }
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(
+                "https://api.vworld.kr/ned/data/getIndvdLandPriceAttr",
+                params=params,
+            )
+            response.raise_for_status()
+            fields = (
+                response.json().get("indvdLandPrices", {}).get("field", [])
+                or []
+            )
+        valid = [item for item in fields if _to_int(item.get("pblntfPclnd"))]
+        if not valid:
+            return None
+        latest = max(
+            valid,
+            key=lambda item: (
+                int(item.get("stdrYear") or 0),
+                int(item.get("stdrMt") or 0),
+                item.get("pblntfDe") or "",
+            ),
+        )
+        return {
+            "price_won_per_m2": _to_int(latest.get("pblntfPclnd")),
+            "year": latest.get("stdrYear"),
+            "date": latest.get("pblntfDe"),
+        }
+    except Exception:
+        # 공시지가 부가 조회 실패가 필지·건축 진단 전체를 막아서는 안 된다.
+        return None
+
+
 # ---------------------------------------------------------------- 지오코딩
 
 
 async def geocode(address: str) -> dict:
-    """주소 문자열 -> {lon, lat, matched_address}. 도로명/지번 모두 시도한다."""
+    """주소 문자열 -> {lon, lat, matched_address}.
+
+    도로명(ROAD)·지번(PARCEL)을 '순차'로 시도하면, 한쪽 요청이 느릴 때 최악
+    30초(15초×2)까지 멈춘다. 그래서 둘을 '동시에' 던지고 먼저 성공하는 쪽을
+    즉시 채택한다(나머지는 취소). 지번 주소면 PARCEL 이 바로 성공해, ROAD 의
+    느린 응답을 기다리지 않는다.
+    """
     if USE_MOCK:
         return {"lon": 127.0286, "lat": 37.4979, "matched_address": f"{address} (mock)"}
 
-    for addr_type in ("ROAD", "PARCEL"):
-        data = await _get(
-            "address",
-            {
-                "service": "address",
-                "request": "getcoord",
-                "version": "2.0",
-                "crs": "EPSG:4326",
-                "type": addr_type,
-                "address": address,
-            },
-        )
+    async def _try(addr_type: str) -> dict | None:
+        try:
+            data = await _get(
+                "address",
+                {
+                    "service": "address",
+                    "request": "getcoord",
+                    "version": "2.0",
+                    "crs": "EPSG:4326",
+                    "type": addr_type,
+                    "address": address,
+                },
+            )
+        except Exception:
+            return None
         resp = data.get("response", {})
         if resp.get("status") == "OK":
             point = resp["result"]["point"]
@@ -115,7 +175,41 @@ async def geocode(address: str) -> dict:
                 "lat": float(point["y"]),
                 "matched_address": resp.get("refined", {}).get("text", address),
             }
+        return None
 
+    # 읍·면·동·리와 번지가 있는 입력은 지번 주소다. ROAD/PARCEL을 경쟁시켜
+    # 먼저 끝난 결과를 쓰면 ROAD가 동명이번지의 다른 지역을 반환할 수 있으므로
+    # 지번 조회를 우선 확정하고, 실패할 때만 도로명 조회로 보완한다.
+    is_parcel_address = bool(
+        re.search(r"(?:읍|면|동|리)\s+(?:산\s*)?\d+(?:-\d+)?(?:\D|$)", address)
+    )
+    if is_parcel_address:
+        parcel_result = await _try("PARCEL")
+        if parcel_result:
+            return parcel_result
+        road_result = await _try("ROAD")
+        if road_result:
+            return road_result
+        raise VWorldError(f"주소를 찾을 수 없습니다: {address}")
+
+    tasks = [asyncio.create_task(_try(t)) for t in ("ROAD", "PARCEL")]
+    result: dict | None = None
+    pending = set(tasks)
+    try:
+        while pending and result is None:
+            done, pending = await asyncio.wait(
+                pending, return_when=asyncio.FIRST_COMPLETED
+            )
+            for d in done:
+                if d.result():
+                    result = d.result()
+                    break
+    finally:
+        for t in pending:
+            t.cancel()
+
+    if result:
+        return result
     raise VWorldError(f"주소를 찾을 수 없습니다: {address}")
 
 
@@ -174,6 +268,62 @@ async def search_addresses(query: str, size: int = 8) -> list[dict]:
     return results
 
 
+async def search_places(query: str, size: int = 8) -> list[dict]:
+    """학교·관공서·상호 같은 장소명(POI)을 좌표와 주소로 검색한다."""
+    if USE_MOCK:
+        return [{
+            "title": query,
+            "category": "장소",
+            "road": "",
+            "parcel": "",
+            "address": query,
+            "lon": 127.0286,
+            "lat": 37.4979,
+        }]
+
+    data = await _get(
+        "search",
+        {
+            "service": "search",
+            "request": "search",
+            "version": "2.0",
+            "crs": "EPSG:4326",
+            "query": query,
+            "type": "PLACE",
+            "size": str(size),
+            "page": "1",
+        },
+    )
+    items = data.get("response", {}).get("result", {}).get("items", []) or []
+    results: list[dict] = []
+    seen: set[tuple[str, str]] = set()
+    for item in items:
+        address = item.get("address", {}) or {}
+        road = address.get("road", "")
+        parcel = address.get("parcel", "")
+        title = re.sub(r"<[^>]+>", "", item.get("title", "")).strip()
+        label = road or parcel
+        point = item.get("point", {}) or {}
+        try:
+            lon, lat = float(point["x"]), float(point["y"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        key = (title, label)
+        if not title or key in seen:
+            continue
+        seen.add(key)
+        results.append({
+            "title": title,
+            "category": item.get("category", ""),
+            "road": road,
+            "parcel": parcel,
+            "address": label,
+            "lon": lon,
+            "lat": lat,
+        })
+    return results
+
+
 # ------------------------------------------------------------------- 필지
 
 
@@ -225,8 +375,12 @@ async def get_parcel(lon: float, lat: float) -> dict:
     # 우선이므로 area_source 로 출처를 밝힌다.
     area = geodesic_area_m2(geometry)
 
+    pnu = props.get("pnu", "")
+    price = _to_int(props.get("jiga"))
+    price_info = None if price else await get_individual_land_price(pnu)
+
     return {
-        "pnu": props.get("pnu", ""),
+        "pnu": pnu,
         "jibun": props.get("addr", ""),
         # 지목은 jibun 끝에 한글 코드로 붙어 온다. 띄어쓰기가 일정하지 않다:
         #   '737 대'(공백 있음) / '100-10 도' / '1유'(공백 없음)
@@ -234,7 +388,11 @@ async def get_parcel(lon: float, lat: float) -> dict:
         "jimok": _trailing_hangul(props.get("jibun", "")),
         "area_m2": round(area, 1),
         "area_source": "지적도 경계 기하계산(측지면적) — 토지대장 공부면적과 다를 수 있음",
-        "jiga_won_per_m2": _to_int(props.get("jiga")),
+        "jiga_won_per_m2": price or (
+            price_info.get("price_won_per_m2") if price_info else None
+        ),
+        "jiga_year": price_info.get("year") if price_info else None,
+        "jiga_date": price_info.get("date") if price_info else None,
         "geometry": geometry,
     }
 
@@ -260,6 +418,51 @@ async def get_parcels_bbox(west: float, south: float, east: float, north: float)
         data.get("response", {}).get("result", {}).get("featureCollection", {}).get("features", [])
     )
     return [f["geometry"] for f in features if f.get("geometry")]
+
+
+async def get_parcel_features_bbox(
+    west: float, south: float, east: float, north: float
+) -> list[dict]:
+    """접도 등 공간판정용 연속지적도 객체(경계+PNU+지목)를 조회한다."""
+    if USE_MOCK:
+        parcel = await get_parcel((west + east) / 2, (south + north) / 2)
+        return [
+            {
+                "pnu": parcel.get("pnu", ""),
+                "address": parcel.get("jibun", ""),
+                "jimok": parcel.get("jimok", ""),
+                "geometry": parcel.get("geometry"),
+            }
+        ]
+    data = await _get(
+        "data",
+        {
+            "service": "data",
+            "request": "GetFeature",
+            "version": "2.0",
+            "data": LAYER_PARCEL,
+            "geomFilter": f"BOX({west},{south},{east},{north})",
+            "geometry": "true",
+            "crs": "EPSG:4326",
+            "size": "1000",
+        },
+    )
+    features = (
+        data.get("response", {})
+        .get("result", {})
+        .get("featureCollection", {})
+        .get("features", [])
+    )
+    return [
+        {
+            "pnu": (f.get("properties") or {}).get("pnu", ""),
+            "address": (f.get("properties") or {}).get("addr", ""),
+            "jimok": _trailing_hangul((f.get("properties") or {}).get("jibun", "")),
+            "geometry": f.get("geometry"),
+        }
+        for f in features
+        if f.get("geometry")
+    ]
 
 
 def _trailing_hangul(text: str) -> str:
@@ -339,6 +542,53 @@ async def get_land_use(lon: float, lat: float) -> dict:
         )
 
     return {"zones": zones, "districts": districts, "source": ",".join(used)}
+
+
+async def get_zoning_polygons_bbox(
+    west: float, south: float, east: float, north: float
+) -> list[dict]:
+    """범위 안 용도지역 폴리곤 목록 [{zone, geometry}]. 주제도 오버레이용.
+
+    도시·관리·농림·자연환경보전 4개 레이어를 모두 조회한다.
+    """
+    if USE_MOCK:
+        return []
+
+    async def _one(layer: str):
+        return await _get(
+            "data",
+            {
+                "service": "data",
+                "request": "GetFeature",
+                "version": "2.0",
+                "data": layer,
+                "geomFilter": f"BOX({west},{south},{east},{north})",
+                "geometry": "true",
+                "crs": "EPSG:4326",
+                "size": "100",
+            },
+        )
+
+    # 4개 용도지역 레이어를 순차가 아니라 병렬로 조회한다(지연 단축).
+    responses = await asyncio.gather(
+        *[_one(layer) for layer in LAYERS_ZONING], return_exceptions=True
+    )
+
+    out: list[dict] = []
+    for data in responses:
+        if isinstance(data, BaseException):
+            continue
+        features = (
+            data.get("response", {})
+            .get("result", {})
+            .get("featureCollection", {})
+            .get("features", [])
+        )
+        for f in features:
+            name = (f.get("properties", {}).get("uname") or "").strip()
+            if name and f.get("geometry"):
+                out.append({"zone": name, "geometry": f["geometry"]})
+    return out
 
 
 async def get_zone_shares(geometry: dict | None) -> list[dict]:

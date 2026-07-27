@@ -1,0 +1,1272 @@
+통계분야,통계유형,통계명,통계표명,통계리스트 주소
+국토/도시,승인통계,건축물통계,면적별 건축물 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=19&hFormId=540
+국토/도시,승인통계,건축물통계,면적별 건축물 현황(50만_이상_도시),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=19&hFormId=5391
+국토/도시,승인통계,건축물통계,소유구분별 건축물 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=19&hFormId=560
+국토/도시,승인통계,건축물통계,소유구분별 건축물 현황(50만_이상_도시),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=19&hFormId=5392
+국토/도시,승인통계,건축물통계,용도별 건축물 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=19&hFormId=522
+국토/도시,승인통계,건축물통계,용도별 건축물 현황(50만_이상_도시),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=19&hFormId=5389
+국토/도시,승인통계,건축물통계,층수별 건축물 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=19&hFormId=524
+국토/도시,승인통계,건축물통계,층수별 건축물 현황(50만_이상_도시),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=19&hFormId=5390
+국토/도시,승인통계,건축허가·착공·준공통계,동수별 연면적별 건축준공현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=466&hFormId=7060
+국토/도시,승인통계,건축허가·착공·준공통계,동수별 연면적별 건축착공현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=466&hFormId=6905
+국토/도시,승인통계,건축허가·착공·준공통계,동수별 연면적별 건축착공현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=466&hFormId=562
+국토/도시,승인통계,건축허가·착공·준공통계,동수별 연면적별 건축허가현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=466&hFormId=6906
+국토/도시,승인통계,건축허가·착공·준공통계,동수별 연면적별 건축허가현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=466&hFormId=564
+국토/도시,승인통계,건축허가·착공·준공통계,시도별 건축준공현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=466&hFormId=7061
+국토/도시,승인통계,건축허가·착공·준공통계,시도별 건축착공현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=466&hFormId=2202
+국토/도시,승인통계,건축허가·착공·준공통계,시도별 건축허가현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=466&hFormId=2200
+국토/도시,승인통계,건축허가·착공·준공통계,연도별 건축물착공현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=466&hFormId=2264
+국토/도시,승인통계,건축허가·착공·준공통계,연도별 건축준공현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=466&hFormId=7164
+국토/도시,승인통계,건축허가·착공·준공통계,연도별 건축착공현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=466&hFormId=6919
+국토/도시,승인통계,건축허가·착공·준공통계,연도별 건축허가현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=466&hFormId=6920
+국토/도시,승인통계,건축허가·착공·준공통계,연도별 건축허가현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=466&hFormId=2260
+국토/도시,승인통계,국토지리정보현황,공공측량현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=13&hFormId=6717
+국토/도시,승인통계,국토지리정보현황,공공측량현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=13&hFormId=448
+국토/도시,승인통계,국토지리정보현황,국가 측량 기준점 설치현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=13&hFormId=6793
+국토/도시,승인통계,국토지리정보현황,국가 측량 기준점 설치현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=13&hFormId=446
+국토/도시,승인통계,국토지리정보현황,수치지도 제작 및 수정현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=13&hFormId=450
+국토/도시,승인통계,국토지리정보현황,자연지명현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=13&hFormId=6794
+국토/도시,승인통계,국토지리정보현황,자연지명현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=13&hFormId=454
+국토/도시,승인통계,국토지리정보현황,종이지도 제작 및 수정현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=13&hFormId=6795
+국토/도시,승인통계,국토지리정보현황,종이지도 제작 및 수정현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=13&hFormId=452
+국토/도시,승인통계,국토지리정보현황,측량업 등록업체현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=13&hFormId=6796
+국토/도시,승인통계,국토지리정보현황,측량업 등록업체현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=13&hFormId=456
+국토/도시,승인통계,도시정비사업현황,1-1. 연도별 주거환경개선사업 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=17&hFormId=6187
+국토/도시,승인통계,도시정비사업현황,1-2. 시도별 주거환경개선사업 현황 누계,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=17&hFormId=6188
+국토/도시,승인통계,도시정비사업현황,2-1. 연도별 재개발사업 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=17&hFormId=6189
+국토/도시,승인통계,도시정비사업현황,2-2. 시도별 재개발사업 현황 누계,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=17&hFormId=6190
+국토/도시,승인통계,도시정비사업현황,3-1. 연도별 재건축사업 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=17&hFormId=6191
+국토/도시,승인통계,도시정비사업현황,3-2. 시도별 재건축사업 현황 누계,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=17&hFormId=6192
+국토/도시,승인통계,도시정비사업현황,3-3. 연도별 서울시 재건축사업 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=17&hFormId=6193
+국토/도시,승인통계,도시정비사업현황,4-1. 연도별 가로주택정비사업 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=17&hFormId=6194
+국토/도시,승인통계,도시정비사업현황,4-2. 시도별 가로주택정비사업 현황 누계,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=17&hFormId=6195
+주택,승인통계,미분양주택현황보고,공사완료후 미분양현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=32&hFormId=5328
+주택,승인통계,미분양주택현황보고,규모별 미분양현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=32&hFormId=2080
+주택,승인통계,미분양주택현황보고,미분양현황_종합,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=32&hFormId=2086
+주택,승인통계,미분양주택현황보고,시·군·구별 미분양현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=32&hFormId=2082
+주택,승인통계,아파트주거환경통계,사업주체별 규모 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=748
+주택,승인통계,아파트주거환경통계,사업주체별 부대복리시설 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=798
+주택,승인통계,아파트주거환경통계,사업주체별 부대복리시설현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=6042
+주택,승인통계,아파트주거환경통계,사업주체별 지역별 규모 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=802
+주택,승인통계,아파트주거환경통계,사업주체별 지역별 층수 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=800
+주택,승인통계,아파트주거환경통계,사업주체별 층수 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=730
+주택,승인통계,아파트주거환경통계,연도별 사업주체별 건설현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=692
+주택,승인통계,아파트주거환경통계,준공연도별 규모현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=690
+주택,승인통계,아파트주거환경통계,준공연도별 지역별 규모 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=804
+주택,승인통계,아파트주거환경통계,지역별 규모현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=682
+주택,승인통계,아파트주거환경통계,지역별 난방방식 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=756
+주택,승인통계,아파트주거환경통계,지역별 단지면적 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=752
+주택,승인통계,아파트주거환경통계,지역별 대중교통 및 교육시설 인접현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=5419
+주택,승인통계,아파트주거환경통계,지역별 동수 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=760
+주택,승인통계,아파트주거환경통계,지역별 방범시설 및 조경면적 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=6038
+주택,승인통계,아파트주거환경통계,지역별 방범시설 및 주택품질 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=5420
+주택,승인통계,아파트주거환경통계,지역별 부대 복리 시설현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=6041
+주택,승인통계,아파트주거환경통계,지역별 부대 복리 시설현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=694
+주택,승인통계,아파트주거환경통계,지역별 용도지역 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=754
+주택,승인통계,아파트주거환경통계,지역별 일반 면적현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=6039
+주택,승인통계,아파트주거환경통계,지역별 주차장 시설 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=696
+주택,승인통계,아파트주거환경통계,지역별 주차장 시설현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=6040
+주택,승인통계,아파트주거환경통계,지역별 집단가스시설 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=758
+주택,승인통계,아파트주거환경통계,지역별 층수 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=722
+주택,승인통계,아파트주거환경통계,지역별 평면형식현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=674
+주택,승인통계,아파트주거환경통계,층수별 동수 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=716
+주택,승인통계,아파트주거환경통계,층수별 평면형식 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=702
+주택,승인통계,아파트주거환경통계,평면형식별 규모 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=740
+주택,승인통계,아파트주거환경통계,평면형식별 지역별 규모 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=688
+주택,승인통계,아파트주거환경통계,평면형식별 지역별 층수 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=33&hFormId=792
+주택,승인통계,임대주택통계,1-1. 임대주택 공급현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=37&hFormId=7163
+주택,승인통계,임대주택통계,1-1. 임대주택 공급현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=37&hFormId=7141
+주택,승인통계,임대주택통계,1-2. 민간임대주택 공급현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=37&hFormId=6827
+주택,승인통계,임대주택통계,2-1. 임대주택 재고현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=37&hFormId=7142
+주택,승인통계,임대주택통계,2-2. 민간임대주택 재고현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=37&hFormId=6828
+주택,승인통계,임대주택통계,3. 분양전환 실적현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=37&hFormId=7143
+주택,승인통계,임대주택통계,4. 시도별 임대사업자 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=37&hFormId=6830
+주택,승인통계,임대주택통계,분양전환 실적 및 공가현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=37&hFormId=812
+주택,승인통계,임대주택통계,분양전환 실적현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=37&hFormId=6829
+주택,승인통계,임대주택통계,시도별 임대사업자 및 임대호수 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=37&hFormId=826
+주택,승인통계,임대주택통계,연도별 임대사업자 및 임대호수 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=37&hFormId=842
+주택,승인통계,임대주택통계,임대주택 공급현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=37&hFormId=6826
+주택,승인통계,임대주택통계,임대주택 재고현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=37&hFormId=6825
+주택,승인통계,임대주택통계,임대주택 재고현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=37&hFormId=840
+주택,승인통계,임대주택통계,임대주택공급실적(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=37&hFormId=1248
+주택,승인통계,주거실태조사,(일반가구)지역별 소득계층별 점유형태,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=327&hFormId=6908
+주택,승인통계,주거실태조사,(일반가구)지역별 소득계층별 점유형태(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=327&hFormId=6689
+주택,승인통계,주거실태조사,(일반가구)지역별 소득계층별 점유형태(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=327&hFormId=5405
+주택,승인통계,주거실태조사,(일반가구)지역별 소득계층별 주택유형,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=327&hFormId=5727
+주택,승인통계,주거실태조사,(일반가구)지역별 소득별 무주택기간,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=327&hFormId=6031
+주택,승인통계,주거실태조사,(일반가구)지역별 소득별 최초주택마련소요년수,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=327&hFormId=6032
+주택,승인통계,주거실태조사,(일반가구)지역별 소득별 현재주택 거주기간,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=327&hFormId=6033
+주택,승인통계,주거실태조사,(일반가구)행정구역별 무주택기간,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=327&hFormId=6034
+주택,승인통계,주거실태조사,(일반가구)행정구역별 점유형태,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=327&hFormId=6909
+주택,승인통계,주거실태조사,(일반가구)행정구역별 점유형태(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=327&hFormId=6690
+주택,승인통계,주거실태조사,(일반가구)행정구역별 점유형태(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=327&hFormId=5402
+주택,승인통계,주거실태조사,(일반가구)행정구역별 주택유형,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=327&hFormId=5403
+주택,승인통계,주거실태조사,(일반가구)행정구역별 현재주택 거주기간,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=327&hFormId=6035
+주택,승인통계,주거실태조사,(일반가구)행정구열별 최초주택마련소요년수,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=327&hFormId=6036
+주택,승인통계,주택건설실적통계(분양),주택건설 분양실적(공동주택),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=488&hFormId=5557
+주택,승인통계,주택건설실적통계(인허가),부문별 주택건설 인허가실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=31&hFormId=626
+주택,승인통계,주택건설실적통계(인허가),부문별 주택건설 인허가실적(월별 누계),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=31&hFormId=1946
+주택,승인통계,주택건설실적통계(인허가),주택건설 인허가실적 총괄,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=31&hFormId=618
+주택,승인통계,주택건설실적통계(인허가),주택규모별 주택건설 인허가실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=31&hFormId=668
+주택,승인통계,주택건설실적통계(인허가),주택규모별 주택건설 인허가실적(월별 누계),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=31&hFormId=1952
+주택,승인통계,주택건설실적통계(인허가),주택유형별 주택건설 인허가실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=31&hFormId=664
+주택,승인통계,주택건설실적통계(인허가),주택유형별 주택건설 인허가실적(월별 누계),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=31&hFormId=1948
+주택,승인통계,주택건설실적통계(인허가),지역별 주택건설 인허가실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=31&hFormId=666
+주택,승인통계,주택건설실적통계(준공),주택건설 준공실적(월계),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=468&hFormId=5372
+주택,승인통계,주택건설실적통계(준공),주택규모별 주택건설 준공실적(월계),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=468&hFormId=5374
+주택,승인통계,주택건설실적통계(준공),주택유형별 주택건설 준공실적(월계),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=468&hFormId=5373
+주택,승인통계,주택건설실적통계(착공),주택건설 착공실적(월계),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=471&hFormId=5386
+주택,승인통계,주택건설실적통계(착공),주택규모별 주택건설 착공실적(월계),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=471&hFormId=5388
+주택,승인통계,주택건설실적통계(착공),주택유형별 주택건설 착공실적(월계),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=471&hFormId=5387
+주택,승인통계,주택도시기금 및 주택분양보증현황,국민주택채권발행현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=35&hFormId=808
+주택,승인통계,주택도시기금 및 주택분양보증현황,주택도시기금 대출실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=35&hFormId=806
+주택,승인통계,주택도시기금 및 주택분양보증현황,주택도시기금 운용현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=35&hFormId=5550
+주택,승인통계,주택도시기금 및 주택분양보증현황,주택도시기금 조성현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=35&hFormId=814
+주택,승인통계,주택도시기금 및 주택분양보증현황,주택분양보증현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=35&hFormId=810
+주택,승인통계,주택보급률,(舊)주택보급률(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=29&hFormId=592
+주택,승인통계,주택보급률,(新)주택보급률,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=29&hFormId=2100
+주택,승인통계,주택보급률,인구천인당 주택수,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=29&hFormId=594
+주택,승인통계,주택보급률,주택멸실현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=29&hFormId=5416
+주택,승인통계,주택이외의거처 주거실태조사(2017년),01. 거처 유형,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6081
+주택,승인통계,주택이외의거처 주거실태조사(2017년),02. 현재 거처를 쪽방으로 인식하는지 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6082
+주택,승인통계,주택이외의거처 주거실태조사(2017년),03. 가구 월평균 소득,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6086
+주택,승인통계,주택이외의거처 주거실태조사(2017년),04. 가구주의 학력,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6084
+주택,승인통계,주택이외의거처 주거실태조사(2017년),05. 가구주의 혼인 상태,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6085
+주택,승인통계,주택이외의거처 주거실태조사(2017년),06. 가구주의 경제활동,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6087
+주택,승인통계,주택이외의거처 주거실태조사(2017년),07. 가구주가 일을 하고 있지 않은 이유,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6088
+주택,승인통계,주택이외의거처 주거실태조사(2017년),08. 수급가구 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6089
+주택,승인통계,주택이외의거처 주거실태조사(2017년),09. 비수급가구의 수급 신청 경험,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6090
+주택,승인통계,주택이외의거처 주거실태조사(2017년),10. 비수급가구가 수급 신청을 했으나 선정되지 않은 이유,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6091
+주택,승인통계,주택이외의거처 주거실태조사(2017년),11. 비수급가구가 수급 신청을 하지 않은 이유,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6092
+주택,승인통계,주택이외의거처 주거실태조사(2017년),12. 주민등록 등재 위치,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6093
+주택,승인통계,주택이외의거처 주거실태조사(2017년),13. 가구원 중 금융채무불이행자 유무,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6094
+주택,승인통계,주택이외의거처 주거실태조사(2017년),14. 가구 형태,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6095
+주택,승인통계,주택이외의거처 주거실태조사(2017년),15. 가족으로 이루어진 가구의 구성,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6096
+주택,승인통계,주택이외의거처 주거실태조사(2017년),16. 가구원 중 장애인 유무,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6097
+주택,승인통계,주택이외의거처 주거실태조사(2017년),17. 가구원 중 외국인·귀화한국인 유무,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6099
+주택,승인통계,주택이외의거처 주거실태조사(2017년),18. 타지 주택 보유 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6100
+주택,승인통계,주택이외의거처 주거실태조사(2017년),19. 주택이외의 거처 거주 시작 시기,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6101
+주택,승인통계,주택이외의거처 주거실태조사(2017년),20. 현재 거처에서의 거주 기간,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6102
+주택,승인통계,주택이외의거처 주거실태조사(2017년),21. 현재 거처를 찾은 경로,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6103
+주택,승인통계,주택이외의거처 주거실태조사(2017년),22. 현재 거처 선택 이유,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6104
+주택,승인통계,주택이외의거처 주거실태조사(2017년),23. 현재 거처에서 겪는 주된 어려움,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6105
+주택,승인통계,주택이외의거처 주거실태조사(2017년),24. 주거 전용면적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6106
+주택,승인통계,주택이외의거처 주거실태조사(2017년),25. 거주 층,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6107
+주택,승인통계,주택이외의거처 주거실태조사(2017년),26. 가구의 사용 방 수,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6108
+주택,승인통계,주택이외의거처 주거실태조사(2017년),27. 시설 설치 비율,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6109
+주택,승인통계,주택이외의거처 주거실태조사(2017년),28. 난방시설 유무 및 사용 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6098
+주택,승인통계,주택이외의거처 주거실태조사(2017년),29. 현재 거처의 점유 형태,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6110
+주택,승인통계,주택이외의거처 주거실태조사(2017년),30. 자가 가구의 매입가격,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6111
+주택,승인통계,주택이외의거처 주거실태조사(2017년),31. 월세 가구의 보증금,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6112
+주택,승인통계,주택이외의거처 주거실태조사(2017년),32. 월세 가구의 월세,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6113
+주택,승인통계,주택이외의거처 주거실태조사(2017년),33. 월세 가구의 월세 연체 경험,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6114
+주택,승인통계,주택이외의거처 주거실태조사(2017년),34. 월평균 공과금과 관리비,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6115
+주택,승인통계,주택이외의거처 주거실태조사(2017년),35. 임대차 계약서 작성 여부 및 계약 기간,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6116
+주택,승인통계,주택이외의거처 주거실태조사(2017년),36. 현재 거처의 물리적 상태에 대한 평가,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6117
+주택,승인통계,주택이외의거처 주거실태조사(2017년),37. 거처가 생활하기에 비좁은지에 대한 평가,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6118
+주택,승인통계,주택이외의거처 주거실태조사(2017년),38. 채광이 안되는지에 대한 평가,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6119
+주택,승인통계,주택이외의거처 주거실태조사(2017년),39. 소음이 심한지에 대한 평가,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6120
+주택,승인통계,주택이외의거처 주거실태조사(2017년),40. 습기와 곰팡이가 많은지에 대한 평가,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6121
+주택,승인통계,주택이외의거처 주거실태조사(2017년),41. 통풍이 잘되지 않고 악취가 심한지에 대한 평가,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6122
+주택,승인통계,주택이외의거처 주거실태조사(2017년),42. 쥐나 바퀴벌레 등으로 위생상태가 나쁜지에 대한 평가,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6123
+주택,승인통계,주택이외의거처 주거실태조사(2017년),"43. 천장, 벽 등에 물이 새는 곳이 있는지에 대한 평가",https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6124
+주택,승인통계,주택이외의거처 주거실태조사(2017년),44. 건물이 노후화되어 붕괴 위험이 있는지에 대한 평가,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6125
+주택,승인통계,주택이외의거처 주거실태조사(2017년),45. 화재 위험이 있는지에 대한 평가,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6126
+주택,승인통계,주택이외의거처 주거실태조사(2017년),46. 낯선 사람의 침입에 취약한지에 대한 평가,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6127
+주택,승인통계,주택이외의거처 주거실태조사(2017년),47. 겨울철 적절한 실내 온도 유지 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6128
+주택,승인통계,주택이외의거처 주거실태조사(2017년),48. 겨울철 적절한 실내 온도 유지가 어려운 이유,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6129
+주택,승인통계,주택이외의거처 주거실태조사(2017년),49. 하루 평균 고시원에 머무는 시간(평일),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6130
+주택,승인통계,주택이외의거처 주거실태조사(2017년),50. 하루 평균 고시원에 머무는 시간(주말),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6131
+주택,승인통계,주택이외의거처 주거실태조사(2017년),51. 하루 평균 고시원 제공 식사 이용 횟수,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6132
+주택,승인통계,주택이외의거처 주거실태조사(2017년),52. 고시원에 대한 공공 규제 필요 부분,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6133
+주택,승인통계,주택이외의거처 주거실태조사(2017년),53. 지난 1년 간 주거비가 부담스러운 정도,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6134
+주택,승인통계,주택이외의거처 주거실태조사(2017년),54. 주거비 부담으로 식료품비를 줄인 경험 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6135
+주택,승인통계,주택이외의거처 주거실태조사(2017년),55. 거처에 대해 전반적으로 만족하며 계속 살아도 좋은지에 대한 의견,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6136
+주택,승인통계,주택이외의거처 주거실태조사(2017년),56. 지금 형편에서 더 좋은 거처를 찾기 어려운지에 대한 의견,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6137
+주택,승인통계,주택이외의거처 주거실태조사(2017년),57. 현재 거처의 상태가 주거비에 비해 적당한지에 대한 의견,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6138
+주택,승인통계,주택이외의거처 주거실태조사(2017년),58. 현재 거처에서의 이웃과의 관계,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6139
+주택,승인통계,주택이외의거처 주거실태조사(2017년),59. 어려울 때 도움을 받을 수 있는 곳,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6140
+주택,승인통계,주택이외의거처 주거실태조사(2017년),60. 현재 거처에서의 퇴거 위협 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6141
+주택,승인통계,주택이외의거처 주거실태조사(2017년),61. 현재 거처에서 계속 거주 의사 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6142
+주택,승인통계,주택이외의거처 주거실태조사(2017년),62. 현재 거처에서 계속 거주하고 싶은 이유,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6143
+주택,승인통계,주택이외의거처 주거실태조사(2017년),63. 이주를 계획하는 이유,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6144
+주택,승인통계,주택이외의거처 주거실태조사(2017년),64. 주거 관련 정보제공 및 상담을 받은 경험,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6145
+주택,승인통계,주택이외의거처 주거실태조사(2017년),65. 주거복지 프로그램 이용 경험,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6146
+주택,승인통계,주택이외의거처 주거실태조사(2017년),66. 가장 필요한 주거복지 프로그램,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6147
+주택,승인통계,주택이외의거처 주거실태조사(2017년),67. 필요한 주거복지 프로그램을 이용하지 못하는 이유,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6148
+주택,승인통계,주택이외의거처 주거실태조사(2017년),68. 공공임대주택 입주 의사,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6149
+주택,승인통계,주택이외의거처 주거실태조사(2017년),69. 공공임대주택에 입주하려는 이유,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6150
+주택,승인통계,주택이외의거처 주거실태조사(2017년),70. 공공임대주택 입주 의사가 없는 이유,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6151
+주택,승인통계,주택이외의거처 주거실태조사(2017년),71. 공유주택 거주 의사,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6152
+주택,승인통계,주택이외의거처 주거실태조사(2017년),72. 독립적인 생활을 위해 다른 사람의 도움 필요 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6153
+주택,승인통계,주택이외의거처 주거실태조사(2017년),73. 사회복지서비스에 대한 소요,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=516&hFormId=6154
+주택,승인통계,주택이외의거처 주거실태조사(2022년),01. 거처 유형,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6938
+주택,승인통계,주택이외의거처 주거실태조사(2022년),02. 현 거처의 임시가건물 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7035
+주택,승인통계,주택이외의거처 주거실태조사(2022년),03. 현재 거처를 쪽방으로 인식하는지 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6940
+주택,승인통계,주택이외의거처 주거실태조사(2022년),04. 거주 층,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6943
+주택,승인통계,주택이외의거처 주거실태조사(2022년),05. 주거 전용면적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6944
+주택,승인통계,주택이외의거처 주거실태조사(2022년),06. 가구의 사용 방 수,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7036
+주택,승인통계,주택이외의거처 주거실태조사(2022년),07. 부엌시설 유무 및 사용 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6946
+주택,승인통계,주택이외의거처 주거실태조사(2022년),08. 화장실시설 유무 및 사용 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6947
+주택,승인통계,주택이외의거처 주거실태조사(2022년),09. 목욕시설 유무 및 사용 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6948
+주택,승인통계,주택이외의거처 주거실태조사(2022년),10. 난방시설 유무 및 사용 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6949
+주택,승인통계,주택이외의거처 주거실태조사(2022년),11. 소방기구시설 유무,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6950
+주택,승인통계,주택이외의거처 주거실태조사(2022년),12. 출입구(현관문)시설 종류,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6951
+주택,승인통계,주택이외의거처 주거실태조사(2022년),13. 현재 거처의 물리적 상태_거주면적이 생활하기에 비좁은지에 대한 평가,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6952
+주택,승인통계,주택이외의거처 주거실태조사(2022년),14. 현재 거처의 물리적 상태_채광이 안되는지에 대한 평가,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6953
+주택,승인통계,주택이외의거처 주거실태조사(2022년),15. 현재 거처의 물리적 상태_소음이 심한지에 대한 평가,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6954
+주택,승인통계,주택이외의거처 주거실태조사(2022년),16. 현재 거처의 물리적 상태_습기와 곰팡이가 많은지에 대한 평가,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6956
+주택,승인통계,주택이외의거처 주거실태조사(2022년),17. 현재 거처의 물리적 상태_통풍이 잘되지 않고 악취가 심한지에 대한 평가,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6957
+주택,승인통계,주택이외의거처 주거실태조사(2022년),18. 현재 거처의 물리적 상태_쥐나 바퀴벌레 등으로 위생 상태가 나쁜지에 대한 평가,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6958
+주택,승인통계,주택이외의거처 주거실태조사(2022년),"19. 현재 거처의 물리적 상태_천장, 벽 등에 물이 새는 곳이 있는지에 대한 평가",https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6959
+주택,승인통계,주택이외의거처 주거실태조사(2022년),20. 현재 거처의 물리적 상태_건물이 노후화되어 붕괴 위험이 있는지에 대한 평가,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6960
+주택,승인통계,주택이외의거처 주거실태조사(2022년),21. 현재 거처의 물리적 상태_화재 위험이 있는지에 대한 평가,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6962
+주택,승인통계,주택이외의거처 주거실태조사(2022년),22. 현재 거처의 물리적 상태_난방이나 단열 상태가 좋지 않은지에 대한 평가,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6961
+주택,승인통계,주택이외의거처 주거실태조사(2022년),23. 현재 거처에서의 거주 기간,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6963
+주택,승인통계,주택이외의거처 주거실태조사(2022년),24. 현재 거처에 거주하기 직전 거처의 거처 유형,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6964
+주택,승인통계,주택이외의거처 주거실태조사(2022년),25. 현재 거처에 거주하기 직전 거처에서의 거처 기간,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6965
+주택,승인통계,주택이외의거처 주거실태조사(2022년),26. 현재 거처의 점유 형태,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7037
+주택,승인통계,주택이외의거처 주거실태조사(2022년),27. 자가 가구의 매입가격,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6967
+주택,승인통계,주택이외의거처 주거실태조사(2022년),28. 전세 보증금,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6968
+주택,승인통계,주택이외의거처 주거실태조사(2022년),29. 월세 가구의 보증금,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6969
+주택,승인통계,주택이외의거처 주거실태조사(2022년),30. 월세 가구의 월세,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6970
+주택,승인통계,주택이외의거처 주거실태조사(2022년),31. 월평균 공과금과 관리비(동절기),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6971
+주택,승인통계,주택이외의거처 주거실태조사(2022년),32. 월평균 공과금과 관리비(간절기),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6972
+주택,승인통계,주택이외의거처 주거실태조사(2022년),33. 월평균 공과금과 관리비(하절기),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6973
+주택,승인통계,주택이외의거처 주거실태조사(2022년),34. 월평균 공과금과 관리비,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6974
+주택,승인통계,주택이외의거처 주거실태조사(2022년),35. 지난 1년간 월세 혹은 관리비 연체 경험,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6975
+주택,승인통계,주택이외의거처 주거실태조사(2022년),36. 현재거처에서 거주하게 된 이유(다중응답),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6976
+주택,승인통계,주택이외의거처 주거실태조사(2022년),37. 현재거처에서 거주하게 된 이유(1순위),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6977
+주택,승인통계,주택이외의거처 주거실태조사(2022년),38. 월세 및 관리비 등 주거비 부담에 대한 어려움 정도,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6978
+주택,승인통계,주택이외의거처 주거실태조사(2022년),39. 실내 공간의 비좀음에 대한 어려움 정도,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6979
+주택,승인통계,주택이외의거처 주거실태조사(2022년),40. 외롭고 주변으로부터의 고립감에 대한 어려움 정도,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6980
+주택,승인통계,주택이외의거처 주거실태조사(2022년),41. 함께 거주하는 사람들과의 갈등이나 다툼에 대한 어려움 정도,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6981
+주택,승인통계,주택이외의거처 주거실태조사(2022년),42. 열악한 기초생활시설에 대한 어려움 정도,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6982
+주택,승인통계,주택이외의거처 주거실태조사(2022년),43. 사생활 침해에 대한 어려움 정도,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6983
+주택,승인통계,주택이외의거처 주거실태조사(2022년),44. 실내외 소음에 대한 어려움 정도,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6984
+주택,승인통계,주택이외의거처 주거실태조사(2022년),45. 시설설비 수준의 열악함에 대한 어려움 정도,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6985
+주택,승인통계,주택이외의거처 주거실태조사(2022년),46. 실내환경에 대한 어려움 정도,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6986
+주택,승인통계,주택이외의거처 주거실태조사(2022년),47. 거주 불안감에 대한 어려움 정도,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6987
+주택,승인통계,주택이외의거처 주거실태조사(2022년),48. 현재 거처에 대해 전반적으로 만족스러우며 계속 살아도 좋은지에 대한 의견,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6988
+주택,승인통계,주택이외의거처 주거실태조사(2022년),49. 지금 형편에서 더 좋은 거처를 찾기 어려운지에 대한 의견,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6989
+주택,승인통계,주택이외의거처 주거실태조사(2022년),50. 잠시 동안은 현재 거처에서 거주할 만한지에 대한 의견,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6990
+주택,승인통계,주택이외의거처 주거실태조사(2022년),51. 혼자 살기에는 현재의 거처만한 곳이 없는지에 대한 의견,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6991
+주택,승인통계,주택이외의거처 주거실태조사(2022년),52. 현재 거처 외에 달리 갈 곳이 없는지에 대한 의견,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6992
+주택,승인통계,주택이외의거처 주거실태조사(2022년),53. 현재 거처가 생에 마지막 거처일지에 대한 의견,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6993
+주택,승인통계,주택이외의거처 주거실태조사(2022년),54. 어려운 일이 있을 때 서로 돕는 이웃이 있는지에 대한 의견,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6994
+주택,승인통계,주택이외의거처 주거실태조사(2022년),55. 현재 거처 이외 주택 보유 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6995
+주택,승인통계,주택이외의거처 주거실태조사(2022년),56. 언제든 소유한 집으로 다시 되돌아 갈 수 있는 여건 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6996
+주택,승인통계,주택이외의거처 주거실태조사(2022년),57. 가구주의 고용 상태(1순위),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6997
+주택,승인통계,주택이외의거처 주거실태조사(2022년),58. 소득 유형별 가구 소득 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6998
+주택,승인통계,주택이외의거처 주거실태조사(2022년),59. 가구 월평균 총소득,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=6999
+주택,승인통계,주택이외의거처 주거실태조사(2022년),60. 가구 월평균 근로 및 사업 소득,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7000
+주택,승인통계,주택이외의거처 주거실태조사(2022년),61. 가구 월평균 재산 소득,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7001
+주택,승인통계,주택이외의거처 주거실태조사(2022년),62. 가구 월평균 사회보험비,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7002
+주택,승인통계,주택이외의거처 주거실태조사(2022년),63. 가구 월평균 정부 지원금,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7003
+주택,승인통계,주택이외의거처 주거실태조사(2022년),64. 가구 월평균 사적이전소득,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7004
+주택,승인통계,주택이외의거처 주거실태조사(2022년),65. 여가·취미·문화 활동 등을 하며 여유있게 생활할 수 있는지에 대한 의견,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7005
+주택,승인통계,주택이외의거처 주거실태조사(2022년),66. 겨우 평균 정도의 생활 수준을 유지하는지에 대한 의견,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7006
+주택,승인통계,주택이외의거처 주거실태조사(2022년),67. 끼니를 거르는 등 생계 유지가 힘든지에 대한 의견,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7007
+주택,승인통계,주택이외의거처 주거실태조사(2022년),68. 매달 월세를 내느라 늘 생활에 쪼들리는지에 대한 의견,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7008
+주택,승인통계,주택이외의거처 주거실태조사(2022년),69. 일해서 벌어도 대출금 등 빚을 갚느라고 힘든지에 대한 의견,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7009
+주택,승인통계,주택이외의거처 주거실태조사(2022년),70. 현재 거처에서 계속 거주 의사 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7010
+주택,승인통계,주택이외의거처 주거실태조사(2022년),71. 현재 거처에서 계속 거주하고 싶은 이유,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7011
+주택,승인통계,주택이외의거처 주거실태조사(2022년),72. 이주를 계획하는 이유,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7012
+주택,승인통계,주택이외의거처 주거실태조사(2022년),73. 주거 관련 정보제공 및 상담을 받은 경험,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7038
+주택,승인통계,주택이외의거처 주거실태조사(2022년),74. 주거 관련 정보제공 및 상담을 받지 않은 이유,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7014
+주택,승인통계,주택이외의거처 주거실태조사(2022년),75. 주거복지 프로그램 이용 경험,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7015
+주택,승인통계,주택이외의거처 주거실태조사(2022년),76. 주거복지 프로그램을 이용하지 못한 이유,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7016
+주택,승인통계,주택이외의거처 주거실태조사(2022년),77. 공공임대주택 입주 의사,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7017
+주택,승인통계,주택이외의거처 주거실태조사(2022년),78. 공공임대주택 입주 의사가 없는 이유,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7018
+주택,승인통계,주택이외의거처 주거실태조사(2022년),79. 주거지원 이외 필요한 사회복지서비스(1순위),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7019
+주택,승인통계,주택이외의거처 주거실태조사(2022년),80. 수급가구 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7020
+주택,승인통계,주택이외의거처 주거실태조사(2022년),81. 급여 종류별 수급 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7021
+주택,승인통계,주택이외의거처 주거실태조사(2022년),82. 주거급여 수급 금액,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7022
+주택,승인통계,주택이외의거처 주거실태조사(2022년),83. 비수급가구의 수급 신청 경험,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7023
+주택,승인통계,주택이외의거처 주거실태조사(2022년),84. 비수급가구가 수급신청을 했으나 선정되지 않은 이유,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7024
+주택,승인통계,주택이외의거처 주거실태조사(2022년),85. 비수급가구가 수급 신청을 하지 않은 이유,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7025
+주택,승인통계,주택이외의거처 주거실태조사(2022년),86. 가구주 연령,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7039
+주택,승인통계,주택이외의거처 주거실태조사(2022년),87. 가구원 수,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7027
+주택,승인통계,주택이외의거처 주거실태조사(2022년),88. 가구 특수연령층 구성,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7028
+주택,승인통계,주택이외의거처 주거실태조사(2022년),89. 장애 및 질병 가구원 유무,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7029
+주택,승인통계,주택이외의거처 주거실태조사(2022년),90. 가구 형태,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7030
+주택,승인통계,주택이외의거처 주거실태조사(2022년),91. 가족으로 이루어진 가구의 구성,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7031
+주택,승인통계,주택이외의거처 주거실태조사(2022년),92. 가구주의 혼인 상태,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7032
+주택,승인통계,주택이외의거처 주거실태조사(2022년),93. 가구주의 주민등록 등재 위치,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7033
+주택,승인통계,주택이외의거처 주거실태조사(2022년),94. 가구원 중 금융채무불이행자 유무,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=564&hFormId=7034
+토지,승인통계,공간정보산업조사,공간정보 관련 매출액,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=492&hFormId=5671
+토지,승인통계,공간정보산업조사,공간정보산업조사_총괄,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=492&hFormId=5663
+토지,승인통계,공간정보산업조사,사업체 전체 매출액,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=492&hFormId=5670
+토지,승인통계,공간정보산업조사,종사자 고용형태 구성비,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=492&hFormId=5714
+토지,승인통계,공간정보산업조사,종사자 근속년수 구성비,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=492&hFormId=5667
+토지,승인통계,공간정보산업조사,종사자 성별 구성비,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=492&hFormId=5665
+토지,승인통계,공간정보산업조사,종사자 업무분야 구성비,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=492&hFormId=5669
+토지,승인통계,공간정보산업조사,종사자 연령 구성비,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=492&hFormId=5666
+토지,승인통계,공간정보산업조사,종사자 지위 구성비(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=492&hFormId=5664
+토지,승인통계,공간정보산업조사,종사자 학력 구성비,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=492&hFormId=5668
+토지,승인통계,부동산서비스산업 실태조사,01. 대표자 성별,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7062
+토지,승인통계,부동산서비스산업 실태조사,02. 대표자 연령대,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7063
+토지,승인통계,부동산서비스산업 실태조사,03. 설립연도,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7157
+토지,승인통계,부동산서비스산업 실태조사,03. 설립연도(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7064
+토지,승인통계,부동산서비스산업 실태조사,04. 부동산 관련 사업 시작 연도,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7158
+토지,승인통계,부동산서비스산업 실태조사,04. 부동산 관련 사업 시작 연도(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7065
+토지,승인통계,부동산서비스산업 실태조사,05. 사업체 소재지,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7066
+토지,승인통계,부동산서비스산업 실태조사,06. 사업체구분,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7067
+토지,승인통계,부동산서비스산업 실태조사,07. 사업영역(주 업종),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7068
+토지,승인통계,부동산서비스산업 실태조사,08. 사업영역(부 업종),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7069
+토지,승인통계,부동산서비스산업 실태조사,09. 매출액,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7070
+토지,승인통계,부동산서비스산업 실태조사,10. 영업이익,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7071
+토지,승인통계,부동산서비스산업 실태조사,11. 매출액 비중,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7072
+토지,승인통계,부동산서비스산업 실태조사,12. R&D 투자금액,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7073
+토지,승인통계,부동산서비스산업 실태조사,13. 경영 성과 평가(전년 대비 체감),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7074
+토지,승인통계,부동산서비스산업 실태조사,14. 업무 다각화 계획 분야(1순위),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7075
+토지,승인통계,부동산서비스산업 실태조사,15. 업무 다각화 계획 분야(1순위+2순위),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7076
+토지,승인통계,부동산서비스산업 실태조사,16. 해외 진출 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7077
+토지,승인통계,부동산서비스산업 실태조사,17. 해외진출 또는 진출 예정 분야,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7078
+토지,승인통계,부동산서비스산업 실태조사,18. IT 기술 기반 부동산 서비스 활용 분야,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7079
+토지,승인통계,부동산서비스산업 실태조사,19. IT 기술 기반 부동산 기술 서비스 미활용 이유,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7080
+토지,승인통계,부동산서비스산업 실태조사,20. 사업 영위 과정에서 부동산 관련 데이터 또는 통계 정보 활용 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7081
+토지,승인통계,부동산서비스산업 실태조사,21. 주 활용 데이터 또는 통계정보(1순위),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7082
+토지,승인통계,부동산서비스산업 실태조사,22. 주 활용 데이터 또는 통계정보(1+2순위),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7083
+토지,승인통계,부동산서비스산업 실태조사,23. 부동산 관련 데이터 또는 통계 미활용 사유,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7084
+토지,승인통계,부동산서비스산업 실태조사,24. 부동산산업 환경변화에 따른 영향평가,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7085
+토지,승인통계,부동산서비스산업 실태조사,25. 부동산산업 환경변화에 따른 경영 전략,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7086
+토지,승인통계,부동산서비스산업 실태조사,26. 분야별 종사자 수,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7087
+토지,승인통계,부동산서비스산업 실태조사,27. 성별 종사자 수,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7088
+토지,승인통계,부동산서비스산업 실태조사,28. 근속연수별 종사자 수,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7089
+토지,승인통계,부동산서비스산업 실태조사,29. 연령별 종사자 수,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7090
+토지,승인통계,부동산서비스산업 실태조사,30. 학력별 종사자 수,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7091
+토지,승인통계,부동산서비스산업 실태조사,31. 연평균 임금수준_정규직,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7092
+토지,승인통계,부동산서비스산업 실태조사,32. 연평균 임금수준_비정규직,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7093
+토지,승인통계,부동산서비스산업 실태조사,33. 1인 사업체 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7094
+토지,승인통계,부동산서비스산업 실태조사,34. 채용 및 퇴사 인력,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7095
+토지,승인통계,부동산서비스산업 실태조사,35. 퇴사 인력의 퇴사 사유,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7096
+토지,승인통계,부동산서비스산업 실태조사,36. 인력 확보 및 채용 과정에서의 어려움 유무,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7097
+토지,승인통계,부동산서비스산업 실태조사,37. 인력 확보 및 채용의 어려움 원인(1순위),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7098
+토지,승인통계,부동산서비스산업 실태조사,38. 인력 확보 및 채용의 어려움 원인(1순위+2순위),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7099
+토지,승인통계,부동산서비스산업 실태조사,39. 채용과정에서 우선 고려사항,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7100
+토지,승인통계,부동산서비스산업 실태조사,40. 요구 학력 수준,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7102
+토지,승인통계,부동산서비스산업 실태조사,41. 요구 경력 수준,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7103
+토지,승인통계,부동산서비스산업 실태조사,42. 요구(선호) 자격 수준,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7104
+토지,승인통계,부동산서비스산업 실태조사,43. 경영 애로 사항(1순위),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7105
+토지,승인통계,부동산서비스산업 실태조사,44. 경영 애로 사항(1순위+2순위),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7106
+토지,승인통계,부동산서비스산업 실태조사,45. 정부 지원 요청 사항(1순위),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7107
+토지,승인통계,부동산서비스산업 실태조사,46. 정부 지원 요청 사항(1순위+2순위),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7108
+토지,승인통계,부동산서비스산업 실태조사,47. (부동산 개발업)주거용 부동산 개발 및 공급실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7109
+토지,승인통계,부동산서비스산업 실태조사,48. (부동산 개발업)비주거용 부동산 개발 및 공급 ,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7110
+토지,승인통계,부동산서비스산업 실태조사,49. (부동산 개발업)기타 부동산 개발 및 공급 실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7111
+토지,승인통계,부동산서비스산업 실태조사,50. (부동산 개발업)부동산 개발 전문인력 수,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7112
+토지,승인통계,부동산서비스산업 실태조사,51. (부동산 임대업)주거용 부동산 임대 실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7113
+토지,승인통계,부동산서비스산업 실태조사,52. (부동산 임대업)비주거용 부동산 임대 실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7114
+토지,승인통계,부동산서비스산업 실태조사,53. (부동산 임대업)기타 부동산 임대 실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7115
+토지,승인통계,부동산서비스산업 실태조사,54. (부동산 관리업)주거용 부동산 관리 실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7116
+토지,승인통계,부동산서비스산업 실태조사,55. (부동산 관리업)비주거용 부동산 관리 실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7117
+토지,승인통계,부동산서비스산업 실태조사,56. (부동산 관리업)주택관리사(보) 수,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7118
+토지,승인통계,부동산서비스산업 실태조사,57. (부동산 자문서비스업)주거용 부동산 투자자문 실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7119
+토지,승인통계,부동산서비스산업 실태조사,58. (부동산 자문서비스업)비주거용 부동산 투자자문 실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7120
+토지,승인통계,부동산서비스산업 실태조사,59. (부동산 자문서비스업)기타 부동산 투자자문 실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7121
+토지,승인통계,부동산서비스산업 실태조사,60. (공인중개서비스업)주거용 부동산 중개실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7122
+토지,승인통계,부동산서비스산업 실태조사,61. (공인중개서비스업)비주거용 부동산 중개실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7123
+토지,승인통계,부동산서비스산업 실태조사,62. (공인중개서비스업)기타 부동산 중개실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7124
+토지,승인통계,부동산서비스산업 실태조사,63. (공인중개서비스업)공인중개사 수,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7125
+토지,승인통계,부동산서비스산업 실태조사,64. .(부동산 감정평가서비스업)공적평가 실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7126
+토지,승인통계,부동산서비스산업 실태조사,65. (부동산 감정평가서비스업)보상평가 실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7127
+토지,승인통계,부동산서비스산업 실태조사,66. (부동산 감정평가서비스업)국공유재산 평가 실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7128
+토지,승인통계,부동산서비스산업 실태조사,67. (부동산 감정평가서비스업)담보평가 실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7129
+토지,승인통계,부동산서비스산업 실태조사,68. (부동산 감정평가서비스업)경매소송 평가 실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7130
+토지,승인통계,부동산서비스산업 실태조사,69. (부동산 감정평가서비스업)부담금 및 택지비 평가 실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7131
+토지,승인통계,부동산서비스산업 실태조사,70. (부동산 감정평가서비스업)일반 평가 실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7132
+토지,승인통계,부동산서비스산업 실태조사,71. (부동산 감정평가서비스업)기타 평가 실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7133
+토지,승인통계,부동산서비스산업 실태조사,72. (부동산 감정평가서비스업)감정평가사 수,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7134
+토지,승인통계,부동산서비스산업 실태조사,73. (금융서비스업)리츠_투자자산 규모,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7135
+토지,승인통계,부동산서비스산업 실태조사,74. (금융서비스업)리츠_투자자산 건수,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7136
+토지,승인통계,부동산서비스산업 실태조사,75. (금융서비스업)자산관리회사_관리 리츠 건수 ,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7137
+토지,승인통계,부동산서비스산업 실태조사,76. (금융서비스업)자산관리회사_리츠운용 수수료,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7138
+토지,승인통계,부동산서비스산업 실태조사,77. (부동산 정보제공서비스업)매출액 발생 구조,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7139
+토지,승인통계,부동산서비스산업 실태조사,78. (부동산 정보제공서비스업)투자유치금액,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=568&hFormId=7140
+토지,승인통계,외국인토지현황,1. 전국 외국인 토지보유현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=26&hFormId=6044
+토지,승인통계,외국인토지현황,2.시도별 외국인 토지보유현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=26&hFormId=6045
+토지,승인통계,외국인토지현황,시도별 외국인 토지보유현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=26&hFormId=5878
+토지,승인통계,외국인토지현황,시도별 외국인 토지보유현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=26&hFormId=1132
+토지,승인통계,외국인토지현황,전국 외국인 토지보유현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=26&hFormId=1134
+토지,승인통계,외국인토지현황,전국 외국인 토지보유현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=26&hFormId=5879
+토지,승인통계,지적통계,소유구분별·지목별 국토이용현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=24&hFormId=1182
+토지,승인통계,지적통계,행정구역별·소유구분별 국토이용현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=24&hFormId=5408
+토지,승인통계,지적통계,행정구역별·지목별 국토이용현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=24&hFormId=1246
+토지,승인통계,지적통계,행정구역별·지목별 국토이용현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=24&hFormId=2300
+토지,승인통계,택지예정지구지정 및 공급현황,시행자별 택지지정 및 공급현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=28&hFormId=5546
+토지,승인통계,택지예정지구지정 및 공급현황,지역별 택지지정 및 공급현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=28&hFormId=5547
+토지,승인통계,토지소유현황,01. 토지 소유구분별 기본 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6058
+토지,승인통계,토지소유현황,01. 토지 소유구분별 기본 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6214
+토지,승인통계,토지소유현황,01.토지 소유구분별 기본 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5890
+토지,승인통계,토지소유현황,01.토지 소유구분별 기본 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5730
+토지,승인통계,토지소유현황,02. 토지 용도지역별 기본 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6059
+토지,승인통계,토지소유현황,02. 토지 용도지역별 기본 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6215
+토지,승인통계,토지소유현황,02.토지 용도지역별 기본 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5731
+토지,승인통계,토지소유현황,03. 토지 지목별 기본 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6060
+토지,승인통계,토지소유현황,03. 토지 지목별 기본 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6216
+토지,승인통계,토지소유현황,03.토지 지목별 기본 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5732
+토지,승인통계,토지소유현황,04.토지거래 회전율 기본 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6055
+토지,승인통계,토지소유현황,04.토지거래 회전율 기본 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6218
+토지,승인통계,토지소유현황,05.개인 토지의 용도지역별 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6061
+토지,승인통계,토지소유현황,05.개인 토지의 용도지역별 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5733
+토지,승인통계,토지소유현황,05.개인 토지의 용도지역별 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6219
+토지,승인통계,토지소유현황,06.개인 토지의 지목별 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6062
+토지,승인통계,토지소유현황,06.개인 토지의 지목별 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5734
+토지,승인통계,토지소유현황,06.개인 토지의 지목별 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6220
+토지,승인통계,토지소유현황,07.개인 토지의 면적규모별 소유자수 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5900
+토지,승인통계,토지소유현황,07.개인 토지의 면적규모별 소유자수 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6221
+토지,승인통계,토지소유현황,08.개인 토지의 가액규모별 소유자수 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5901
+토지,승인통계,토지소유현황,08.개인 토지의 가액규모별 소유자수 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6222
+토지,승인통계,토지소유현황,09.개인 토지의 순위별 소유현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6589
+토지,승인통계,토지소유현황,09.개인 토지의 순위별 소유현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6223
+토지,승인통계,토지소유현황,09.개인 토지의 순위별 소유현황_시군구(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=7148
+토지,승인통계,토지소유현황,10.개인 토지의 면적규모별 소유세대수 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5902
+토지,승인통계,토지소유현황,10.개인 토지의 면적규모별 소유세대수 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6224
+토지,승인통계,토지소유현황,11.개인 토지의 가액규모별 소유세대수 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5903
+토지,승인통계,토지소유현황,11.개인 토지의 가액규모별 소유세대수 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6225
+토지,승인통계,토지소유현황,12.개인 토지의 소유세대순위별 소유현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6590
+토지,승인통계,토지소유현황,12.개인 토지의 소유세대순위별 소유현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6226
+토지,승인통계,토지소유현황,13.개인 토지의 10분위별 소유세대현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5741
+토지,승인통계,토지소유현황,14.개인 토지의 100분위별 소유세대현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5904
+토지,승인통계,토지소유현황,15.개인 토지의 연령별 소유현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6074
+토지,승인통계,토지소유현황,15.개인 토지의 연령별 소유현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5744
+토지,승인통계,토지소유현황,15.개인 토지의 연령별 소유현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5743
+토지,승인통계,토지소유현황,15.개인 토지의 연령별 소유현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6227
+토지,승인통계,토지소유현황,16.개인 토지의 성별 연령별 소유현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6076
+토지,승인통계,토지소유현황,16.개인 토지의 성별 연령별 소유현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6228
+토지,승인통계,토지소유현황,17.소유자 거주지별 토지소유 면적현황(물건소재지 기준),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6073
+토지,승인통계,토지소유현황,17.소유자 거주지별 토지소유 면적현황(물건소재지 기준) 시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6229
+토지,승인통계,토지소유현황,17.소유자 거주지별 토지소유 면적현황(물건소재지 기준)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5745
+토지,승인통계,토지소유현황,18.소유자 거주지별 토지소유 면적현황(소유자주소지 기준),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6070
+토지,승인통계,토지소유현황,18.소유자 거주지별 토지소유 면적현황(소유자주소지 기준) 시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6230
+토지,승인통계,토지소유현황,18.소유자 거주지별 토지소유 면적현황(소유자주소지 기준)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5746
+토지,승인통계,토지소유현황,19.소유자 거주지별 토지소유 가액현황(물건소재지 기준),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6071
+토지,승인통계,토지소유현황,19.소유자 거주지별 토지소유 가액현황(물건소재지 기준) 시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6231
+토지,승인통계,토지소유현황,19.소유자 거주지별 토지소유 가액현황(물건소재지 기준)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5905
+토지,승인통계,토지소유현황,20.소유자 거주지별 토지소유 가액현황(소유자주소지 기준),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6072
+토지,승인통계,토지소유현황,20.소유자 거주지별 토지소유 가액현황(소유자주소지 기준) 시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6232
+토지,승인통계,토지소유현황,20.소유자 거주지별 토지소유 가액현황(소유자주소지 기준)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5906
+토지,승인통계,토지소유현황,21.법인 토지의 용도지역별 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6067
+토지,승인통계,토지소유현황,21.법인 토지의 용도지역별 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5749
+토지,승인통계,토지소유현황,21.법인 토지의 용도지역별 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6233
+토지,승인통계,토지소유현황,22.법인 토지의 지목별 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6066
+토지,승인통계,토지소유현황,22.법인 토지의 지목별 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5750
+토지,승인통계,토지소유현황,22.법인 토지의 지목별 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6234
+토지,승인통계,토지소유현황,23.법인 토지의 면적규모별 소유자수(법인수) 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5907
+토지,승인통계,토지소유현황,23.법인 토지의 면적규모별 소유자수(법인수) 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6235
+토지,승인통계,토지소유현황,24.법인 토지의 가액규모별 소유자(법인수) 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5908
+토지,승인통계,토지소유현황,24.법인 토지의 가액규모별 소유자(법인수) 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6236
+토지,승인통계,토지소유현황,25.법인 토지의 10분위별 소유현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5909
+토지,승인통계,토지소유현황,26.법인 토지의 100분위별 소유현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5910
+토지,승인통계,토지소유현황,27.비법인 토지의 용도지역별 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6075
+토지,승인통계,토지소유현황,27.비법인 토지의 용도지역별 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5755
+토지,승인통계,토지소유현황,27.비법인 토지의 용도지역별 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6237
+토지,승인통계,토지소유현황,28.비법인 종중 토지의 용도지역별 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6069
+토지,승인통계,토지소유현황,28.비법인 종중 토지의 용도지역별 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=7161
+토지,승인통계,토지소유현황,28.비법인 종중 토지의 용도지역별 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6238
+토지,승인통계,토지소유현황,29.비법인 종교단체 토지의 용도지역별 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6068
+토지,승인통계,토지소유현황,29.비법인 종교단체 토지의 용도지역별 현황(종교)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5912
+토지,승인통계,토지소유현황,29.비법인 종교단체 토지의 용도지역별 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6239
+토지,승인통계,토지소유현황,30.비법인 기타단체 토지의 용도지역별 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6065
+토지,승인통계,토지소유현황,30.비법인 기타단체 토지의 용도지역별 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5913
+토지,승인통계,토지소유현황,30.비법인 기타단체 토지의 용도지역별 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6240
+토지,승인통계,토지소유현황,31.비법인 토지의 지목별 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6064
+토지,승인통계,토지소유현황,31.비법인 토지의 지목별 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5759
+토지,승인통계,토지소유현황,31.비법인 토지의 지목별 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6241
+토지,승인통계,토지소유현황,32.비법인 종중 토지의 지목별 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5914
+토지,승인통계,토지소유현황,32.비법인 종중 토지의 지목별 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=7159
+토지,승인통계,토지소유현황,32.비법인 종중 토지의 지목별 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6242
+토지,승인통계,토지소유현황,33.비법인 종교단체 토지의 지목별 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5915
+토지,승인통계,토지소유현황,33.비법인 종교단체 토지의 지목별 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=7160
+토지,승인통계,토지소유현황,33.비법인 종교단체 토지의 지목별 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6243
+토지,승인통계,토지소유현황,34.비법인 기타단체 토지의 지목별 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5916
+토지,승인통계,토지소유현황,34.비법인 기타단체 토지의 지목별 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6244
+토지,승인통계,토지소유현황,35.비법인 토지의 면적규모별 소유자(비법인수) 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5917
+토지,승인통계,토지소유현황,35.비법인 토지의 면적규모별 소유자(비법인수) 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6245
+토지,승인통계,토지소유현황,36.비법인 토지의 가액규모별 소유자(비법인수) 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5918
+토지,승인통계,토지소유현황,36.비법인 토지의 가액규모별 소유자(비법인수) 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6246
+토지,승인통계,토지소유현황,37.비법인 토지의 10분위별 소유 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5919
+토지,승인통계,토지소유현황,38.비법인 토지의 100분위별 소유 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5920
+토지,승인통계,토지소유현황,39. 외국인 외국공공기관 토지의 용도지역별 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5922
+토지,승인통계,토지소유현황,39.비법인 토지의 유형별 소유 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6063
+토지,승인통계,토지소유현황,39.비법인 토지의 유형별 소유 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=5921
+토지,승인통계,토지소유현황,39.비법인 토지의 유형별 소유 현황_시군구,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=25&hFormId=6249
+건설,승인통계,건설공사계약통계,계약규모 순위별 건설공사계약 금액,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=514&hFormId=6017
+건설,승인통계,건설공사계약통계,발주자별 공종별건설공사계약액 추이,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=514&hFormId=6015
+건설,승인통계,건설공사계약통계,본사소재지별 건설공사계약 금액,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=514&hFormId=6019
+건설,승인통계,건설공사계약통계,세부공종별 건설공사계약액 추이 ,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=514&hFormId=6016
+건설,승인통계,건설공사계약통계,현장소재지별 건설공사계약 금액,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=514&hFormId=6018
+건설,승인통계,기계설비산업실태조사,가장 구하기 어려운 건설인력 유형(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6657
+건설,승인통계,기계설비산업실태조사,경력별 신규고용자 수 (평균)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6610
+건설,승인통계,기계설비산업실태조사,경력별 인력 채용의 어려움을 겪은 경험 (복수응답)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6612
+건설,승인통계,기계설비산업실태조사,공공 및 민간공사의 원도급 수주 경험(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6641
+건설,승인통계,기계설비산업실태조사,공공 및 민간공사의 하도급 수주 경험(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6646
+건설,승인통계,기계설비산업실태조사,공공공사의 원도급 수주율,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6643
+건설,승인통계,기계설비산업실태조사,공공공사의 원도급 입찰/수주 건수,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6895
+건설,승인통계,기계설비산업실태조사,공공공사의 원도급 입찰/수주 건수(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6642
+건설,승인통계,기계설비산업실태조사,공공공사의 하도급 공사 실행률(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6653
+건설,승인통계,기계설비산업실태조사,공공공사의 하도급 낙찰률,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6651
+건설,승인통계,기계설비산업실태조사,공공공사의 하도급 수주율,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6648
+건설,승인통계,기계설비산업실태조사,공공공사의 하도급 입찰/수주 건수,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6897
+건설,승인통계,기계설비산업실태조사,공공공사의 하도급 입찰/수주 건수(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6647
+건설,승인통계,기계설비산업실태조사,근속연수별 종사자 수 (평균)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6607
+건설,승인통계,기계설비산업실태조사,금년 공사현장의 산업재해 발생 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6675
+건설,승인통계,기계설비산업실태조사,금년 기계설비분야 평균 연구개발 건수 및 투자액,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6622
+건설,승인통계,기계설비산업실태조사,금년 대비 내년 업황 전망(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6620
+건설,승인통계,기계설비산업실태조사,금년 외부기관으로부터 지원 받은 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6625
+건설,승인통계,기계설비산업실태조사,금년 원도급자로부터 부당요구(계약 체결 또는 건설공사의 시공 관련)를 강요당한 경험 및 공사비율(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6664
+건설,승인통계,기계설비산업실태조사,금년 재무 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6892
+건설,승인통계,기계설비산업실태조사,금년 재무 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6614
+건설,승인통계,기계설비산업실태조사,금년 표준시장단가 적용 건설공사의 공사비 산정방식별 평균 비중(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6671
+건설,승인통계,기계설비산업실태조사,금년 표준시장단가 적용 건설공사의 수주경험(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6670
+건설,승인통계,기계설비산업실태조사,기계설비공사업 근속연수별 성별 종사자 수(평균),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6922
+건설,승인통계,기계설비산업실태조사,기계설비공사업 근속연수별 종사자 수 (평균),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6889
+건설,승인통계,기계설비산업실태조사,기계설비공사업 기술자격별 성별 종사자 수(평균),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6923
+건설,승인통계,기계설비산업실태조사,기계설비공사업 기술자격별 종사자 수 (평균),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6891
+건설,승인통계,기계설비산업실태조사,기계설비공사업 분야별 매출 비중,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6893
+건설,승인통계,기계설비산업실태조사,기계설비공사업 분야별 매출 비중(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6615
+건설,승인통계,기계설비산업실태조사,기계설비공사업 학력별 성별 종사자 수(평균),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6924
+건설,승인통계,기계설비산업실태조사,기계설비공사업 학력별 종사자 수 (평균),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6890
+건설,승인통계,기계설비산업실태조사,기계설비공사업 해외 매출액,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6894
+건설,승인통계,기계설비산업실태조사,기계설비법 제정에 따른 사업 강화 계획 (복수응답)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6660
+건설,승인통계,기계설비산업실태조사,기계설비법 제정의 기대효과 (복수응답)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6659
+건설,승인통계,기계설비산업실태조사,기계설비산업 관련 사업활동 수행의 애로사항 (1+2순위)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6626
+건설,승인통계,기계설비산업실태조사,"기계설비산업 육성을 위한 유형별 정책 지원사항 필요 정도 (개발 : 품질관리, 신기술 개발 등 R&D 지원)(종료)",https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6631
+건설,승인통계,기계설비산업실태조사,기계설비산업 육성을 위한 유형별 정책 지원사항 필요 정도 (인력컨설팅 : 고급인력 양성 및 교육지원)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6636
+건설,승인통계,기계설비산업실태조사,기계설비산업 육성을 위한 유형별 정책 지원사항 필요 정도 (인력컨설팅 : 기계설비 관련 분야 전용 인력채용 통로 제공)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6637
+건설,승인통계,기계설비산업실태조사,기계설비산업 육성을 위한 유형별 정책 지원사항 필요 정도 (인력컨설팅 : 기능인력 양성 및 교육지원)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6635
+건설,승인통계,기계설비산업실태조사,기계설비산업 육성을 위한 유형별 정책 지원사항 필요 정도 (인력컨설팅 : 신규 채용인력 인건비 지원)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6638
+건설,승인통계,기계설비산업실태조사,기계설비산업 육성을 위한 유형별 정책 지원사항 필요 정도 (인프라 : 신기술 개발 시설·장비 지원)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6639
+건설,승인통계,기계설비산업실태조사,기계설비산업 육성을 위한 유형별 정책 지원사항 필요 정도 (인프라 : 지원시설 제공)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6640
+건설,승인통계,기계설비산업실태조사,기계설비산업 육성을 위한 유형별 정책 지원사항 필요 정도 (자금 : 세금 감면 지원)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6630
+건설,승인통계,기계설비산업실태조사,"기계설비산업 육성을 위한 유형별 정책 지원사항 필요 정도 (자금 : 융자, 외부투자 등 자금지원)(종료)",https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6629
+건설,승인통계,기계설비산업실태조사,"기계설비산업 육성을 위한 유형별 정책 지원사항 필요 정도 (제도 : 공공, 민간 간의 소통활성화를 위한 창구마련)(종료)",https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6628
+건설,승인통계,기계설비산업실태조사,기계설비산업 육성을 위한 유형별 정책 지원사항 필요 정도 (판로 : 정부 발주사업의 다양화)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6634
+건설,승인통계,기계설비산업실태조사,기계설비산업 육성을 위한 유형별 정책 지원사항 필요 정도 (판로 : 해외 시장 및 기술 정보제공 확대)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6633
+건설,승인통계,기계설비산업실태조사,기계설비산업 육성을 위한 유형별 정책 지원사항 필요 정도 (판로 : 해외진출지원사업 확대)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6632
+건설,승인통계,기계설비산업실태조사,기술자격별 종사자 수 (평균)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6609
+건설,승인통계,기계설비산업실태조사,기업 인증 보유현황 (복수응답),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6598
+건설,승인통계,기계설비산업실태조사,기타종사자 종사자 수 (평균),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6887
+건설,승인통계,기계설비산업실태조사,기타종사자 종사자 수 (평균)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6605
+건설,승인통계,기계설비산업실태조사,무급가족종사자 종사자 수 (평균),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6886
+건설,승인통계,기계설비산업실태조사,무급가족종사자 종사자 수 (평균)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6604
+건설,승인통계,기계설비산업실태조사,민간공사의 원도급 수주율,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6645
+건설,승인통계,기계설비산업실태조사,민간공사의 원도급 입찰/수주 건수,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6896
+건설,승인통계,기계설비산업실태조사,민간공사의 원도급 입찰/수주 건수(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6644
+건설,승인통계,기계설비산업실태조사,민간공사의 하도급 공사 실행률(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6654
+건설,승인통계,기계설비산업실태조사,민간공사의 하도급 낙찰률,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6652
+건설,승인통계,기계설비산업실태조사,민간공사의 하도급 수주율,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6650
+건설,승인통계,기계설비산업실태조사,민간공사의 하도급 입찰/수주 건수,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6898
+건설,승인통계,기계설비산업실태조사,민간공사의 하도급 입찰/수주 건수(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6649
+건설,승인통계,기계설비산업실태조사,발주자와 원도급자의 서면승낙을 모두 받아 재하도급을 하도록 하는 현행 제도에 대한 견해(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6665
+건설,승인통계,기계설비산업실태조사,법정직무교육의 근로자 역량제고 및 업무에 도움 여부(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6672
+건설,승인통계,기계설비산업실태조사,법정직무교육이 도움되지 않는 이유 (1+2순위)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6673
+건설,승인통계,기계설비산업실태조사,부당하게 하도급대금을 감액 당한 이유 (복수응답)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6663
+건설,승인통계,기계설비산업실태조사,사업분야 (복수응답),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6882
+건설,승인통계,기계설비산업실태조사,사업분야 (복수응답)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6600
+건설,승인통계,기계설비산업실태조사,산업재산권 유형별 국내 등록 평균 건수(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6623
+건설,승인통계,기계설비산업실태조사,산업재산권 유형별 국외 등록 평균 건수(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6624
+건설,승인통계,기계설비산업실태조사,상용근로자 종사자 수 (평균),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6883
+건설,승인통계,기계설비산업실태조사,상용근로자 종사자 수 (평균)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6601
+건설,승인통계,기계설비산업실태조사,상장/코스닥,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6599
+건설,승인통계,기계설비산업실태조사,안전관리비가 부족한 이유(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6677
+건설,승인통계,기계설비산업실태조사,연간 인건비 (평균)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6606
+건설,승인통계,기계설비산업실태조사,연구개발(R&D)을 위한 전담 부서 또는 인력 보유 여부,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6621
+건설,승인통계,기계설비산업실태조사,운영자금 주요 조달방법(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6618
+건설,승인통계,기계설비산업실태조사,원도급공사에서 안전관리비로 가장 많이 지출되는 항목 (1+2순위)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6678
+건설,승인통계,기계설비산업실태조사,원도급업자의 추가공사작업 지시 및 조치 형태(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6662
+건설,승인통계,기계설비산업실태조사,원도급업체가 지급하는 안전관리비의 적정성(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6676
+건설,승인통계,기계설비산업실태조사,인력 채용이 어려운 이유 (복수응답)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6613
+건설,승인통계,기계설비산업실태조사,일용근로자 고용 시 애로사항 (복수응답)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6658
+건설,승인통계,기계설비산업실태조사,임시 및 일용근로자 종사자 수 (평균),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6884
+건설,승인통계,기계설비산업실태조사,임시 및 일용근로자 종사자 수 (평균)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6602
+건설,승인통계,기계설비산업실태조사,자금사정이 악화되는 주요 원인(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6616
+건설,승인통계,기계설비산업실태조사,자금악화 현상 개선을 위한 주된 방안(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6617
+건설,승인통계,기계설비산업실태조사,자영업자 종사자 수 (평균),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6885
+건설,승인통계,기계설비산업실태조사,자영업자 종사자 수 (평균)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6603
+건설,승인통계,기계설비산업실태조사,작년 대비 금년 업황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6619
+건설,승인통계,기계설비산업실태조사,저가 투찰한 주된 원인(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6655
+건설,승인통계,기계설비산업실태조사,저가로 낙찰된 공사의 수행방법 (복수응답)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6656
+건설,승인통계,기계설비산업실태조사,조직형태,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6597
+건설,승인통계,기계설비산업실태조사,주계약자 공동도급제도 활성화를 위해 필요한 사항 (복수응답)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6667
+건설,승인통계,기계설비산업실태조사,주계약자 공동도급제도의 확대·적용이 필요한 이유 (복수응답)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6666
+건설,승인통계,기계설비산업실태조사,총 종사자 수 (평균),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6888
+건설,승인통계,기계설비산업실태조사,퇴직인원 수 (평균)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6611
+건설,승인통계,기계설비산업실태조사,표준시장단가 제도에 대한 생각(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6668
+건설,승인통계,기계설비산업실태조사,표준시장단가 제도의 폐지[축소]를 희망하는 주된 이유(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6669
+건설,승인통계,기계설비산업실태조사,하도급공사에서 안전관리비로 가장 많이 지출되는 항목 (1+2순위)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6679
+건설,승인통계,기계설비산업실태조사,학력별 종사자 수 (평균)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6608
+건설,승인통계,기계설비산업실태조사,해외 매출액(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6680
+건설,승인통계,기계설비산업실태조사,해외 진출방법(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6596
+건설,승인통계,기계설비산업실태조사,해외 진출지역 (복수응답)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6681
+건설,승인통계,기계설비산업실태조사,해외 진출형태 (복수응답)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6682
+건설,승인통계,기계설비산업실태조사,향후 기계설비산업의 경쟁력 강화를 위하여 필요한 정보 (1+2순위)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6627
+건설,승인통계,기계설비산업실태조사,향후 필요한 교육훈련 (1+2순위)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6674
+건설,승인통계,기계설비산업실태조사,효과적인 하도급자 보호제도 (복수응답)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=552&hFormId=6661
+교통/물류,승인통계,교통문화실태조사,교통문화지수 및 순위,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=271&hFormId=6057
+교통/물류,승인통계,교통부문수송실적보고,1-1. 국내·국제여객총괄,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=54&hFormId=1050
+교통/물류,승인통계,교통부문수송실적보고,1-2. 국내·국제여객 연도별 수송수단별,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=54&hFormId=5376
+교통/물류,승인통계,교통부문수송실적보고,1-3. 국내·국제여객 월별 수송수단별,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=54&hFormId=1048
+교통/물류,승인통계,교통부문수송실적보고,2-1. 국내·국제화물총괄,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=54&hFormId=1060
+교통/물류,승인통계,교통부문수송실적보고,2-2. 국내·국제화물 연도별 수송수단별,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=54&hFormId=662
+교통/물류,승인통계,교통부문수송실적보고,2-3. 국내·국제화물 월별 수송수단별,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=54&hFormId=1062
+교통/물류,승인통계,교통부문수송실적보고,3. 수송수단별 수송현황(연도별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=54&hFormId=1064
+교통/물류,승인통계,교통부문수송실적보고,4. 수송수단별 수송현황(월별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=54&hFormId=1072
+교통/물류,승인통계,교통부문수송실적보고,5. 수송장비현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=54&hFormId=1068
+교통/물류,승인통계,교통부문수송실적보고,6. 영업용 자동차 수송총괄,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=54&hFormId=1066
+교통/물류,승인통계,교통부문수송실적보고,낙도보조항로_연도별(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=54&hFormId=1304
+교통/물류,승인통계,교통부문수송실적보고,낙도보조항로_월별(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=54&hFormId=1308
+교통/물류,승인통계,교통부문수송실적보고,내항여객선 항로현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=54&hFormId=1300
+교통/물류,승인통계,교통부문수송실적보고,분기별 교통산업서비스지수_국내(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=54&hFormId=2220
+교통/물류,승인통계,교통부문수송실적보고,분기별 교통산업서비스지수_국제(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=54&hFormId=2222
+교통/물류,승인통계,교통부문수송실적보고,여객선수송현황_연도별(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=54&hFormId=1294
+교통/물류,승인통계,교통부문수송실적보고,여객선수송현황_월별(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=54&hFormId=1302
+교통/물류,승인통계,교통부문수송실적보고,월별 국내 교통산업서비스지수TSI(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=54&hFormId=2224
+교통/물류,승인통계,교통부문수송실적보고,월별 국제 교통산업서비스지수TSI(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=54&hFormId=2226
+교통/물류,승인통계,교통부문수송실적보고,주요품목별 수송현황_연도별(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=54&hFormId=1070
+교통/물류,승인통계,교통부문수송실적보고,주요품목별 수송현황_월별(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=54&hFormId=1074
+교통/물류,승인통계,국가교통조사,"<여객>지역간 통행량(승용차,버스,철도,항공,해운)",https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=326&hFormId=5406
+교통/물류,승인통계,국가교통조사,<화물>지역간통행량(화물자동차),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=326&hFormId=5407
+교통/물류,승인통계,국가교통조사,업종별 화물자동차 평균 보유·이용대수현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=326&hFormId=7150
+교통/물류,승인통계,국가교통조사,업종별 화물자동차 평균 보유·이용대수현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=326&hFormId=5412
+교통/물류,승인통계,국가교통조사,적재능력별 일평균 적재 및 공차 통행현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=326&hFormId=5413
+교통/물류,승인통계,국가교통조사,화물자동차 적재능력별 평균 적재현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=326&hFormId=5414
+교통/물류,승인통계,국가교통조사,화물자동차 적재능력별 평균 통행현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=326&hFormId=5415
+교통/물류,승인통계,대중교통현황조사(2007~2010),6대 특별·광역시 전용차로 유무별 대중교통 교통량비율(~2007)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1104
+교통/물류,승인통계,대중교통현황조사(2007~2010),7대 특별·광역시 교통카드 이용률(~2007)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1096
+교통/물류,승인통계,대중교통현황조사(2007~2010),7대 특별·광역시 대중교통 1일이용률(~2007)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1092
+교통/물류,승인통계,대중교통현황조사(2007~2010),노선버스 및 도시철도 운행거리(~2007)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1094
+교통/물류,승인통계,대중교통현황조사(2007~2010),대중교통 이용횟수_1주(권역별)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=2142
+교통/물류,승인통계,대중교통현황조사(2007~2010),대중교통 접근수단(권역별)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=2146
+교통/물류,승인통계,대중교통현황조사(2007~2010),대중교통 접근시간(권역별)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=2148
+교통/물류,승인통계,대중교통현황조사(2007~2010),대중교통 환승실태(권역별)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=2124
+교통/물류,승인통계,대중교통현황조사(2007~2010),대중교통점유율(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=2120
+교통/물류,승인통계,대중교통현황조사(2007~2010),도시철도 운행여부에 따른 환승유형(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1162
+교통/물류,승인통계,대중교통현황조사(2007~2010),도시철도 유무별 총소요시간 대비 환승소요시간(~2007)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1158
+교통/물류,승인통계,대중교통현황조사(2007~2010),소요시간 대비 환승소요시간(권역별)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=2154
+교통/물류,승인통계,대중교통현황조사(2007~2010),시도별 대중교통 접근수단(~2007)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1170
+교통/물류,승인통계,대중교통현황조사(2007~2010),시도별 대중교통 접근시간(~2007)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1168
+교통/물류,승인통계,대중교통현황조사(2007~2010),시도별 대중교통 환승실태(~2007)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1088
+교통/물류,승인통계,대중교통현황조사(2007~2010),시도별 주요노선 평균속도(~2007)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1106
+교통/물류,승인통계,대중교통현황조사(2007~2010),시도별 주요노선 평균이용인원(~2007)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1176
+교통/물류,승인통계,대중교통현황조사(2007~2010),시도별 주요노선 평균정체횟수(비율)(~2007)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1108
+교통/물류,승인통계,대중교통현황조사(2007~2010),시도별 주요노선 평균정체횟수(시간)(~2007)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1110
+교통/물류,승인통계,대중교통현황조사(2007~2010),시도별 주요노선운행 및 이용현황(~2007)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1090
+교통/물류,승인통계,대중교통현황조사(2007~2010),시도별 총소요시간 대비 환승소요시간(~2007)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1160
+교통/물류,승인통계,대중교통현황조사(2007~2010),시도별 터미널업체수현황(~2007)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1102
+교통/물류,승인통계,대중교통현황조사(2007~2010),시도별 터미널운영현황(~2007)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1100
+교통/물류,승인통계,대중교통현황조사(2007~2010),시도별 한달평균 대중교통비용(~2007)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1172
+교통/물류,승인통계,대중교통현황조사(2007~2010),시도별 환승유형(~2007)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1164
+교통/물류,승인통계,대중교통현황조사(2007~2010),시도별 환승횟수(~2007)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1166
+교통/물류,승인통계,대중교통현황조사(2007~2010),"시도별, 7대 특별·광역시·9개도 대중교통교통량비율(~2007)(종료)",https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1086
+교통/물류,승인통계,대중교통현황조사(2007~2010),"시도별, 정체사유별 평균정체율(~2007)(종료)",https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1122
+교통/물류,승인통계,대중교통현황조사(2007~2010),"시도별, 주요노선 시간대별 평균정체시간(~2007)(종료)",https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1120
+교통/물류,승인통계,대중교통현황조사(2007~2010),"연도별, 업종별 버스현황(종료)",https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1098
+교통/물류,승인통계,대중교통현황조사(2007~2010),월평균 대중교통비용(권역별)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=2144
+교통/물류,승인통계,대중교통현황조사(2007~2010),전용차로 유무별 대중교통 교통량비율(권역·광역시)(~2008)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=2130
+교통/물류,승인통계,대중교통현황조사(2007~2010),주요노선 시간대별 평균 정체시간(권역별)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=2138
+교통/물류,승인통계,대중교통현황조사(2007~2010),주요노선 운행 및 이용현황(권역별)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=2122
+교통/물류,승인통계,대중교통현황조사(2007~2010),주요노선 평균 이용인원(권역별)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=2140
+교통/물류,승인통계,대중교통현황조사(2007~2010),주요노선 평균 정체횟수_비율(권역별)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=2134
+교통/물류,승인통계,대중교통현황조사(2007~2010),주요노선 평균 정체횟수_시간(권역별)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=2136
+교통/물류,승인통계,대중교통현황조사(2007~2010),주요노선 평균속도(권역별)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=2132
+교통/물류,승인통계,대중교통현황조사(2007~2010),직업별 대중교통 이용횟수(1주)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1174
+교통/물류,승인통계,대중교통현황조사(2007~2010),직업별 한달평균 대중교통비용(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1216
+교통/물류,승인통계,대중교통현황조사(2007~2010),터미널 업체수 현황(특별·광역시별)(~2009)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=2126
+교통/물류,승인통계,대중교통현황조사(2007~2010),터미널 운영현황(특별·광역시별)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=2128
+교통/물류,승인통계,대중교통현황조사(2007~2010),통행목적별 대중교통 이용현황(~2007)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1156
+교통/물류,승인통계,대중교통현황조사(2007~2010),통행목적별 대중교통 이용현황(권역별)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=2156
+교통/물류,승인통계,대중교통현황조사(2007~2010),통행목적별 소요비용(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=2158
+교통/물류,승인통계,대중교통현황조사(2007~2010),통행목적별 소용비용 및 소요시간(~2007)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=1154
+교통/물류,승인통계,대중교통현황조사(2007~2010),환승유형(권역별)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=2152
+교통/물류,승인통계,대중교통현황조사(2007~2010),환승횟수(권역별)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=57&hFormId=2150
+교통/물류,승인통계,대중교통현황조사(2011~ ),대중교통 이용횟수_1주(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5499
+교통/물류,승인통계,대중교통현황조사(2011~ ),대중교통 환승유형(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5605
+교통/물류,승인통계,대중교통현황조사(2011~ ),대중교통과 승용차 속도비교,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5685
+교통/물류,승인통계,대중교통현황조사(2011~ ),대중교통과 승용차 속도비교(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5610
+교통/물류,승인통계,대중교통현황조사(2011~ ),대중교통점유율_시간대별 주말 탑승건수(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5504
+교통/물류,승인통계,대중교통현황조사(2011~ ),대중교통점유율_시간대별 주중 탑승건수(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5503
+교통/물류,승인통계,대중교통현황조사(2011~ ),대중교통접근수단(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5500
+교통/물류,승인통계,대중교통현황조사(2011~ ),대중교통접근시간(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5501
+교통/물류,승인통계,대중교통현황조사(2011~ ),대중교통환승실태(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5502
+교통/물류,승인통계,대중교통현황조사(2011~ ),대중교통환승실태(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5604
+교통/물류,승인통계,대중교통현황조사(2011~ ),시도별 대중교통 접근수단,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=6196
+교통/물류,승인통계,대중교통현황조사(2011~ ),시도별 대중교통 접근수단(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5720
+교통/물류,승인통계,대중교통현황조사(2011~ ),시도별 대중교통 접근수단(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5602
+교통/물류,승인통계,대중교통현황조사(2011~ ),시도별 대중교통 접근시간,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5721
+교통/물류,승인통계,대중교통현황조사(2011~ ),시도별 대중교통 접근시간(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5603
+교통/물류,승인통계,대중교통현황조사(2011~ ),시도별 대중교통이용횟수_1주,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=7149
+교통/물류,승인통계,대중교통현황조사(2011~ ),시도별 대중교통이용횟수_1주(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5719
+교통/물류,승인통계,대중교통현황조사(2011~ ),시도별 대중교통이용횟수_1주(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5601
+교통/물류,승인통계,대중교통현황조사(2011~ ),시도별 대중교통통행목적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5728
+교통/물류,승인통계,대중교통현황조사(2011~ ),시도별 대중교통통행목적(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5613
+교통/물류,승인통계,대중교통현황조사(2011~ ),시도별 도로부문 차종별 배출량(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5616
+교통/물류,승인통계,대중교통현황조사(2011~ ),시도별 월평균 대중교통비용,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5725
+교통/물류,승인통계,대중교통현황조사(2011~ ),시도별 월평균 대중교통비용(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5608
+교통/물류,승인통계,대중교통현황조사(2011~ ),시도별 주요노선 평균 이용인원(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5609
+교통/물류,승인통계,대중교통현황조사(2011~ ),시도별 환승소요시간,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5722
+교통/물류,승인통계,대중교통현황조사(2011~ ),시도별 환승소요시간(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5606
+교통/물류,승인통계,대중교통현황조사(2011~ ),시도별 환승유형,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5724
+교통/물류,승인통계,대중교통현황조사(2011~ ),시도별 환승유형(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5614
+교통/물류,승인통계,대중교통현황조사(2011~ ),시도별 환승횟수,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5723
+교통/물류,승인통계,대중교통현황조사(2011~ ),시도별 환승횟수(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5615
+교통/물류,승인통계,대중교통현황조사(2011~ ),업종별 버스현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5507
+교통/물류,승인통계,대중교통현황조사(2011~ ),월평균 대중교통비용(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5508
+교통/물류,승인통계,대중교통현황조사(2011~ ),주요노선 시간대별 평균정체시간(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5509
+교통/물류,승인통계,대중교통현황조사(2011~ ),주요노선 운행 및 이용시간(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5510
+교통/물류,승인통계,대중교통현황조사(2011~ ),주요노선 평균 이용인원 및 통행량(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5684
+교통/물류,승인통계,대중교통현황조사(2011~ ),주요노선 평균 이용인원(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5511
+교통/물류,승인통계,대중교통현황조사(2011~ ),주요노선 평균 정체횟수 비율(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5512
+교통/물류,승인통계,대중교통현황조사(2011~ ),주요노선 평균 정체횟수 시간(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5513
+교통/물류,승인통계,대중교통현황조사(2011~ ),주요노선 평균속도(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5514
+교통/물류,승인통계,대중교통현황조사(2011~ ),직업별 대중교통 이용횟수(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5515
+교통/물류,승인통계,대중교통현황조사(2011~ ),직업별 대중교통 이용횟수_1주(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5611
+교통/물류,승인통계,대중교통현황조사(2011~ ),직업별 대중교통 이용횟수_1주(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5726
+교통/물류,승인통계,대중교통현황조사(2011~ ),직업별 통행목적(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5612
+교통/물류,승인통계,대중교통현황조사(2011~ ),직업별 통행목적(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5729
+교통/물류,승인통계,대중교통현황조사(2011~ ),직업별 한달 대중교통 비용(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5516
+교통/물류,승인통계,대중교통현황조사(2011~ ),터미널운영현황(2010년 12월 기준)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5517
+교통/물류,승인통계,대중교통현황조사(2011~ ),통행목적별 대중교통 이용현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5518
+교통/물류,승인통계,대중교통현황조사(2011~ ),통행목적별 소요비용(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5519
+교통/물류,승인통계,대중교통현황조사(2011~ ),환승소요시간(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5506
+교통/물류,승인통계,대중교통현황조사(2011~ ),환승유형(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=483&hFormId=5520
+교통/물류,승인통계,자동차등록현황보고,이륜차신고현황 시도별,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=58&hFormId=5559
+교통/물류,승인통계,자동차등록현황보고,이륜차신고현황 연도별,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=58&hFormId=7170
+교통/물류,승인통계,자동차등록현황보고,이륜차신고현황_시도별(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=58&hFormId=2040
+교통/물류,승인통계,자동차등록현황보고,이륜차신고현황_연도별(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=58&hFormId=2042
+교통/물류,승인통계,자동차등록현황보고,자동차등록대수현황 시도별,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=58&hFormId=5498
+교통/물류,승인통계,자동차등록현황보고,자동차등록대수현황_시도별(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=58&hFormId=1242
+교통/물류,승인통계,자동차등록현황보고,자동차등록대수현황_연도별,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=58&hFormId=1244
+항공,승인통계,항공교통관제업무통계,관제탑 관제량(연도별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=79&hFormId=5354
+항공,승인통계,항공교통관제업무통계,관제탑 관제량(월별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=79&hFormId=7166
+항공,승인통계,항공교통관제업무통계,관제탑 관제량(월별)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=79&hFormId=728
+항공,승인통계,항공교통관제업무통계,접근관제소 관제량(연도별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=79&hFormId=5355
+항공,승인통계,항공교통관제업무통계,접근관제소 관제량(월별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=79&hFormId=7167
+항공,승인통계,항공교통관제업무통계,접근관제소 관제량(월별)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=79&hFormId=732
+항공,승인통계,항공교통관제업무통계,통과 비행량(연도별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=79&hFormId=5356
+항공,승인통계,항공교통관제업무통계,통과 비행량(월별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=79&hFormId=7168
+항공,승인통계,항공교통관제업무통계,통과 비행량(월별)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=79&hFormId=726
+항공,승인통계,항공교통관제업무통계,항로 관제량(연도별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=79&hFormId=5357
+항공,승인통계,항공교통관제업무통계,항로 관제량(월별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=79&hFormId=7169
+항공,승인통계,항공교통관제업무통계,항로 관제량(월별)(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=79&hFormId=762
+도로/철도,승인통계,도로교량 및 터널현황,노선별 터널현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=65&hFormId=1038
+도로/철도,승인통계,도로교량 및 터널현황,시도별 교량현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=65&hFormId=1016
+도로/철도,승인통계,도로교량 및 터널현황,연도교 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=65&hFormId=1034
+도로/철도,승인통계,도로교량 및 터널현황,연륙교 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=65&hFormId=1030
+도로/철도,승인통계,도로교량 및 터널현황,전국교량 연장별 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=65&hFormId=1018
+도로/철도,승인통계,도로교량 및 터널현황,전국교량현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=65&hFormId=1002
+도로/철도,승인통계,도로교량 및 터널현황,전국터널현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=65&hFormId=1040
+도로/철도,승인통계,도로교량 및 터널현황,전국터널현황_고속국도,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=65&hFormId=5343
+도로/철도,승인통계,도로교량 및 터널현황,전국터널현황_구도,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=65&hFormId=5350
+도로/철도,승인통계,도로교량 및 터널현황,전국터널현황_군도,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=65&hFormId=5349
+도로/철도,승인통계,도로교량 및 터널현황,전국터널현황_시도,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=65&hFormId=5348
+도로/철도,승인통계,도로교량 및 터널현황,전국터널현황_일반국도,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=65&hFormId=5344
+도로/철도,승인통계,도로교량 및 터널현황,전국터널현황_지방도,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=65&hFormId=5346
+도로/철도,승인통계,도로교량 및 터널현황,전국터널현황_지방도(국가지원),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=65&hFormId=5347
+도로/철도,승인통계,도로교량 및 터널현황,전국터널현황_특별·광역시도,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=65&hFormId=5345
+도로/철도,승인통계,도로교량 및 터널현황,한강횡단교량현황(총괄),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=65&hFormId=1022
+도로/철도,승인통계,도로교량 및 터널현황,한강횡단교량현황(현황),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=65&hFormId=1046
+도로/철도,승인통계,도로교통량조사,1.도로종류별 노선별 차종별 평균일교통량과 구성비,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=63&hFormId=996
+도로/철도,승인통계,도로교통량조사,2.도로종류별 차종별 평균일교통량과 구성비,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=63&hFormId=1240
+도로/철도,승인통계,도로교통량조사,3.도로종류별 교통량분포에 따른 연장 및 구성비,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=63&hFormId=994
+도로/철도,승인통계,도로현황,01.도로현황 총괄표,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=59&hFormId=5675
+도로/철도,승인통계,도로현황,02.연도별 도로현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=59&hFormId=958
+도로/철도,승인통계,도로현황,03.시·도별 도로현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=59&hFormId=962
+도로/철도,승인통계,도로현황,04.도로등급별 차로현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=59&hFormId=968
+도로/철도,승인통계,도로현황,05.고속국도 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=59&hFormId=5676
+도로/철도,승인통계,도로현황,06.일반국도 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=59&hFormId=5677
+도로/철도,승인통계,도로현황,07.특광시도 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=59&hFormId=5678
+도로/철도,승인통계,도로현황,08.지방도 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=59&hFormId=5679
+도로/철도,승인통계,도로현황,09.시도 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=59&hFormId=5680
+도로/철도,승인통계,도로현황,10.군도현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=59&hFormId=5681
+도로/철도,승인통계,도로현황,11.구도 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=59&hFormId=5682
+도로/철도,승인통계,도로현황,12.시·도별 도로보급률,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=59&hFormId=966
+도로/철도,승인통계,도로현황,13.일반국도 관리연장현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=59&hFormId=976
+도로/철도,승인통계,도로현황,14.자동차전용도로현황(고속국도제외),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=59&hFormId=970
+도로/철도,승인통계,도로현황,15.유료도로현황(전체현황),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=59&hFormId=5674
+도로/철도,승인통계,도로현황,16.유료도로현황(구간별현황),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=59&hFormId=5673
+도로/철도,승인통계,철도경찰통계,1.형사사건현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=68&hFormId=6683
+도로/철도,승인통계,철도경찰통계,1.형사사건현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=68&hFormId=5926
+도로/철도,승인통계,철도경찰통계,2.경범현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=68&hFormId=6684
+도로/철도,승인통계,철도경찰통계,2.경범현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=68&hFormId=5927
+도로/철도,승인통계,철도경찰통계,3.과태료현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=68&hFormId=6685
+도로/철도,승인통계,철도경찰통계,3.과태료현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=68&hFormId=5928
+도로/철도,승인통계,철도경찰통계,4-1.가출인 상담 및 처리현황_상담실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=68&hFormId=5929
+도로/철도,승인통계,철도경찰통계,4-2.가출인 상담 및 처리현황_자체발견처리,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=68&hFormId=5930
+도로/철도,승인통계,철도경찰통계,5.형사사건현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=68&hFormId=882
+도로/철도,승인통계,철도경찰통계,6.행정범현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=68&hFormId=884
+도로/철도,승인통계,철도경찰통계,7-1.가출현황_가출인상담(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=68&hFormId=886
+도로/철도,승인통계,철도경찰통계,7-2.가출현황_가출인처리(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=68&hFormId=888
+도로/철도,승인통계,철도경찰통계,7-3.가출현황_가출인발견(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=68&hFormId=894
+도로/철도,승인통계,철도사고현황,건널목사고 상세현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=67&hFormId=876
+도로/철도,승인통계,철도사고현황,사상사고 상세현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=67&hFormId=878
+도로/철도,승인통계,철도사고현황,열차사고 상세현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=67&hFormId=874
+도로/철도,승인통계,철도사고현황,철도사고현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=67&hFormId=5341
+국토/도시,승인통계,[산하기관]건물에너지사용량(세부 용도별_총괄),다가구주택,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A032&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(세부 용도별_총괄),다세대주택,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A035&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(세부 용도별_총괄),다중주택,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A031&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(세부 용도별_총괄),단독주택(세),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A030&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(세부 용도별_총괄),대학교,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A040&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(세부 용도별_총괄),사무소,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A041&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(세부 용도별_총괄),상점,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A038&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(세부 용도별_총괄),소매점,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A036&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(세부 용도별_총괄),아파트,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A033&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(세부 용도별_총괄),여관,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A042&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(세부 용도별_총괄),연립주택,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A034&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(세부 용도별_총괄),일반음식점,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A037&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(세부 용도별_총괄),종합병원,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A039&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(세부 용도별_총괄),지역별 건물에너지사용량(총괄),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A000_1&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),공동주택,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A002&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),공장,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A017&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),관광휴게시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A027&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),교육연구시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A010&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),교정및군사시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A023&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),노유자시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A011&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),단독주택,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A001&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),동식물관련시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A021&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),묘지관련시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A026&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),문화및집회시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A005&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),발전시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A025&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),방송통신시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A024&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),수련시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A012&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),숙박시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A015&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),야영장시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A029&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),업무시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A014&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),용도별 건물에너지사용량(총괄),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A000_0&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),운동시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A013&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),운수시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A008&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),위락시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A016&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),위험물저장및처리시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A019&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),의료시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A009&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),자동차관련시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A020&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),자원순환관련시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A022&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),장례식장,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A028&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),제1종근린생활시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A003&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),제2종근린생활시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A004&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),종교시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A006&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),종합병원,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A039&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=U_14_002&conn_path=I4
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),창고시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A018&conn_path=I2
+국토/도시,승인통계,[산하기관]건물에너지사용량(용도별_총괄),판매시설,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408003_A007&conn_path=I2
+국토/도시,승인통계,[산하기관]도시계획현황,개발행위허가(시군구),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=460&tblId=TX_315_2009_H1100&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=315_31502_002&conn_path=I4
+국토/도시,승인통계,[산하기관]도시계획현황,개발행위허가(용도지역),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=460&tblId=TX_315_2009_H1101&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=315_31502_002&conn_path=I4
+국토/도시,승인통계,[산하기관]도시계획현황,공원,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=460&tblId=TX_315_2009_H1126&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=315_31502_004&conn_path=I4
+국토/도시,승인통계,[산하기관]도시계획현황,도시·군관리계획 수립도시현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=460&tblId=TX_315_2009_H1008&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=315_31502_008&conn_path=I4
+국토/도시,승인통계,[산하기관]도시계획현황,도시·군기본계획 수립도시현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=460&tblId=TX_315_2009_H1003&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=315_31502_008&conn_path=I4
+국토/도시,승인통계,[산하기관]도시계획현황,도시지역 인구현황(시군구),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=460&tblId=TX_315_2009_H1001&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=315_31502_008&conn_path=I4
+국토/도시,승인통계,[산하기관]도시계획현황,용도지구(시군구),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=460&tblId=TX_315_2009_H1441&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=315_31502_016&conn_path=I4
+국토/도시,승인통계,[산하기관]도시계획현황,용도지역(시군구)-도시지역,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=460&tblId=TX_315_2009_H1440&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=315_31502_016&conn_path=I4
+국토/도시,승인통계,[산하기관]도시계획현황,인구1인당 도시지역 면적,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=460&tblId=TX_315_2009_H1013&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=315_31502_016&conn_path=I4
+국토/도시,승인통계,[산하기관]도시계획현황,"주차장, 자동차정류장",http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=460&tblId=TX_315_2009_H1027&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=315_31502_006&conn_path=I4
+국토/도시,승인통계,[산하기관]도시계획현황,학교,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=460&tblId=TX_315_2009_H1051&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=315_31502_005&conn_path=I4
+국토/도시,승인통계,[산하기관]측량업체임금실태조사,측량기술자 등급별 임금,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=377&tblId=TX_37701_A002&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=377_37701&conn_path=I4
+주택,승인통계,[산하기관]공동주택실거래가격지수,공동주택 통합 매매 실거래가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_KAB_11672_S13&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=116_11672&conn_path=I4
+주택,승인통계,[산하기관]공동주택실거래가격지수,규모별 아파트 매매 실거래가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_KAB_11672_S3&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=116_11672&conn_path=I4
+주택,승인통계,[산하기관]공동주택실거래가격지수,규모별 연립 다세대 매매 실거래가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_KAB_11672_S9&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=116_11672&conn_path=I4
+주택,승인통계,[산하기관]공동주택실거래가격지수,아파트 매매 실거래가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_KAB_11672_S1&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=116_11672&conn_path=I4
+주택,승인통계,[산하기관]공동주택실거래가격지수,연립 다세대 매매 실거래가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_KAB_11672_S7&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=116_11672&conn_path=I4
+주택,승인통계,[산하기관]민간아파트분양시장동향,지역별 규모별 ㎡당 분양가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=414&tblId=DT_41401N_006&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_414_01&conn_path=I4
+주택,승인통계,[산하기관]민간아파트분양시장동향,지역별 규모별 ㎡당 평균 분양가격,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=414&tblId=DT_41401N_005&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_414_01&conn_path=I4
+주택,승인통계,[산하기관]민간아파트분양시장동향,지역별 민간아파트 평균 초기분양률,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=414&tblId=DT_41401N_008&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_414_01&conn_path=I4
+주택,승인통계,[산하기관]민간아파트분양시장동향,지역별 민간아파트 평균 초기분양률,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=414&tblId=DT_41401N_004&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_414_01&conn_path=I4
+주택,승인통계,[산하기관]민간아파트분양시장동향,지역별 신규 분양세대수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=414&tblId=DT_41401N_007&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_414_01&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,거래규모별 건축물거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0033&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_001&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,거래규모별 순수토지거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0021&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_002&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,거래규모별 아파트거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0052&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_003&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,거래규모별 아파트매매거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0067&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_004&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,거래규모별 주택거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0043&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_005&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,거래규모별 주택매매거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0060&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_006&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,거래규모별 토지거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0008&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_007&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,거래원인별 건축물거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0034&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_001&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,거래원인별 순수토지거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0022&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_002&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,거래원인별 아파트거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0053&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_003&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,거래원인별 주택거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0044&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_005&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,거래원인별 토지거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0009&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_007&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,거래주체별 건축물거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0032&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_001&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,거래주체별 순수토지거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0020&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_002&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,거래주체별 아파트거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0051&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_003&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,거래주체별 아파트매매거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0066&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_004&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,거래주체별 주택거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0042&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_005&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,거래주체별 주택매매거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0059&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_006&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,거래주체별 토지거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0007&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_007&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,건물용도별 건축물거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0035&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_001&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,건물용도별 토지거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0010&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_007&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,년도별 세부항목 건축물거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0027&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_001&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,년도별 세부항목 순수토지거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0015&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_002&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,년도별 세부항목 아파트거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0048&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_003&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,년도별 세부항목 아파트매매거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0063&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_004&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,년도별 세부항목 토지거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0002&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_007&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,매입자거주지별 건축물거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0031&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_001&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,매입자거주지별 순수토지거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0019&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_002&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,매입자거주지별 아파트거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0050&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_003&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,매입자거주지별 아파트매매거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0065&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_004&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,매입자거주지별 주택거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0041&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_005&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,매입자거주지별 주택매매거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0058&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_006&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,매입자거주지별 토지거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0006&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_007&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,신탁/신탁해지 건축물거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0037&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_001&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,신탁/신탁해지 순수토지거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0025&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_002&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,신탁/신탁해지 아파트거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0054&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_003&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,신탁/신탁해지 주택거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0046&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_005&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,신탁/신탁해지 토지거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0013&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_007&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,아파트거래현황_년도별 행정구역별,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0047&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_003&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,외국인 거래 순수토지거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0024&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_002&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,외국인 거래 토지거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0012&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_007&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,외국인거래 건축물거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0036&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_001&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,용도지역별 건축물거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0029&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_001&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,용도지역별 순수토지거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0017&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_002&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,용도지역별 토지거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0004&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_007&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,월별지목별 토지거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0005&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_007&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,주택거래현황_년도별 세부항목,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0039&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_005&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,주택매매거래현황_년도별 세부항목,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0056&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_006&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,주택매매거래현황_년도별 행정구역별,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0055&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_006&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,주택유형별 주택거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0045&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_005&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,주택유형별 주택매매거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0061&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_006&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,지목별 건축물거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0030&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_001&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,지목별 순수토지거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0018&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_002&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,토지거래허가처리별 순수토지거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0023&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_002&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,토지거래허가처리별 토지거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0011&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_007&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,토지거래현황_년도별 행정구역별,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0001&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_007&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,행정구역별 건축물거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0026&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_001&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,행정구역별 건축물거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0028&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_001&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,행정구역별 순수토지거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0014&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_002&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,행정구역별 순수토지거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0016&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_002&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,행정구역별 아파트거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0049&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_003&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,행정구역별 아파트매매거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0062&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_004&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,행정구역별 아파트매매거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0064&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_004&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,행정구역별 주택거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0040&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_005&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,행정구역별 주택거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0038&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_005&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,행정구역별 주택매매거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0057&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_006&conn_path=I4
+주택,승인통계,[산하기관]부동산거래현황,행정구역별 토지거래현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408_2006_S0003&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_31503_007&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 규모별 오피스 공실률,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N120202_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_001&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 규모별 오피스 공실률,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N120202_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_1&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 소규모 상가 공실률,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N420201_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_002_003&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 소규모 상가 기본정보,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N4101_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_002_003&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 소규모 상가 기본정보,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N4101_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_2_b&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 소규모 상가 순영업소득,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N4303_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_2_b&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 소규모 상가 순영업소득,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N4303_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_002_003&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 소규모 상가 임대료,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N4203_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_002_003&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 소규모 상가 임대료,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N4203_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_2_b&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 소규모 상가 전환율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N4206_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_002_003&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 소규모 상가 전환율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N4206_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_2_b&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 소규모 상가 층별임대료 및 효용비율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N4204_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_002_003&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 소규모 상가 층별임대료 및 효용비율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N4204_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_2_b&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 오피스 공실률,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N120201_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_001&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 오피스 공실률,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N120201_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_1&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 오피스 기본정보,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N1101_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_1&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 오피스 기본정보,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N1101_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_001&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 오피스 수익률(종합),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N1301_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_001&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 오피스 수익률(종합),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N1301_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_1&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 오피스 순영업소득,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N1303_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_001&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 오피스 순영업소득,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N1303_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_1&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 오피스 임대가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N1201_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_001&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 오피스 임대가격지수(2017.4Q=100.0),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N1201_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_1&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 오피스 임대료,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N120301_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_001&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 오피스 임대료,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N120301_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_1&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 오피스 전환율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N1205_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_1&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 오피스 전환율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N1205_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_001&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 중대형 상가 공실률,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N220201_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_2_a&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 중대형 상가 공실률,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N220201_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_002_001&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 중대형 상가 기본정보,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N2101_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_002_001&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 중대형 상가 기본정보,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N2101_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_2_a&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 중대형 상가 수익률(종합),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N2301_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_002_001&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 중대형 상가 수익률(종합),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N2301_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_2_a&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 중대형 상가 순영업소득,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N2303_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_002_001&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 중대형 상가 순영업소득,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N2303_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_2_a&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 중대형 상가 임대가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N2201_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_002_001&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 중대형 상가 임대가격지수(2017.4Q=100.0),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N2201_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_2_a&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 중대형 상가 임대료,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N2203_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_2_a&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 중대형 상가 임대료,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N2203_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_002_001&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 중대형 상가 전환율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N2206_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_2_a&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 중대형 상가 전환율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N2206_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_002_001&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 중대형 상가 층별임대료 및 효용비율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N2204_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_2_a&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 중대형 상가 층별임대료 및 효용비율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N2204_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_002_001&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 집합 상가 기본정보,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N3101_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_002_002&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 집합 상가 기본정보,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N3101_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_2_c&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 집합 상가 순영업소득,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N3303_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_002_002&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 집합 상가 순영업소득,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N3303_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_2_c&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 집합 상가 임대가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N3201_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_002_002&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 집합 상가 임대가격지수(2017.4Q=100.0),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N3201_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_2_c&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 집합 상가 임대료,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N3203_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_002_002&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 집합 상가 임대료,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N3203_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_2_c&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 집합 상가 전환율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N3206_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_002_002&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 집합 상가 전환율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N3206_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_2_c&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 집합 상가 층별임대료 및 효용비율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N3204_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C1_142_14205_C1_142_14205_2019_002_002&conn_path=I4
+주택,승인통계,[산하기관]상업용부동산임대동향조사,상권별 집합 상가 층별임대료 및 효용비율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40801_N3204_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=408_408_kt_050A_0509_0509_2_c&conn_path=I4
+주택,승인통계,[산하기관]오피스텔가격동향조사(기준일: 2018.01),가격지수 상대표준오차,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_08002_11&conn_path=I2
+주택,승인통계,[산하기관]오피스텔가격동향조사(기준일: 2018.01),매매가격,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_08002_04&conn_path=I2
+주택,승인통계,[산하기관]오피스텔가격동향조사(기준일: 2018.01),매매가격 대비 전세가격 비율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_08002_07&conn_path=I2
+주택,승인통계,[산하기관]오피스텔가격동향조사(기준일: 2018.01),매매가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_08002_01&conn_path=I2
+주택,승인통계,[산하기관]오피스텔가격동향조사(기준일: 2018.01),수익률,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_08002_10&conn_path=I2
+주택,승인통계,[산하기관]오피스텔가격동향조사(기준일: 2018.01),월세가격,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_08002_06&conn_path=I2
+주택,승인통계,[산하기관]오피스텔가격동향조사(기준일: 2018.01),월세가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_08002_03&conn_path=I2
+주택,승인통계,[산하기관]오피스텔가격동향조사(기준일: 2018.01),전세가격,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_08002_05&conn_path=I2
+주택,승인통계,[산하기관]오피스텔가격동향조사(기준일: 2018.01),전세가격 대비 월세보증금 비율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_08002_08&conn_path=I2
+주택,승인통계,[산하기관]오피스텔가격동향조사(기준일: 2018.01),전세가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_08002_02&conn_path=I2
+주택,승인통계,[산하기관]오피스텔가격동향조사(기준일: 2018.01),전월세 전환율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_08002_09&conn_path=I2
+주택,승인통계,[산하기관]오피스텔가격동향조사(기준일: 2020.07),가격지수 상대표준오차,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_08002_11_011&conn_path=I2
+주택,승인통계,[산하기관]오피스텔가격동향조사(기준일: 2020.07),매매가격,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_08002_04_004&conn_path=I2
+주택,승인통계,[산하기관]오피스텔가격동향조사(기준일: 2020.07),매매가격 대비 전세가격 비율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_08002_07_007&conn_path=I2
+주택,승인통계,[산하기관]오피스텔가격동향조사(기준일: 2020.07),매매가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_08002_01_001&conn_path=I2
+주택,승인통계,[산하기관]오피스텔가격동향조사(기준일: 2020.07),수익률,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_08002_10_010&conn_path=I2
+주택,승인통계,[산하기관]오피스텔가격동향조사(기준일: 2020.07),월세가격,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_08002_06_006&conn_path=I2
+주택,승인통계,[산하기관]오피스텔가격동향조사(기준일: 2020.07),월세가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_08002_03_003&conn_path=I2
+주택,승인통계,[산하기관]오피스텔가격동향조사(기준일: 2020.07),전세가격,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_08002_05_005&conn_path=I2
+주택,승인통계,[산하기관]오피스텔가격동향조사(기준일: 2020.07),전세가격 대비 월세보증금 비율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_08002_08_008&conn_path=I2
+주택,승인통계,[산하기관]오피스텔가격동향조사(기준일: 2020.07),전세가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_08002_02_002&conn_path=I2
+주택,승인통계,[산하기관]오피스텔가격동향조사(기준일: 2020.07),전월세 전환율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_08002_09_009&conn_path=I2
+주택,승인통계,[산하기관]외국인 주택소유현황,[산하기관]국적별 외국인주택소유현황(공동주택),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408004_007&vw_cd=MT_ZTITLE&list_id=E_001&scrId=&seqNo=&lang_mode=ko&obj_var_id=&itm_id=&conn_path=MT_ZTITLE&path=%252FstatisticsList%252FstatisticsListIndex.do
+주택,승인통계,[산하기관]외국인 주택소유현황,[산하기관]국적별 외국인주택소유현황(단독주택),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408004_008&vw_cd=MT_ZTITLE&list_id=E_001&scrId=&seqNo=&lang_mode=ko&obj_var_id=&itm_id=&conn_path=MT_ZTITLE&path=%252FstatisticsList%252FstatisticsListIndex.do
+주택,승인통계,[산하기관]외국인 주택소유현황,[산하기관]소유인수별 외국인주택소유현황(공동주택),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408004_002&vw_cd=MT_ZTITLE&list_id=E_001&scrId=&seqNo=&lang_mode=ko&obj_var_id=&itm_id=&conn_path=MT_ZTITLE&path=%252FstatisticsList%252FstatisticsListIndex.do
+주택,승인통계,[산하기관]외국인 주택소유현황,[산하기관]소유인수별 외국인주택소유현황(단독주택),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408004_003&vw_cd=MT_ZTITLE&list_id=E_001&scrId=&seqNo=&lang_mode=ko&obj_var_id=&itm_id=&conn_path=MT_ZTITLE&path=%252FstatisticsList%252FstatisticsListIndex.do
+주택,승인통계,[산하기관]외국인 주택소유현황,[산하기관]외국인주택소유현황(총괄),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408004_001&vw_cd=MT_ZTITLE&list_id=E_001&scrId=&seqNo=&lang_mode=ko&obj_var_id=&itm_id=&conn_path=MT_ZTITLE&path=%252FstatisticsList%252FstatisticsListIndex.do
+주택,승인통계,[산하기관]외국인 주택소유현황,[산하기관]주택수별 외국인소유자현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408004_009&vw_cd=MT_ZTITLE&list_id=E_001&scrId=&seqNo=&lang_mode=ko&obj_var_id=&itm_id=&conn_path=MT_ZTITLE&path=%252FstatisticsList%252FstatisticsListIndex.do
+주택,승인통계,[산하기관]외국인 주택소유현황,[산하기관]주택수별 외국인소유자현황(지분반영),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408004_010&vw_cd=MT_ZTITLE&list_id=E_001&scrId=&seqNo=&lang_mode=ko&obj_var_id=&itm_id=&conn_path=MT_ZTITLE&path=%252FstatisticsList%252FstatisticsListIndex.do
+주택,승인통계,[산하기관]외국인 주택소유현황,[산하기관]주택유형별 외국인주택소유현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408004_004&vw_cd=MT_ZTITLE&list_id=E_001&scrId=&seqNo=&lang_mode=ko&obj_var_id=&itm_id=&conn_path=MT_ZTITLE&path=%252FstatisticsList%252FstatisticsListIndex.do
+주택,승인통계,[산하기관]외국인 주택소유현황,[산하기관]지역별 외국인주택소유현황(공동주택),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408004_005&vw_cd=MT_ZTITLE&list_id=E_001&scrId=&seqNo=&lang_mode=ko&obj_var_id=&itm_id=&conn_path=MT_ZTITLE&path=%252FstatisticsList%252FstatisticsListIndex.do
+주택,승인통계,[산하기관]외국인 주택소유현황,[산하기관]지역별 외국인주택소유현황(단독주택),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_408004_006&vw_cd=MT_ZTITLE&list_id=E_001&scrId=&seqNo=&lang_mode=ko&obj_var_id=&itm_id=&conn_path=MT_ZTITLE&path=%252FstatisticsList%252FstatisticsListIndex.do
+주택,승인통계,[산하기관]전국주택가격동향조사,건축연령별 매매가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40803_N0005&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C14_001&conn_path=I4
+주택,승인통계,[산하기관]전국주택가격동향조사,건축연령별 월세가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_30404_N0008&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C14_001&conn_path=I4
+주택,승인통계,[산하기관]전국주택가격동향조사,건축연령별 전세가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40803_N0006&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C14_001&conn_path=I4
+주택,승인통계,[산하기관]전국주택가격동향조사,규모별 매매가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40803_N0003&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C14_001&conn_path=I4
+주택,승인통계,[산하기관]전국주택가격동향조사,규모별 월세가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_30404_N0007&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C14_001&conn_path=I4
+주택,승인통계,[산하기관]전국주택가격동향조사,규모별 전세가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40803_N0004&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C14_001&conn_path=I4
+주택,승인통계,[산하기관]전국주택가격동향조사,규모별 전월세전환율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_30404_N0009&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C14_001&conn_path=I4
+주택,승인통계,[산하기관]전국주택가격동향조사,유형별 매매가격 대비 전세가격 비율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_30404_N0006_R1&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C14_001&conn_path=I4
+주택,승인통계,[산하기관]전국주택가격동향조사,유형별 매매가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40803_N0001&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C14_001&conn_path=I4
+주택,승인통계,[산하기관]전국주택가격동향조사,유형별 월세가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_30404_N0002&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C14_001&conn_path=I4
+주택,승인통계,[산하기관]전국주택가격동향조사,유형별 월세통합가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_30404_N0001&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C14_001&conn_path=I4
+주택,승인통계,[산하기관]전국주택가격동향조사,유형별 전세가격 대비 월세보증금 비율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_30404_N0011&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C14_001&conn_path=I4
+주택,승인통계,[산하기관]전국주택가격동향조사,유형별 전세가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40803_N0002&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C14_001&conn_path=I4
+주택,승인통계,[산하기관]전국주택가격동향조사,유형별 준월세가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_30404_N0003&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C14_001&conn_path=I4
+주택,승인통계,[산하기관]전국주택가격동향조사,유형별 준전세가격지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_30404_N0004&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C14_001&conn_path=I4
+주택,승인통계,[산하기관]전국주택가격동향조사,전월세통합지수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_30404_N0012&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C14_001&conn_path=I4
+주택,승인통계,[산하기관]전국주택가격동향조사,주요지역별 매매수급동향,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40803_N0007&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C14_001&conn_path=I4
+주택,승인통계,[산하기관]전국주택가격동향조사,주요지역별 월세수급동향,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_30404_N0006&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C14_001&conn_path=I4
+주택,승인통계,[산하기관]전국주택가격동향조사,주요지역별 전세수급동향,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_40803_N0009&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C14_001&conn_path=I4
+주택,승인통계,[산하기관]전국주택가격동향조사,지역별 전월세전환율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_30404_N0010&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=C14_001&conn_path=I4
+주택,승인통계,[산하기관]주택보증통계,보증발급기준 분양보증세대수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=414&tblId=DT_414002_003&conn_path=I2
+주택,승인통계,[산하기관]주택보증통계,보증발급내역,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=414&tblId=DT_414002_001&conn_path=I2
+주택,승인통계,[산하기관]주택보증통계,보증잔액,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=414&tblId=DT_414002_002&conn_path=I2
+주택,승인통계,[산하기관]주택보증통계,보증잔액기준 분양보증세대수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=414&tblId=DT_414002_004&conn_path=I2
+토지,승인통계,[산하기관]전국지가변동률조사,시군구별/용도지역별/이용상황별 지가변동률,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_PLCAHTUSE&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=H3315_31501&conn_path=I4
+토지,승인통계,[산하기관]전국지가변동률조사,읍면동별 지가변동률,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_31501N_010&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=H3315_31501&conn_path=I4
+토지,승인통계,[산하기관]전국지가변동률조사,읍면동별 지가변동률(2014.12~2016.11),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=408&tblId=DT_31501N_001&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=H3315_31501&conn_path=I4
+건설,승인통계,[산하기관]건설사업관리기술인임금실태조사,감리원 임금(종전 등급),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=378&tblId=TX_37801_A001&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=378_37801&conn_path=I4
+건설,승인통계,[산하기관]건설사업관리기술인임금실태조사,감리원 임금(현행 등급),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=378&tblId=TX_37801_A000&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=378_37801&conn_path=I4
+건설,승인통계,[산하기관]건설사업관리기술인임금실태조사,건설사업관리기술인 노임가격,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=378&tblId=DT_37801_A005&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=378_37801&conn_path=I4
+건설,승인통계,[산하기관]건설업경영분석,건설업 기업규모별 부가가치 구성,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36502_A015&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36502_001&conn_path=I4
+건설,승인통계,[산하기관]건설업경영분석,건설업 기업규모별 비용 관계비율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36502_A012A&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36502_001&conn_path=I4
+건설,승인통계,[산하기관]건설업경영분석,건설업 기업규모별 생산성 관계비율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36502_A014A&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36502_001&conn_path=I4
+건설,승인통계,[산하기관]건설업경영분석,건설업 기업규모별 성장률 관계비율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36502_A009A&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36502_001&conn_path=I4
+건설,승인통계,[산하기관]건설업경영분석,건설업 기업규모별 수익률 관계비율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36502_A010A&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36502_001&conn_path=I4
+건설,승인통계,[산하기관]건설업경영분석,건설업 기업규모별 안정성 관계비율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36502_A011A&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36502_001&conn_path=I4
+건설,승인통계,[산하기관]건설업경영분석,건설업 기업규모별 자산·자본의 회전율 관계비율,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36502_A013A&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36502_001&conn_path=I4
+건설,승인통계,[산하기관]건설업경영분석,분석대상 분류기준별 업체수 및 상시종업원수 현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36502_A000&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36502_007&conn_path=I4
+건설,승인통계,[산하기관]건설업경영분석,종합건설공사원가명세서,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36502_A060&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36502_003&conn_path=I4
+건설,승인통계,[산하기관]건설업경영분석,종합손익계산서,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36502_A059&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36502_003&conn_path=I4
+건설,승인통계,[산하기관]건설업임금실태조사,개별직종노임단가,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36504_A001_1&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36504&conn_path=I4
+건설,승인통계,[산하기관]국내건설수주동향조사,국내건설수주액,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36505_A000&conn_path=I2
+건설,승인통계,[산하기관]국내건설수주동향조사,국내건설수주액,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36505_A000&conn_path=I2
+건설,승인통계,[산하기관]설비건설업통계조사,시도별 도급별 계약실적,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=369&tblId=DT_369001_001&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=369_36901_A01_A01&conn_path=I4
+건설,승인통계,[산하기관]설비건설업통계조사,시도별 도급별 기성실적,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=369&tblId=DT_369001_021&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=369_36901_A01_a02&conn_path=I4
+건설,승인통계,[산하기관]설비건설업통계조사,시도별 업종별 계약실적,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=369&tblId=DT_369001_002&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=369_36901_A01_A01&conn_path=I4
+건설,승인통계,[산하기관]설비건설업통계조사,시도별 업종별 기성실적,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=369&tblId=DT_369001_023&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=369_36901_A01_a02&conn_path=I4
+건설,승인통계,[산하기관]시설물정보현황,시도별 시설물증감대비표,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=328&tblId=DT_32801_STAT002&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=328_32801&conn_path=I4
+건설,승인통계,[산하기관]시설물정보현황,시설물별 시설물증감대비표,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=328&tblId=DT_32801_STAT003&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=328_32801&conn_path=I4
+건설,승인통계,[산하기관]시설물정보현황,시설물종별,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=328&tblId=DT_32801_STAT001&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=328_32801&conn_path=I4
+건설,승인통계,[산하기관]시설물정보현황,시특법분류별현황(건축물),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=328&tblId=DT_32801_STAT_AR&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=328_32801&conn_path=I4
+건설,승인통계,[산하기관]시설물정보현황,시특법분류별현황(공동구),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=328&tblId=DT_32801_STAT_UC&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=328_32801&conn_path=I4
+건설,승인통계,[산하기관]시설물정보현황,시특법분류별현황(교량),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=328&tblId=DT_32801_STAT_BR&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=328_32801&conn_path=I4
+건설,승인통계,[산하기관]시설물정보현황,시특법분류별현황(댐),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=328&tblId=DT_32801_STAT_DAM&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=328_32801&conn_path=I4
+건설,승인통계,[산하기관]시설물정보현황,시특법분류별현황(상하수도),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=328&tblId=DT_32801_STAT_WS&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=328_32801&conn_path=I4
+건설,승인통계,[산하기관]시설물정보현황,시특법분류별현황(시설물기타),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=328&tblId=DT_32801_STAT_ET&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=328_32801&conn_path=I4
+건설,승인통계,[산하기관]시설물정보현황,시특법분류별현황(옹벽),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=328&tblId=DT_32801_STAT_RW&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=328_32801&conn_path=I4
+건설,승인통계,[산하기관]시설물정보현황,시특법분류별현황(절토사면),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=328&tblId=DT_32801_STAT_SL&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=328_32801&conn_path=I4
+건설,승인통계,[산하기관]시설물정보현황,시특법분류별현황(터널),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=328&tblId=DT_32801_STAT_TU&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=328_32801&conn_path=I4
+건설,승인통계,[산하기관]시설물정보현황,시특법분류별현황(하천),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=328&tblId=DT_32801_STAT_WG&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=328_32801&conn_path=I4
+건설,승인통계,[산하기관]시설물정보현황,시특법분류별현황(항만),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=328&tblId=DT_32801_STAT_HA&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=328_32801&conn_path=I4
+건설,승인통계,[산하기관]완성공사원가통계,공사규모별 공사기간별 원가계산서,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36503_A006_NEW&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36503&conn_path=I4
+건설,승인통계,[산하기관]완성공사원가통계,공사규모별 공사기간별 원가계산서(1992~2009년),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36503_A006&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36503&conn_path=I4
+건설,승인통계,[산하기관]완성공사원가통계,공종별 공사기간별 공사규모별 원가계산서,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36503_A010&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36503&conn_path=I4
+건설,승인통계,[산하기관]완성공사원가통계,공종별 공사기간별 공사규모별 원가계산서,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36503_A010_NEW&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36503&conn_path=I4
+건설,승인통계,[산하기관]완성공사원가통계,공종별 공사기간별 원가계산서,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36503_A001&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36503&conn_path=I4
+건설,승인통계,[산하기관]완성공사원가통계,기업규모별 공사규모별 원가계산서,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36503_A008_NEW&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36503&conn_path=I4
+건설,승인통계,[산하기관]완성공사원가통계,기업규모별 공사규모별 원가계산서(2000~2009년),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36503_A008&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36503&conn_path=I4
+건설,승인통계,[산하기관]완성공사원가통계,기업규모별 공사기간별 원가계산서,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36503_A009&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36503&conn_path=I4
+건설,승인통계,[산하기관]완성공사원가통계,발주기관별 공사규모별 원가계산서,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36503_A007_NEW&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36503&conn_path=I4
+건설,승인통계,[산하기관]완성공사원가통계,발주기관별 공사규모별 원가계산서(1992~2009년),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36503_A007&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36503&conn_path=I4
+건설,승인통계,[산하기관]완성공사원가통계,세분공종별 공사규모별 원가계산서-가스1종공사,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36503_A012&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36503&conn_path=I4
+건설,승인통계,[산하기관]완성공사원가통계,세분공종별 공사규모별 원가계산서-건축(1992~2006년),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36503_A003&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36503&conn_path=I4
+건설,승인통계,[산하기관]완성공사원가통계,세분공종별 공사규모별 원가계산서-산업설비,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36503_A004&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36503&conn_path=I4
+건설,승인통계,[산하기관]완성공사원가통계,세분공종별 공사규모별 원가계산서-전문,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36503_A011&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36503&conn_path=I4
+건설,승인통계,[산하기관]완성공사원가통계,세분공종별 공사규모별 원가계산서-조경공사,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36503_A005&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36503&conn_path=I4
+건설,승인통계,[산하기관]완성공사원가통계,세분공종별 공사규모별 원가계산서-토목(1992~2009년),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36503_A002&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36503&conn_path=I4
+건설,승인통계,[산하기관]완성공사원가통계,종합원가계산서,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36503_A000&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36503&conn_path=I4
+건설,승인통계,[산하기관]전문건설업통계조사,시도별 도급별 계약실적,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=366&tblId=TX_36601_A018&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=366_36601_007_008_001&conn_path=I4
+건설,승인통계,[산하기관]전문건설업통계조사,시도별 도급별 기성실적,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=366&tblId=TX_36601_A110&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=366_36601_008_015&conn_path=I4
+건설,승인통계,[산하기관]전문건설업통계조사,시도별 세분공종별 계약실적(원도급),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=366&tblId=TX_36601_A072&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=366_36601_007_008_001&conn_path=I4
+건설,승인통계,[산하기관]전문건설업통계조사,시도별 세분공종별 계약실적(하도급) ,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=366&tblId=TX_36601_A073&conn_path=I2
+건설,승인통계,[산하기관]전문건설업통계조사,시도별 세분공종별 계약실적(합계),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=366&tblId=TX_36601_A071&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=366_36601_007_008_001&conn_path=I4
+건설,승인통계,[산하기관]전문건설업통계조사,업종별 도급별 계약실적,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=366&tblId=TX_36601_A019&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=366_36601_007_008&conn_path=I4
+건설,승인통계,[산하기관]전문건설업통계조사,업종별 도급별 기성실적,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=366&tblId=TX_36601_A111&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=366_36601_008_015&conn_path=I4
+건설,승인통계,[산하기관]전문건설업통계조사,전문건설업 등록 분포현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=366&tblId=TX_36601_A013&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=366_36601_003_022&conn_path=I4
+건설,승인통계,[산하기관]종합건설업조사,공사지역별 세분공사종류별 계약실적,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36501_A108_NEW&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36501_002_016_001&conn_path=I4
+건설,승인통계,[산하기관]종합건설업조사,공사지역별 세분공사종류별 기성실적,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36501_A038&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36501_003_026_002&conn_path=I4
+건설,승인통계,[산하기관]종합건설업조사,발주기관별 세분공사종류별 계약실적,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36501_A093&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36501_002_016_007&conn_path=I4
+건설,승인통계,[산하기관]종합건설업조사,발주기관별 세분공사종류별 기성실적,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=365&tblId=TX_36501_A024&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=365_36501_003_026_008&conn_path=I4
+건설,승인통계,[산하기관]해외건설수주통계,공종별 수주실적,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=326&tblId=DT_ICAK_003&conn_path=I4
+건설,승인통계,[산하기관]해외건설수주통계,국가별 수주실적,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=326&tblId=DT_ICAK_002&conn_path=I4
+건설,승인통계,[산하기관]해외건설수주통계,지역별 수주현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=326&tblId=DT_ICAK_001&conn_path=I4
+교통/물류,승인통계,[산하기관]자동차검사현황,용도별 차종별 규모별 누적주행거리별 자동차검사현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=426&tblId=DT_426001_M003&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=I1_426001&conn_path=I4
+교통/물류,승인통계,[산하기관]자동차검사현황,용도별 차종별 규모별 시도별 자동차검사현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=426&tblId=DT_426001_M004&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=I1_426001&conn_path=I4
+교통/물류,승인통계,[산하기관]자동차검사현황,용도별 차종별 규모별 연료별 자동차검사현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=426&tblId=DT_426001_M001&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=I1_426001&conn_path=I4
+교통/물류,승인통계,[산하기관]자동차검사현황,용도별 차종별 규모별 차령별 자동차검사현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=426&tblId=DT_426001_M002&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=I1_426001&conn_path=I4
+교통/물류,승인통계,[산하기관]자동차주행거리통계,시군구별 자동차주행거리 당 사망자수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=426&tblId=DT_426001_N006&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=I1_426&conn_path=I4
+교통/물류,승인통계,[산하기관]자동차주행거리통계,용도별 차종별 시군구별 자동차주행거리,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=426&tblId=DT_426001_N004&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=I1_426&conn_path=I4
+교통/물류,승인통계,[산하기관]자동차주행거리통계,용도별 차종별 연료별 자동차주행거리,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=426&tblId=DT_42601_N003&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=I1_426&conn_path=I4
+교통/물류,승인통계,[산하기관]자동차주행거리통계,용도별 차종별 유형별 규모별 자동차주행거리,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=426&tblId=DT_42601_N002&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=I1_426&conn_path=I4
+교통/물류,승인통계,[산하기관]자동차주행거리통계,용도별 차종별 자동차주행거리 당 교통사고,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=426&tblId=DT_426001_N005&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=I1_426&conn_path=I4
+항공,승인통계,[산하기관]항공운송업체연료 소비량현황조사,항공운송업체연료 소비량현황조사,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=426&tblId=DT_426003_001&conn_path=I2
+항공,승인통계,[산하기관]항공통계,결항통계,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=381&tblId=DT_920005_B007&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=381_38101&conn_path=I4
+항공,승인통계,[산하기관]항공통계,공항별 통계,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=381&tblId=DT_920005_B001&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=381_38101&conn_path=I4
+항공,승인통계,[산하기관]항공통계,국내선 노선별 통계,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=381&tblId=DT_920005_B004&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=381_38101&conn_path=I4
+항공,승인통계,[산하기관]항공통계,국제선 지역별 통계,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=381&tblId=DT_920005_B005&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=381_38101&conn_path=I4
+항공,승인통계,[산하기관]항공통계,시간별 통계,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=381&tblId=DT_920005_B003&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=381_38101&conn_path=I4
+항공,승인통계,[산하기관]항공통계,요일별 통계,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=381&tblId=DT_920005_B002&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=381_38101&conn_path=I4
+항공,승인통계,[산하기관]항공통계,지연통계,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=381&tblId=DT_920005_B006&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=381_38101&conn_path=I4
+항공,승인통계,[산하기관]항공통계,항공사별 통계,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=381&tblId=DT_920005_B008&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=381_38101&conn_path=I4
+도로/철도,승인통계,[산하기관]고속도로교통량통계,구간별 월별 차종별 교통량(일평균),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=313&tblId=DT_EX010&conn_path=I4
+도로/철도,승인통계,[산하기관]고속도로교통량통계,"구간별 평일, 주말, 차종별 교통량",http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=313&tblId=DT_EX003&conn_path=I4
+도로/철도,승인통계,[산하기관]고속도로교통량통계,"노선별 이용차량, 통행료수입 현황",http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=313&tblId=DT_EX001&conn_path=I4
+도로/철도,승인통계,[산하기관]고속도로교통량통계,"시간대별 교통량(폐쇄식, 개방식)",http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=313&tblId=DT_EX005&conn_path=I4
+도로/철도,승인통계,[산하기관]고속도로교통량통계,"영업소별 이용차량(폐쇄식, 개방식)",http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=313&tblId=DT_EX006&conn_path=I4
+도로/철도,승인통계,[산하기관]고속도로교통량통계,"월별, 노선별, 차종별 이용차량/통행료수입",http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=313&tblId=DT_EX008&conn_path=I4
+도로/철도,승인통계,[산하기관]고속도로교통량통계,"인터체인지간 월별, 차종별 교통량",http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=313&tblId=DT_EX002&conn_path=I4
+도로/철도,승인통계,[산하기관]고속도로교통량통계,주행거리별 총이용차량(폐쇄식),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=313&tblId=DT_EX007&conn_path=I4
+도로/철도,승인통계,[산하기관]고속도로교통량통계,특정공휴일 총 이용차량,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=313&tblId=DT_EX009&conn_path=I4
+도로/철도,승인통계,[산하기관]고속도로교통량통계,"폐쇄식, 개방식 총주행거리",http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=313&tblId=DT_EX004&conn_path=I4
+도로/철도,승인통계,[산하기관]한국철도통계,구간별 전철화 현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=357&tblId=DT_35701_81&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=357_35701_023_A08&conn_path=I4
+도로/철도,승인통계,[산하기관]한국철도통계,레일중량별 궤도연장,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=357&tblId=DT_35701_59&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=357_35701_023_A06&conn_path=I4
+도로/철도,승인통계,[산하기관]한국철도통계,선별 여객수송실적,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=357&tblId=DT_357001_001&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=357_35701_023_A04&conn_path=I4
+도로/철도,승인통계,[산하기관]한국철도통계,역수 및 영업키로(지역간철도),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=357&tblId=DT_35701_02&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=357_35701_023_A02&conn_path=I4
+도로/철도,승인통계,[산하기관]한국철도통계,열차종별 운행횟수,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=357&tblId=DT_357001_011&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=357_35701_023_A05&conn_path=I4
+도로/철도,승인통계,[산하기관]한국철도통계,영업 선로별 철도키로,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=357&tblId=DT_357001_020&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=357_35701_023_A06&conn_path=I4
+도로/철도,승인통계,[산하기관]한국철도통계,전차선 가선현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=357&tblId=DT_357001_023&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=357_35701_023_A08&conn_path=I4
+도로/철도,승인통계,[산하기관]한국철도통계,철도 신호제어 설비현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=357&tblId=DT_35701_89&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=357_35701_023_A08&conn_path=I4
+도로/철도,승인통계,[산하기관]한국철도통계,철도 여객 수송(인거리),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=357&tblId=DT_35701_11&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=357_35701_023_A04&conn_path=I4
+도로/철도,승인통계,[산하기관]한국철도통계,철도 여객 수송(인원),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=357&tblId=DT_35701_10&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=357_35701_023_A04&conn_path=I4
+도로/철도,승인통계,[산하기관]한국철도통계,철도 운수 수입실적,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=357&tblId=DT_35701_41&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=357_35701_023_A04&conn_path=I4
+도로/철도,승인통계,[산하기관]한국철도통계,철도 차종별 보유현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=357&tblId=DT_35701_71&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=357_35701_023_A07&conn_path=I4
+도로/철도,승인통계,[산하기관]한국철도통계,철도관련 통신 시설물 현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=357&tblId=DT_35701_86&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=357_35701_023_A08&conn_path=I4
+도로/철도,승인통계,[산하기관]한국철도통계,철도총괄지표(지역간철도),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=357&tblId=DT_35701_01&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=357_35701_023_A01&conn_path=I4
+도로/철도,승인통계,[산하기관]한국철도통계,철도화물 수송실적(톤수),http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=357&tblId=DT_35701N_32&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=357_35701_023_A04&conn_path=I4
+도로/철도,승인통계,[산하기관]한국철도통계,화차 자중별 보유현황,http://nsist.nsi.go.kr/statHtml/statHtml.do?orgId=357&tblId=DT_357001_018&lang_mode=ko&vw_cd=MT_ZTITLE&list_id=357_35701_023_A07&conn_path=I4
+국토/도시,행정자료,개발제한구역현황,권역별 지정 및 해제현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=18&hFormId=516
+국토/도시,행정자료,개발제한구역현황,시군구별 해제현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=18&hFormId=520
+국토/도시,행정자료,개발제한구역현황,시도별 해제현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=18&hFormId=518
+국토/도시,행정자료,건축사현황,건축사 배출 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=372&hFormId=3754
+국토/도시,행정자료,건축사현황,건축사(건축사보) 및 건축사사무소 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=372&hFormId=5633
+국토/도시,행정자료,국토계획,국토지표의 진전,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=3&hFormId=394
+국토/도시,행정자료,도시개발사업현황,1. 도시개발사업현황_총괄표,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=16&hFormId=5648
+국토/도시,행정자료,도시개발사업현황,2. 도시개발사업현황(신규지정),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=16&hFormId=5631
+국토/도시,행정자료,도시개발사업현황,3. 도시개발사업현황(진행사업),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=16&hFormId=1232
+국토/도시,행정자료,도시개발사업현황,4. 도시개발사업현황(완료사업),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=16&hFormId=5629
+국토/도시,행정자료,도시개발사업현황,5. 도시개발사업현황(해제사업),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=16&hFormId=5630
+국토/도시,행정자료,산업단지 현황,국가산업단지현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=12&hFormId=1820
+국토/도시,행정자료,산업단지 현황,도시첨단산업단지현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=12&hFormId=1824
+국토/도시,행정자료,산업단지 현황,일반산업단지현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=12&hFormId=1822
+국토/도시,행정자료,수도권계획,과밀부담금 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=11&hFormId=5806
+국토/도시,행정자료,수도권계획,수도권 권역현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=11&hFormId=430
+국토/도시,행정자료,지역균형발전계획('15년 이후 추가 지정없음),개발촉진지구 지정현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=6&hFormId=400
+국토/도시,행정자료,지역균형발전계획('15년 이후 추가 지정없음),거점지역형 지역개발계획현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=6&hFormId=420
+국토/도시,행정자료,지역균형발전계획('15년 이후 추가 지정없음),공공기관이전 및 혁신도시현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=6&hFormId=426
+국토/도시,행정자료,지역균형발전계획('15년 이후 추가 지정없음),광역권 지정현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=6&hFormId=398
+국토/도시,행정자료,지역균형발전계획('15년 이후 추가 지정없음),기업도시현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=6&hFormId=428
+국토/도시,행정자료,지역균형발전계획('15년 이후 추가 지정없음),전국 시&#8228;도별 지역행복생활권 구성 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=6&hFormId=5706
+국토/도시,행정자료,지역균형발전계획('15년 이후 추가 지정없음),행정중심복합도시 예정지역 토지이용계획표,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=6&hFormId=424
+국토/도시,행정자료,지역균형발전계획('15년 이후 추가 지정없음),행정중심복합도시현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=6&hFormId=422
+주택,행정자료,공동주택 현황,공동주택현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=419&hFormId=5882
+주택,행정자료,공동주택 현황,공동주택현황_세대수별단지(13년 이후 작성중지),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=419&hFormId=4728
+주택,행정자료,공동주택 현황,면적별 공동주택(13년 이후 작성중지),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=419&hFormId=4724
+주택,행정자료,공동주택 현황,사용년수별 공동주택(13년 이후 작성중지),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=419&hFormId=5396
+주택,행정자료,공동주택 현황,층별 공동주택(13년 이후 작성중지),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=419&hFormId=5397
+주택,행정자료,도시형생활주택 인허가 실적,도시형생활주택 인허가 실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=489&hFormId=5558
+주택,행정자료,입주자저축가입자현황,입주자저축가입자현황(시도별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=36&hFormId=828
+주택,행정자료,입주자저축가입자현황,입주자저축가입자현황(연도별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=36&hFormId=830
+주택,행정자료,주택사업자현황,시도별 주택사업자현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=381&hFormId=7145
+토지,행정자료,개발부담금 부과 및 징수현황,개발부담금부과및징수실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=386&hFormId=4880
+토지,행정자료,개업공인중개사 현황(분기별),분기별 개업공인중개사 증감현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=292&hFormId=6201
+토지,행정자료,개업공인중개사 현황(분기별),시도별 개업공인중개사 등록현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=292&hFormId=7146
+토지,행정자료,부동산개발 전문인력 교육기관 지정현황,부동산개발 전문인력 교육기관 지정현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=293&hFormId=4770
+토지,행정자료,부동산개발업등록현황_세부(월별),부동산개발업등록현황_세부(월별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=290&hFormId=4626
+토지,행정자료,부동산개발업등록현황_총괄,부동산개발업등록현황_총괄,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=291&hFormId=4624
+토지,행정자료,중앙토지수용위원회 재결처리 현황,중앙토지수용위원회 재결처리 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=473&hFormId=5395
+건설,행정자료,건설공사감리현황(2013년 이후 통계생산 중단),감리용역수행실적현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=46&hFormId=934
+건설,행정자료,건설공사감리현황(2013년 이후 통계생산 중단),감리원현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=46&hFormId=954
+건설,행정자료,건설공사감리현황(2013년 이후 통계생산 중단),감리전문회사현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=46&hFormId=956
+건설,행정자료,건설근로자 퇴직공제 현황,건설근로자_취업자 현황(년도),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=392&hFormId=4236
+건설,행정자료,건설근로자 퇴직공제 현황,건설근로자_퇴직공제 가입 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=392&hFormId=3746
+건설,행정자료,건설근로자 퇴직공제 현황,건설근로자_피공제자 및 공제금 지급자 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=392&hFormId=3752
+건설,행정자료,건설근로자 퇴직공제 현황,건설인력현황_퇴직공제기금적립,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=392&hFormId=3750
+건설,행정자료,건설기계 현황 통계,건설기계 현황통계,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=476&hFormId=5409
+건설,행정자료,건설기술인 및 용역업체 현황,건설기술인 현황(등급별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=506&hFormId=5883
+건설,행정자료,건설기술인 및 용역업체 현황,건설기술인 현황(분야별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=506&hFormId=5884
+건설,행정자료,건설기술인 및 용역업체 현황,건설기술인 현황(소속업체별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=506&hFormId=5885
+건설,행정자료,건설기술인 및 용역업체 현황,건설기술인 현황(자격별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=506&hFormId=5886
+건설,행정자료,건설신기술지정현황(연도별),건설신기술지정현황_개발주체별,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=393&hFormId=5804
+건설,행정자료,건설신기술지정현황(연도별),건설신기술지정현황_기술분야별,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=393&hFormId=5805
+건설,행정자료,건설신기술지정현황(연도별),건설신기술지정현황_연도별,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=393&hFormId=3876
+건설,행정자료,건설신기술지정현황(연도별),활용실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=393&hFormId=5624
+건설,행정자료,건설업체수 및 부도업체수  ,건설업체 수 및 부도업체 수_연도별,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=474&hFormId=5398
+건설,행정자료,건설업체수 및 부도업체수  ,건설업체 수 및 부도업체 수_월별,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=474&hFormId=5399
+건설,행정자료,건설자재현황_연도별 골재채취현황,연도별_골재채취현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=344&hFormId=5393
+건설,행정자료,민간투자사업 추진현황,민간투자사업 추진현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=324&hFormId=4704
+교통/물류,행정자료,GDP대비 국가물류비,GDP 대비 국가물류비 및 부가가치 현황(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=401&hFormId=5364
+교통/물류,행정자료,GDP대비 국가물류비,기능별 국가물류비(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=401&hFormId=4620
+교통/물류,행정자료,GDP대비 국가물류비,단위수송비추이(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=401&hFormId=4616
+교통/물류,행정자료,GDP대비 국가물류비,톤기준단위물류비추이(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=401&hFormId=4622
+교통/물류,행정자료,경유가 추이(전국주유소 평균가),경유가 추이(전국주유소 평균가),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=403&hFormId=4594
+교통/물류,행정자료,광역교통개선대책수립현황,광역교통개선대책수립현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=431&hFormId=4590
+교통/물류,행정자료,광역교통시설부담금 현황,광역교통시설부담금 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=432&hFormId=4592
+교통/물류,행정자료,기업물류비연도별추이,주요국의 기능별 기업물류비 구성비율 비교(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=398&hFormId=4824
+교통/물류,행정자료,기업물류비연도별추이,한.미.일 기업매출액 대비 물류비 지출 비중(종료),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=398&hFormId=5371
+교통/물류,행정자료,물류시설현황,내륙물류기지 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=282&hFormId=4748
+교통/물류,행정자료,물류시설현황,물류단지 지정 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=282&hFormId=5881
+교통/물류,행정자료,물류시설현황,일반물류터미널 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=282&hFormId=5880
+교통/물류,행정자료,버스 및 택시 수송실적(연도별),버스 및 택시 수송실적,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=433&hFormId=4758
+교통/물류,행정자료,영업용 화물차량 대수,영업용 화물차량 대수,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=404&hFormId=4602
+교통/물류,행정자료,자동차 리콜 현황,자동차 리콜 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=319&hFormId=4730
+교통/물류,행정자료,자동차 면허 및 등록대수 연도별,자동차면허및등록대수(년별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=313&hFormId=4916
+교통/물류,행정자료,자동차관리사업자업체현황분기,자동차관리사업자업체현황(분기),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=437&hFormId=4392
+교통/물류,행정자료,자동차교통사고발생현황(연도별),자동차교통사고발생현황(년별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=434&hFormId=3838
+교통/물류,행정자료,저상버스도입현황,저상버스도입현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=354&hFormId=5250
+교통/물류,행정자료,특별교통대책 기간중 주요 지역간 최대 소요 시간 (고속도로),특별교통대책 기간중 주요 지역간 최대 소요 시간,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=424&hFormId=4774
+항공,행정자료,공항 소음대책지역 지정고시 현황,공항 소음대책지역 지정고시 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=460&hFormId=5495
+항공,행정자료,국내공항시설현황,국내항공시설현황_공항시설_연도별,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=461&hFormId=4932
+항공,행정자료,국내선항공노선현황,국내선항공노선현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=361&hFormId=714
+항공,행정자료,국적항공사 위험물 운송현황,국적항공사 위험물 운송현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=457&hFormId=5304
+항공,행정자료,국제선지역별운항현황,국제선지역별운항현황-여객(연도별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=454&hFormId=4980
+항공,행정자료,국제선지역별운항현황,국제선지역별운항현황-화물(연도별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=454&hFormId=5092
+항공,행정자료,국제선항공노선현황,국제선항공노선현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=360&hFormId=718
+항공,행정자료,국제선항공노선현황,항공노선 취항추이,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=360&hFormId=720
+항공,행정자료,주요 항행안전시설 현황,주요 항행안전시설 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=459&hFormId=4778
+항공,행정자료,지방공항국제선운항현황연도별,지방공항국제선운항현황(연도별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=456&hFormId=4972
+항공,행정자료,항공기등록현황,항공기등록현황_업체별보유현황(년별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=462&hFormId=4764
+항공,행정자료,항공기등록현황,항공기등록현황_운송용항공기(년별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=462&hFormId=4766
+항공,행정자료,항공기등록현황,항공기등록현황_운송용항공기기령(년별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=462&hFormId=4768
+항공,행정자료,항공기등록현황,항공기등록현황_총괄(년별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=462&hFormId=4762
+항공,행정자료,항공사고 현황,항공사고현황(연도별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=80&hFormId=734
+항공,행정자료,항공종사자 자격증명 발급현황,항공종사자 자격증명 발급현황_연도별,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=464&hFormId=4628
+항공,행정자료,항공종사자 현황,항공종사자 현황_연도별,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=523&hFormId=4630
+도로/철도,행정자료,도로보수현황,01.도로보수실적총괄표,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=60&hFormId=5683
+도로/철도,행정자료,도로보수현황,02.도로보수비현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=60&hFormId=978
+도로/철도,행정자료,도로투자실적 현황,도로투자실적현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=62&hFormId=986
+도로/철도,행정자료,도시철도수송실적_연도별,도시철도수송실적_연도별,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=272&hFormId=6907
+도로/철도,행정자료,송변전설비 현황,송변전설비 관련 세부사항,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=448&hFormId=4814
+도로/철도,행정자료,송변전설비 현황,송변전설비현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=448&hFormId=5365
+도로/철도,행정자료,장대레일 부설 현황,장대레일 부설 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=446&hFormId=4844
+도로/철도,행정자료,전철전력설비 현황,전력설비 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=451&hFormId=4812
+도로/철도,행정자료,전철전력설비 현황,전철설비 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=451&hFormId=4830
+도로/철도,행정자료,철도공사 열차 보유현황,철도공사 열차 보유 현황,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=447&hFormId=4834
+도로/철도,행정자료,철도입체교차시설현황_연도별,철도입체교차시설현황(년별),https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=303&hFormId=4744
+도로/철도,행정자료,철도터널현황_연도별,철도터널현황_연도별,https://stat.molit.go.kr/portal/cate/viewChk.do?hRsId=302&hFormId=4746
