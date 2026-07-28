@@ -163,10 +163,20 @@ extract_request(client, query)   # "테헤란로 152에 업무시설" → (주�
 
 요약문(`_summarize`)도 LLM 없이 값에서 조립한다.
 
-### 4.3 지도제어 에이전트 (`app/agents/map_control.py`)
+### 4.3 지도제어(2D) · 3D(매스) 에이전트 (`app/agents/map_control.py`)
 
 **LLM을 쓰지 않는 순수 변환기.** 진단이 이미 판단을 끝냈으니 여기서는
-'무엇을 어떻게 그릴지'만 정하면 되고, 그 규칙은 확정적이다.
+'무엇을 어떻게 그릴지'만 정하면 되고, 그 규칙은 확정적이다. 한 모듈이지만 기능이
+둘로 나뉜다.
+
+- **지도제어(2D)** — 카메라 이동(`fly_to`), 필지 강조(`highlight_parcel`),
+  용도지역 조각(`show_zone_pieces`), 결과 패널(`show_panel`)
+- **3D(매스)** — 건축 가능 규모의 3D 입체(`extrude_mass`), 치수선(`show_dimensions`),
+  용도별 건물 모델(`show_housing_model`: 주택/공장/상가/창고). **실제 3D 렌더링은
+  백엔드가 아니라 프론트 `lib/mapBridge.ts` 가 VWorld 3D(ws3d/Cesium)에서** 한다.
+
+> 별표1의 4번째 에이전트 — `agents/area_recommender.py` (지역추천): "○○ 비도시
+> 지역에서 농막 지을 데 찾아줘" 류 탐색형 질의를 처리한다.
 
 `build_map_commands(diagnosis)` → 명령 배열:
 

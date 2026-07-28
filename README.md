@@ -8,25 +8,41 @@ VWorld 3D 지도에서 해당 필지로 이동해 건폐율·용적률 범위 �
 ```
 사용자 질의
     ↓
-오케스트레이터 (Claude Opus 4.8 · tool-use 루프)   backend/app/orchestrator.py
-    ├─ prediagnose      → 사전진단 에이전트          backend/app/agents/prediagnosis.py
-    ├─ render_on_map    → 지도제어 에이전트          backend/app/agents/map_control.py
-    └─ restudy_massing  → 매스 재산출 (후속 질의용)
+오케스트레이터 (LLM 도구 루프 · Gemini gemini-flash-lite-latest)   backend/app/orchestrator.py
+    │
+    ├─ ① 사전진단 에이전트        진단 (도구 20개 sub-오케스트레이션)   agents/prediagnosis.py
+    │        · LLM 1회(주소·용도 추출) + 결정적 파이프라인
+    │        · vworld·zoning·ordinance·setback_rules·site_constraints·
+    │          road_access·building_register·land_conversion … (20개)
+    │
+    ├─ ② 지도제어(2D) 에이전트      2D 지도 명령                       agents/map_control.py
+    │        · fly_to(카메라)·highlight_parcel(필지)·
+    │          show_zone_pieces(용도지역)·show_panel(결과 패널)
+    │
+    ├─ ③ 3D(매스) 에이전트          건물 입체·치수선                    agents/map_control.py + lib/mapBridge.ts
+    │        · extrude_mass(건축 가능 규모 3D 입체)·show_dimensions(치수선)·
+    │          show_housing_model(주택/공장/상가/창고 모델)
+    │        · 실제 3D 렌더링은 프론트 mapBridge.ts 가 VWorld 3D(ws3d/Cesium)에서
+    │
+    └─ ④ 지역추천 에이전트          탐색형 질의                        agents/area_recommender.py
+             · "○○ 비도시 지역에서 농막 지을 데 찾아줘" 류
 ```
 
-사전진단 에이전트는 자체 tool-use 루프를 돌며 공간 도구를 순서대로 호출한다.
+② 지도제어(2D)와 ③ 3D(매스)는 **코드상 `map_control.py` 한 모듈**이지만 기능적으로
+2D 지도 묘화와 3D 건물 입체(매스)로 나뉜다. 둘 다 **LLM 없이** 진단 결과를 지도 명령으로
+번역하고(판단은 이미 끝났으므로), 명령은 SSE로 프론트에 흘러가 `lib/mapBridge.ts` 가
+VWorld 3D 위에서 실행한다.
+
+사전진단 에이전트가 순서대로 호출하는 핵심 공간 도구:
 
 | 단계 | 도구 | 소스 |
 |---|---|---|
 | 주소 → 좌표 | `geocode_address` | `tools/vworld.py` (VWorld 지오코더) |
 | 좌표 → 필지 | `get_parcel` | `tools/vworld.py` (연속지적도) |
 | 좌표 → 용도지역 | `get_land_use` | `tools/vworld.py` (용도지역지구도) |
-| 규제 판정 | `lookup_zoning` | `tools/zoning.py` (국토계획법 시행령) |
-| 매스 산출 | `calc_massing` | `tools/massing.py` |
-
-지도제어 에이전트는 LLM 없이 진단 결과를 지도 명령으로 번역한다 —
-판단은 이미 끝났고, 무엇을 그릴지는 확정적이기 때문이다. 명령은 SSE 로 프론트에
-흘러가 `lib/mapBridge.ts` 가 VWorld 3D 위에서 실행한다.
+| 규제 판정 | `lookup_zoning` | `tools/zoning.py` (국토계획법 시행령·조례) |
+| 이격 조회 | `setback_rules` | `tools/setback_rules.py` (119개 지자체 별표) |
+| 3D(매스) 산출 | `calc_massing` | `tools/massing.py` |
 
 ## 실행
 
