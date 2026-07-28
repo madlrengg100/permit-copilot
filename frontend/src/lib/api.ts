@@ -47,6 +47,45 @@ export async function setSessionParcelSelection(
   if (!res.ok) throw new Error(`선택 필지 세션 저장 오류 ${res.status}`);
 }
 
+/** 현재 진단 필지에서 특정 용도의 대지 안의 공지(이격)를 계산해 받아온다. */
+export async function fetchSetbackForUse(
+  sessionId: string,
+  use: string,
+): Promise<{
+  ok: boolean;
+  use?: string | null;
+  zone?: string | null;
+  gross_floor_area_m2?: number | null;
+  verdict?: string | null;
+  verdict_label?: string | null;
+  verdict_color?: string | null;
+  front_setback_m?: number | null;
+  adjacent_setback_m?: number | null;
+  north_setback_m?: number | null;
+  source?: string | null;
+  status?: string | null;
+  note?: string | null;
+  map_commands?: unknown[];
+} | null> {
+  try {
+    const res = await fetch(
+      `${BASE}/api/session/${encodeURIComponent(sessionId)}/setback-for-use`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(APP_TOKEN ? { "X-App-Token": APP_TOKEN } : {}),
+        },
+        body: JSON.stringify({ use }),
+      },
+    );
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 /** 질의를 보내고 SSE 이벤트를 순서대로 뱉는 async generator. */
 export async function* streamChat(
   sessionId: string,

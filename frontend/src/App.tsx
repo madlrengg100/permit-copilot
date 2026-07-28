@@ -3,6 +3,7 @@ import { ChatPanel, type ChatMessage } from "./components/ChatPanel";
 import { MapCanvas } from "./components/MapCanvas";
 import {
   fetchConfig,
+  fetchSetbackForUse,
   searchAddresses,
   setSessionParcelSelection,
   streamChat,
@@ -362,13 +363,22 @@ export default function App() {
             const asksWarehouse = /창고|물류|저장|보관/.test(q);
             // 3D 모델이 없는 특수 용도를 콕 집어 물으면 모델 버튼을 띄우지 않는다.
             const asksNoModelUse = /움막|농막|비닐하우스|하우스|축사|컨테이너|주차장|태양광|캠핑|정화조|옹벽/.test(q);
+            // 3D 모델이 없는 '특정 용도'(학교·병원·업무·숙박·종교 등)를 콕 집어 물었으면,
+            // 단독주택·공장·상가·창고 같은 엉뚱한 모델을 띄우지 않는다.
+            const asksModellessUse =
+              /학교|교육|병원|의원|의료|보건소|종교|교회|성당|사찰|업무|사무실|오피스|숙박|호텔|모텔|펜션|여관|위락|유흥|장례|연구소|도서관|학원/.test(q);
             const asksSpecific = asksHousing || asksFactory || asksCommercial || asksWarehouse;
-            const suppressModels = asksNoModelUse && !asksSpecific;
-            // 특정 용도를 물었으면 그 카테고리만, 일반 질문('건물 지을 수 있어')이면 되는 것 전부.
-            const showHousing = !suppressModels && (asksHousing || !asksSpecific);
-            const showFactory = !suppressModels && (asksFactory || !asksSpecific);
-            const showCommercial = !suppressModels && (asksCommercial || !asksSpecific);
-            const showWarehouse = !suppressModels && (asksWarehouse || !asksSpecific);
+            const suppressModels = (asksNoModelUse || asksModellessUse) && !asksSpecific;
+            // 정의·현황 질문("건축선 후퇴가 이격거리야?", "여기 도로 접해?")과
+            // 건축 의도 질문("건물 지을 수 있어?")을 구분한다. '짓겠다는 의도'가 있을
+            // 때만 일반 모델을 띄우고, 개념·현황만 묻는 후속질문엔 모델을 붙이지 않는다.
+            const asksBuildIntent =
+              /(지을|짓|지어|세울|올릴|신축|규모|몇\s*층|모델|배치|건축\s*(?:가능|할|해|하려|되나|되니))/.test(q);
+            // 특정 용도를 물었으면 그 카테고리만, 일반 '짓기' 질문이면 되는 것 전부.
+            const showHousing = !suppressModels && (asksHousing || (!asksSpecific && asksBuildIntent));
+            const showFactory = !suppressModels && (asksFactory || (!asksSpecific && asksBuildIntent));
+            const showCommercial = !suppressModels && (asksCommercial || (!asksSpecific && asksBuildIntent));
+            const showWarehouse = !suppressModels && (asksWarehouse || (!asksSpecific && asksBuildIntent));
             const floors = p.massing?.floors ?? "허용";
             const options: NonNullable<ChatMessage["options"]> = [];
             if (showHousing && housingUses.includes("단독주택")) {
@@ -565,8 +575,10 @@ export default function App() {
             const coords = `경도 ${lon.toFixed(7)}, 위도 ${lat.toFixed(7)}`;
             // 건축 가능 여부를 묻는 게 아니라 공시지가·면적·지목 같은 '필지 사실'을
             // 물으면 억지로 진단(카드)을 돌리지 말고, 좌표를 붙여 질문 그대로 보낸다.
+            // 이격거리·도로 접촉 같은 '사실/수치' 질문은 새 진단(카드)이 아니라
+            // 저장된 데이터를 읽어 자연어로 답해야 한다(공장/창고 단어가 있어도).
             const asksParcelFacts =
-              /건축물\s*대장|대장\s*(확인|조회)|공시지가|토지\s*면적|대지\s*면적|지목|용도지역\s*(뭐|확인|조회)/.test(answer);
+              /건축물\s*대장|대장\s*(확인|조회)|공시지가|토지\s*면적|대지\s*면적|지목|용도지역\s*(뭐|확인|조회)|이격|대지\s*안의?\s*공지|도로\s*접촉|접도|건축선|후퇴/.test(answer);
             const asksConditionalRequirements =
               /(조건부\s*가능|가능\s*조건).*(어떻게|하려면|되려면|뭐|무엇|절차|해결)|어떻게.*조건부\s*가능/.test(answer);
             const wantsDiagnosis =
@@ -628,7 +640,7 @@ export default function App() {
               setMessages((current) => [...dropEarthwork(current), {
                 role: "assistant",
                 text:
-                  `⛰ **토공(정지) 추정** — 계획고 약 EL ${ew.platform_m.toFixed(1)}m(균형 절성토) 기준:\n` +
+                  `⛰ **토공(정지) 추정** — 계획고 약 표고 ${ew.platform_m.toFixed(1)}m(균형 절성토) 기준:\n` +
                   `- 절토(깎기) 약 **${won(ew.cut_m3)}㎥**, 성토(쌓기) 약 **${won(ew.fill_m3)}㎥**\n` +
                   `- 최대 깎기 약 ${ew.max_cut_m.toFixed(1)}m · 최대 쌓기 약 ${ew.max_fill_m.toFixed(1)}m\n` +
                   `- 지형데이터 기반 개략 추정입니다. 실제 토공량·옹벽·법면은 현황측량과 설계 계획고에 따라 달라지며, 절성토는 개발행위허가·경사도 심의 대상이 될 수 있습니다.`,
@@ -639,6 +651,66 @@ export default function App() {
                 text: "⛰ 대상지는 거의 평지로, 절토·성토는 미미할 것으로 추정됩니다.",
               }]);
             }
+            // 누른 모델(용도)의 '실제' 이격을 백엔드에서 계산해 받아온다(진단 용도와
+            // 무관하게, 그 용도로 대지 안의 공지를 계산). 애매한 규칙 문구가 아니라
+            // 계산된 수치(예: 전면 3m)를 그대로 보여준다.
+            const USE_OF_MODEL: Record<HousingModelType, string> = {
+              detached: "단독주택", lowrise: "공동주택", slim: "공동주택",
+              factory: "공장", warehouse: "창고시설", commercial: "판매시설",
+            };
+            const useName = USE_OF_MODEL[type];
+            void (async () => {
+              const r = await fetchSetbackForUse(SESSION_ID, useName);
+              const label = `📐 **이격거리(건축선↔인접대지경계선) — ${useName} 용도의 대지 안의 공지(이격)**`;
+              let text: string;
+              if (!r || !r.ok) {
+                text = `${label} · 먼저 이 필지를 진단해 주세요.`;
+              } else {
+                // 이 용도의 이격선(전면/인접 건축선 등)을 지도에 다시 그린다.
+                if (Array.isArray(r.map_commands) && r.map_commands.length) {
+                  setCommands((c) => [...c, ...(r.map_commands as MapCommand[])]);
+                }
+                // 팝업 '검토 용도'와 판정 배지를 클릭한 용도 기준으로 바꾼다.
+                setPanel((p: any) =>
+                  p
+                    ? {
+                        ...p,
+                        building_use: useName,
+                        ...(r.verdict ? { verdict: r.verdict } : {}),
+                        ...(r.verdict_label ? { verdict_label: r.verdict_label } : {}),
+                        ...(r.verdict_color ? { color: r.verdict_color } : {}),
+                      }
+                    : p,
+                );
+                const f = Number(r.front_setback_m ?? 0);
+                const a = Number(r.adjacent_setback_m ?? 0);
+                const n = Number(r.north_setback_m ?? 0);
+                const src = r.source ? ` (${r.source})` : "";
+                // 이격은 '용도+규모+용도지역' 조건에 따라 정해진다는 걸 문구로 드러낸다.
+                const gross = Number(r.gross_floor_area_m2 ?? 0);
+                const zone = r.zone ?? "";
+                const cond = `이 용도·${
+                  gross > 0 ? `규모(연면적 약 ${Math.round(gross).toLocaleString()}㎡)·` : "규모·"
+                }${zone || "지역"} 조건에서는`;
+                const parts: string[] = [];
+                if (f > 0) parts.push(`전면 ${f}m`);
+                if (a > 0) parts.push(`인접 ${a}m`);
+                if (n > 0) parts.push(`정북일조 ${n}m`);
+                if (r.status === "NEEDS_SUBTYPE") {
+                  text = `${label} · ${cond} 세부 유형에 따라 이격이 달라집니다 — ${r.note ?? ""}`.trim() + src;
+                } else if (parts.length) {
+                  text = `${label} · ${cond} ${parts.join(" · ")}가 적용됩니다 — 지도에 건축선으로 표시했습니다.${src}`;
+                } else if (r.status === "NOT_COLLECTED") {
+                  text = `${label} · 관할 건축조례 '대지 안의 공지' 별표 미수집으로 이격을 확정하지 못했습니다(0m). 관할 건축조례 별표 원문 확인이 필요합니다.`;
+                } else {
+                  text = `${label} · 이 용도·규모·지역은 대지 안의 공지 대상이 아니어서 이격 0m입니다.${src}`;
+                }
+              }
+              setMessages((current) => [
+                ...current.filter((msg) => !(typeof msg.text === "string" && msg.text.startsWith("📐"))),
+                { role: "assistant", text },
+              ]);
+            })();
           } catch (error) {
             setMessages((current) => [...current, {
               role: "status",
@@ -810,18 +882,28 @@ function ResultPanel({
   const developmentCharge = panel.development_charge;
   const legalSources = panel.legal_sources?.sources ?? [];
   const siteConstraints = panel.site_constraints;
+  // 이격 배지: status APPLIED 는 0m도 포함하므로, 실제 그려질 이격이 있을 때만
+  // '반영'이라 한다(단독주택 0m인데 '반영'으로 표기되던 오해 방지).
+  const hasSetback =
+    (siteConstraints?.front_setback_m ?? 0) > 0 ||
+    (siteConstraints?.adjacent_setback_m ?? 0) > 0 ||
+    (siteConstraints?.north_setback_m ?? 0) > 0;
+  const setbackBadge =
+    siteConstraints?.setback_rule?.status === "NOT_COLLECTED"
+      ? "이격 미수집(조례)"
+      : hasSetback
+        ? "이격거리 반영"
+        : "이격 없음(0m)";
+  // 주차 배지: 지상주차는 '개념 면적차감'이고 지도에 배치 모델을 그리지는 않는다.
+  // '반영'이라 하면 모델이 있는 것으로 오해되므로 '면적차감'으로 정확히 표기한다.
+  const parkingBadge =
+    siteConstraints?.parking?.strategy_status === "APPLIED"
+      ? "지상주차 면적차감"
+      : siteConstraints?.parking?.strategy_status === "DESIGN_REQUIRED"
+        ? "주차 별도 설계"
+        : "주차 미반영";
   const compactSiteNote = siteConstraints
-    ? [
-        siteConstraints.setback_rule?.status === "APPLIED"
-          ? "이격거리 반영"
-          : "이격거리 미반영",
-        siteConstraints.parking?.strategy_status === "APPLIED"
-          ? "지상주차 반영"
-          : siteConstraints.parking?.strategy_status === "DESIGN_REQUIRED"
-            ? "주차 별도 설계"
-            : "주차 미반영",
-        "도로 후퇴선 현황측량 필요",
-      ].join(" · ")
+    ? [setbackBadge, parkingBadge, "도로 후퇴선 현황측량 필요"].join(" · ")
     : "";
 
   // 건물의 화면 좌표를 얻기 전에는 우측 상단에 임시로 띄우지 않는다.

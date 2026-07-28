@@ -74,6 +74,21 @@ USE_MATRIX: dict[str, dict[str, list[str]]] = {
         "allowed": ["유통상업지역", "전용공업지역", "일반공업지역", "준공업지역"],
         "permitted": ["계획관리지역", "생산녹지지역", "자연녹지지역", "농림지역"],
     },
+    "교육연구시설": {
+        # 국토계획법 시행령 별표(용도지역 안에서 건축할 수 있는 건축물) 기준.
+        # 학교(초·중·고 등)를 대표로 한 단순화이며, 세부 유형(학원·연구소·직업
+        # 훈련소)에 따라 달라질 수 있어 상세는 관할 조례·별표로 확인해야 한다.
+        "allowed": [
+            "제1종일반주거지역", "제2종일반주거지역", "제3종일반주거지역",
+            "준주거지역", "중심상업지역", "일반상업지역", "근린상업지역",
+        ],
+        "permitted": [
+            "제1종전용주거지역", "제2종전용주거지역", "준공업지역", "일반공업지역",
+            "자연녹지지역", "생산녹지지역", "보전녹지지역", "계획관리지역",
+            "생산관리지역", "보전관리지역", "농림지역",
+        ],
+        # 전용공업지역·유통상업지역·자연환경보전지역 등은 목록에 없으므로 불가.
+    },
 }
 
 # 용도지구/구역 중 별도 심의·제한이 걸리는 것.
@@ -169,7 +184,10 @@ def lookup_zoning_rules(
         reason = f"{zone}에서 {building_use}은(는) 원칙적으로 건축 가능합니다."
     elif zone in matrix["permitted"]:
         verdict = "conditional"
-        reason = f"{zone}에서 {building_use}은(는) 도시계획조례가 정하는 범위에서 조건부 허용됩니다."
+        # 근거를 뭉뚱그리지 않는다 — 해당 지자체 도시계획조례가 확인되면 그 조례명·
+        # 조문·시행일을 인용하고, 조례를 못 찾았을 때만 일반 '도시계획조례'로 둔다.
+        _basis_cite = basis if "조례" in basis else "도시계획조례"
+        reason = f"{zone}에서 {building_use}은(는) {_basis_cite}가 정하는 범위에서 조건부 허용됩니다."
     else:
         verdict = "not_allowed"
         reason = f"{zone}에서 {building_use}은(는) 건축할 수 없는 용도입니다."
@@ -177,6 +195,16 @@ def lookup_zoning_rules(
     constraints = _match_constraints(districts)
     if constraints and verdict in ("allowed", "conditional"):
         verdict = "conditional"
+
+    # 최종 판정이 조건부면(용도지구 제약으로 조건부가 된 경우 포함) 대안 마련 경로를
+    # 안내한다. 조건부는 설계로 요건을 맞추면 허가가 가능한 경우가 많기 때문이다.
+    if verdict == "conditional":
+        reason = (
+            reason.rstrip(".")
+            + ". 조건부는 지구단위계획·조례 세부기준과 개별 심의로 가능 여부가 갈리므로, "
+            "설계사무소를 통해 설계도면 조정과 필요한 증빙자료 준비로 허가 가능성을 "
+            "의뢰받으시기 바랍니다."
+        )
 
     return {
         "verdict": verdict,

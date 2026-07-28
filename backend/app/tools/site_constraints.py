@@ -202,6 +202,31 @@ def apply(
     floors = max(1, math.ceil(floors_theoretical - 1e-9)) if adjusted_area else 0
     full_floors = math.floor(floors_theoretical + 1e-9) if floors else 0
     top_ratio = 1.0 if floors == full_floors else floors_theoretical - full_floors
+
+    # 이격 caveat — 0m일 때도 '왜 0인지'를 이 지자체·용도 데이터로 구체화한다.
+    # (일반론 대신 조례 수집 여부·다른 용도의 실제 수치를 근거로)
+    if front > 0 or adjacent > 0 or north_setback > 0:
+        setback_caveat = (
+            f"이격거리를 규모 계산에 반영: 전면 {front:g}m·인접 {adjacent:g}m"
+            + (f"·정북일조 {north_setback:g}m" if north_setback > 0 else "")
+            + "(지도에 치수선 표시). "
+        )
+    elif rule.get("status") == "NOT_COLLECTED":
+        setback_caveat = (
+            f"{jurisdiction or '이 지역'} 건축조례 대지 안의 공지 별표가 아직 수집되지 "
+            "않아 이격 0m로 계산했습니다. "
+        )
+    else:
+        _other_uses = setback_rules.setback_uses(jurisdiction, building_use)
+        setback_caveat = (
+            f"이 필지에서 {building_use} 용도는 대지 안의 공지(건축법 시행령 제80조의2·"
+            "별표2, 연면적 500㎡ 이상 공장·창고 등 대상) 대상이 아니어서 이격 0m입니다"
+            + (
+                f"(같은 조례에서 {' · '.join(_other_uses)} 용도는 규모·지역에 따라 이격 적용). "
+                if _other_uses
+                else ". "
+            )
+        )
     return {
         "footprint_geometry": footprint,
         "density_building_area_m2": round(density_area, 2),
@@ -238,13 +263,15 @@ def apply(
                 if not layout_feasible
                 else ""
             )
+            # 이격 문구는 위에서 status·타 용도까지 반영해 조립한 값을 쓴다.
+            + setback_caveat
             +
+            # 주차는 '개념 면적 차감'이지 지도에 주차 라인을 그리는 것이 아니다.
             (
-                "법정 이격거리를 반영했고, "
-                if rule["status"] == "APPLIED"
-                else "이격거리(대지 안의 공지)는 반영하지 않았고, "
+                f"지상주차 {parking['spaces']}대 개념 면적을 규모에서 차감(배치 라인은 미표시). "
+                if float(parking.get("applied_surface_area_m2") or 0) > 0
+                else "지상주차 면적 차감은 없습니다(미선택 또는 불필요). "
             )
-            + _PARKING_KO[parking["strategy_status"]]
-            + ". 건축선·도로 후퇴선은 현황측량으로 확정해야 합니다."
+            + "건축선·도로 후퇴선은 현황측량으로 확정해야 합니다."
         ),
     }

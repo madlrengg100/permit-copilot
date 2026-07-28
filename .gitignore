@@ -24,3 +24,12 @@ backend/app/data/ordinance_index_vocab.json
 .env.backup*
 .env.*.bak
 *.env.backup*
+
+# 별표 HWP 다운로드 캐시 (collect_setback_tables.py 로 재생성 가능, 대용량)
+backend/scripts/.cache_hwp/
+
+# 서버 실행/디버깅 로그 (임시)
+frontend/.server5173.log
+frontend/.stable5174.log
+backend/.server5173.log
+*.log

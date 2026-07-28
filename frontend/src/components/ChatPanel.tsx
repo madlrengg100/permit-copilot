@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 /** 인라인 서식: **볼드**, `코드`, [링크](https://...). */
@@ -76,38 +76,51 @@ function renderMarkdownCore(text: string): ReactNode {
   return blocks;
 }
 
+// 접기/펼치기로 만들 섹션 규칙. 헤더 제목이 test 에 맞으면 그 섹션을 <details>로 감싼다.
+const COLLAPSIBLE_SECTIONS: Array<{ test: RegExp; label: string }> = [
+  { test: /국가법령정보센터 원문 확인/, label: "법령 원문" },
+  { test: /관련 조례 조문\(근거\)/, label: "관련 조례 조문" },
+];
+
 function renderMarkdown(text: string): ReactNode {
   const lines = text.split("\n");
-  const start = lines.findIndex((line) =>
-    /^#{1,4}\s+\d+\.\s+국가법령정보센터 원문 확인\s*$/.test(line.trim()),
-  );
-  if (start < 0) return renderMarkdownCore(text);
+  // 상단 섹션 헤더(## N. 제목) 위치들
+  const headers: number[] = [];
+  lines.forEach((line, i) => {
+    if (/^#{1,4}\s+/.test(line.trim())) headers.push(i);
+  });
+  if (headers.length === 0) return renderMarkdownCore(text);
 
-  let end = lines.length;
-  for (let i = start + 1; i < lines.length; i += 1) {
-    if (/^#{1,4}\s+/.test(lines[i].trim())) {
-      end = i;
-      break;
+  const nodes: ReactNode[] = [];
+  if (headers[0] > 0) {
+    nodes.push(
+      <Fragment key="pre">{renderMarkdownCore(lines.slice(0, headers[0]).join("\n"))}</Fragment>,
+    );
+  }
+  for (let h = 0; h < headers.length; h += 1) {
+    const startH = headers[h];
+    const endH = h + 1 < headers.length ? headers[h + 1] : lines.length;
+    const headerLine = lines[startH].trim();
+    const rule = COLLAPSIBLE_SECTIONS.find((r) => r.test.test(headerLine));
+    if (rule) {
+      const bodyLines = lines.slice(startH + 1, endH).filter((line) => line.trim());
+      const count = bodyLines.filter((line) => /^\s*-\s+/.test(line)).length;
+      nodes.push(
+        <details className="law-sources" key={startH}>
+          <summary>
+            <span className="law-summary-closed">▾ {rule.label} {count}건 펼치기</span>
+            <span className="law-summary-open">▴ {rule.label} {count}건 닫기</span>
+          </summary>
+          <div className="law-sources-body">{renderMarkdownCore(bodyLines.join("\n"))}</div>
+        </details>,
+      );
+    } else {
+      nodes.push(
+        <Fragment key={startH}>{renderMarkdownCore(lines.slice(startH, endH).join("\n"))}</Fragment>,
+      );
     }
   }
-  const sourceLines = lines.slice(start + 1, end).filter((line) => line.trim());
-  const sourceCount = sourceLines.filter((line) => /^\s*-\s+\[/.test(line)).length;
-
-  return (
-    <>
-      {renderMarkdownCore(lines.slice(0, start).join("\n"))}
-      <details className="law-sources">
-        <summary>
-          <span className="law-summary-closed">▾ 법령 원문 {sourceCount}건 펼치기</span>
-          <span className="law-summary-open">▴ 법령 원문 {sourceCount}건 닫기</span>
-        </summary>
-        <div className="law-sources-body">
-          {renderMarkdownCore(sourceLines.join("\n"))}
-        </div>
-      </details>
-      {renderMarkdownCore(lines.slice(end).join("\n"))}
-    </>
-  );
+  return <>{nodes}</>;
 }
 
 export interface ChatMessage {

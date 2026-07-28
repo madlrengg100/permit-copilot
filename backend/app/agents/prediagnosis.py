@@ -37,6 +37,7 @@ from ..tools import (
     permit_requirements,
     regulatory_screen,
     road_access,
+    setback_rules,
     site_constraints,
     vworld,
     zoning,
@@ -157,6 +158,7 @@ def jimok_label(code) -> str:
 _SHOP_TERMS: set[str] = {
     "상가", "점포", "상점", "마트", "쇼핑", "백화점",
     "음식점", "식당", "카페", "주점", "술집",
+    "상업시설", "상업",
 }
 
 # 사용자가 쓴 일상어 용도 -> 그 말이 가리킬 수 있는 정식 용도(판정표 기준).
@@ -169,6 +171,10 @@ _AMBIGUOUS_USE_TERMS: list[tuple[str, list[str]]] = [
     # 원룸은 소유·세대 구획 방식에 따라 다가구 또는 다세대가 될 수 있다.
     # 둘 중 하나라도 허용되면 전면 불가 경고 대신 세부유형 확인 대상으로 둔다.
     ("원룸", ["단독주택", "공동주택"]),
+    # '상업시설'은 '상업'보다 먼저 둔다(부분일치 순서). 소매점·근생부터 대형
+    # 판매시설까지 넓게 가리키므로 후보를 폭넓게 잡는다.
+    ("상업시설", ["제1종근린생활시설", "제2종근린생활시설", "판매시설"]),
+    ("상업", ["제1종근린생활시설", "제2종근린생활시설", "판매시설"]),
     ("상가", ["판매시설", "제2종근린생활시설"]),
     ("점포", ["판매시설", "제2종근린생활시설"]),
     ("상점", ["판매시설"]),
@@ -185,6 +191,11 @@ _AMBIGUOUS_USE_TERMS: list[tuple[str, list[str]]] = [
     ("펜션", ["숙박시설"]),
     ("공장", ["공장"]),
     ("창고", ["창고시설"]),
+    ("학교", ["교육연구시설"]),
+    ("교육연구시설", ["교육연구시설"]),
+    # '주택'은 단독/공동 어느 쪽도 가리킬 수 있는 넓은 말이라 맨 끝에 둔다
+    # (다가구·다세대·원룸 등 구체어가 먼저 매칭되어야 한다).
+    ("주택", ["단독주택", "공동주택"]),
 ]
 
 
@@ -236,7 +247,7 @@ def detect_use_restriction(query: str, diagnosis: dict) -> dict | None:
         if not blocked:
             return None
         return {
-            "label": f"'{term}' 건축불가",
+            "label": f"{term} 건축 불가",
             "reason": f"{zone}에서 {'·'.join(blocked)}은(는) 건축할 수 없는 용도입니다.",
             "term": term,
             "blocked": blocked,
@@ -291,6 +302,10 @@ def format_diagnosis_answer(d: dict) -> str:
             f"- **개별공시지가:** 평당 약 {_per_pyeong(jiga)}원 (㎡당 {_won(jiga)}원)"
         )
     use = reg.get("building_use") or (d.get("request") or {}).get("building_use", "")
+    # 용도를 특정하지 않은 일반 건축 질문(inferred)은 기본값 단독주택을 그대로
+    # 노출하면 오해를 준다 — '시설물'로 일반화해 표기한다.
+    if (d.get("request") or {}).get("inferred"):
+        use = "시설물"
     out.append(f"- **검토 용도:** {use or '—'}")
     # 사용자가 말한 용도가 이 지역에서 불가면(예: 제1종전용주거의 일반 상가) 경고.
     ur = d.get("use_restriction")
@@ -320,6 +335,70 @@ def format_diagnosis_answer(d: dict) -> str:
                 f"연면적 약 {_area(mass['gross_floor_area_m2'])} · 지상 {mass['floors']}층 "
                 f"(높이 약 {mass['mass_height_m']}m, 층고 3.3m 가정)"
             )
+    # 이격거리 안내 — 값이 있으면 값을, 없으면 왜 0인지 사유를 항상 남긴다.
+    # (사용자: 이격이 없을 때도 안내문구가 있어야 한다)
+    if mass and mass.get("layout_feasible") is not False and not mass.get("exceeds_far_limit"):
+        sc = d.get("site_constraints") or {}
+        front = float(sc.get("front_setback_m") or 0)
+        adjacent = float(sc.get("adjacent_setback_m") or 0)
+        north = float(sc.get("north_setback_m") or 0)
+        parts = []
+        if front > 0:
+            parts.append(f"전면(건축선) {front:g}m")
+        if adjacent > 0:
+            parts.append(f"인접경계 {adjacent:g}m")
+        if north > 0:
+            parts.append(f"정북일조 {north:g}m")
+        if parts:
+            out.append(f"- **이격거리:** {' · '.join(parts)} (지도에 치수선 표시)")
+        else:
+            # 0m일 때도 '왜 0인지'를 이 용도·이 지자체 데이터로 구체적으로 남긴다.
+            # (일반론 대신, 검토 용도명·수집 여부·다른 용도의 실제 수치를 근거로)
+            rule = sc.get("setback_rule") or {}
+            status = rule.get("status")
+            jur = d.get("jurisdiction") or ""
+            eval_use = reg.get("building_use") or (d.get("request") or {}).get(
+                "building_use", ""
+            )
+            use_label = (
+                "시설물" if (d.get("request") or {}).get("inferred") else eval_use
+            )
+            if status == "NOT_COLLECTED":
+                out.append(
+                    f"- **이격거리:** {jur or '이 지역'} 건축조례 '대지 안의 공지' 별표를 "
+                    "아직 수집하지 못해 0m로 계산했습니다. 실제 이격은 관할 건축조례로 확인이 "
+                    "필요합니다."
+                )
+            else:
+                # 이 필지의 용도지역·연면적 기준으로 '실제' 적용되는 용도별 이격
+                # 수치를 계산해 보여준다(일반론이 아니라 데이터의 수치를 그대로).
+                zone_here = reg.get("zone") or (lu.get("zones") or [""])[0]
+                gross_here = float((mass or {}).get("gross_floor_area_m2") or 0)
+                applicable = setback_rules.applicable_setbacks(
+                    jur, zone_here, gross_here, exclude_use=eval_use
+                )
+                line = (
+                    f"- **이격거리:** {use_label} 용도는 대지 안의 공지(건축법 시행령 별표2) "
+                    "대상이 아니어서 0m입니다."
+                )
+                if applicable:
+                    parts_use = []
+                    for item in applicable:
+                        if item.get("needs_subtype"):
+                            parts_use.append(f"{item['use']}(세부유형별)")
+                            continue
+                        dist = f"전면 {item['front_m']:g}m"
+                        if item["adjacent_m"] > 0:
+                            dist += f"·인접 {item['adjacent_m']:g}m"
+                        parts_use.append(f"{item['use']} {dist}")
+                    line += (
+                        f" 이 규모(연면적 약 {gross_here:,.0f}㎡)에선 {', '.join(parts_use)}이 "
+                        "적용됩니다(해당 용도로 검토 시 지도에 표시)."
+                    )
+                if rule.get("source"):
+                    line += f" (근거: {rule['source'].split(' (')[0]})"
+                out.append(line)
+
     existing = d.get("existing_buildings") or {}
     buildings = existing.get("buildings") or []
     if existing.get("status") == "FOUND" and buildings:
@@ -502,6 +581,8 @@ _USE_KEYWORDS: list[tuple[str, str]] = [
     ("원룸", "단독주택"), ("다가구", "단독주택"),
     ("주택", "단독주택"), ("집", "단독주택"),
     ("사무", "업무시설"), ("빌딩", "업무시설"), ("오피스", "업무시설"),
+    ("상업시설", "판매시설"), ("상업", "판매시설"),
+    ("학교", "교육연구시설"), ("교육연구시설", "교육연구시설"),
     ("상가", "제1종근린생활시설"), ("근린생활", "제1종근린생활시설"),
     ("마트", "판매시설"), ("판매", "판매시설"),
     ("호텔", "숙박시설"), ("펜션", "숙박시설"), ("모텔", "숙박시설"),
