@@ -70,6 +70,27 @@ API 키, 향후 데이터베이스 볼륨은 Git과 Docker 이미지에 포함�
 `VWORLD_KEY` 는 [vworld.kr](https://www.vworld.kr) 에서 발급받고,
 개발용으로 `localhost` 를 인증 도메인에 등록해야 한다.
 
+### 운영 배포 (systemd)
+
+운영 서버에서는 백엔드·프론트를 **systemd 서비스**로 띄운다. 코드 수정 후에는
+수동으로 `uvicorn`/`node`를 실행하지 말 것 — 포트(8000/5173) 충돌로 서비스가
+크래시-재시작 루프에 빠지고, 프론트는 `Requires=` 로 백엔드에 묶여 함께 재시작돼
+진행 중인 SSE 채팅이 끊긴다("network error").
+
+```bash
+# 프론트: dist 를 서빙 + /api 를 백엔드로 프록시 (frontend/server.mjs)
+sudo systemctl restart permit-copilot-backend      # uvicorn, :8000
+npm --prefix frontend run build                    # 프론트 변경 시 dist 재빌드
+sudo systemctl restart permit-copilot-frontend     # node server.mjs, :5173
+
+systemctl status permit-copilot-backend permit-copilot-frontend
+```
+
+백엔드만 고쳤으면 백엔드 서비스만 재시작하면 되고, 프론트(dist)만 고쳤으면
+재빌드 후 브라우저 하드 새로고침이면 된다. 공인 IP로 접속할 때 브라우저가
+HTTPS를 강제하면(HSTS/HTTPS-First) HTTP 서버라 `ERR_SSL_PROTOCOL_ERROR` 가 날 수
+있으니 `http://` 로 접속하거나 크롬의 "항상 보안 연결 사용"을 끈다.
+
 ## 조례 데이터
 
 건폐율·용적률 수치는 코드에 하드코딩하지 않고 `app/data/ordinances.json` 에서
@@ -104,6 +125,25 @@ python compare_ordinances.py --gaps        # 법정 대비 격차 큰 순
 조항이 조례에 아예 없다. 이런 항목은 법정 상한으로 폴백하되 조례를 근거로
 인용하지 않는다 — 없는 조문을 인용하는 것이 틀린 수치보다 위험하다.
 
+### 이격거리(대지 안의 공지) — 전국 조례 별표
+
+이격거리도 코드에 하드코딩하지 않고 `app/data/setbacks.json` 에서 읽는다. 전국
+**119개 지자체**의 건축조례 「대지 안의 공지」 별표를 국가법령정보센터(ELIS)에서
+첨부 HWP로 내려받아 표 셀을 추출·파싱한 것이다(수집·파싱 스크립트:
+`scripts/collect_setback_tables.py`, `scripts/parse_setbacks_grid.py`).
+
+- `setback_rules.lookup(지자체, 용도, 용도지역, 연면적)` — first-match 규칙 평가로
+  전면(건축선)·인접(대지경계) 이격을 돌려준다. 미수집 지자체는 `NOT_COLLECTED`.
+- `setback_rules.applicable_setbacks(...)` — 이 필지의 용도지역·연면적 기준으로
+  **실제 이격이 발생하는 용도와 수치**를 산출한다(예: 연면적 632㎡ 계획관리지역 →
+  공장 전면 3m·인접 1.5m, 창고 전면 3m). 규모 조건 미달 용도는 자동 제외.
+- 규칙은 규모(`min_gross`)·용도지역(`zone`/`zone_contains`) 조건을 지원한다.
+
+이격은 고정값이 아니라 `용도 + 연면적 규모 + 용도지역` 조건 조합으로 결정된다.
+아산은 검증값이고 나머지 118개는 별표 자동 파싱값(`review_status: auto_parsed`)이라
+운영 투입 전 표본 검수가 필요하다. 파생 데이터(`setbacks_parsed.json`,
+`setbacks_tables_raw.json`)는 재생성 가능하며, HWP 다운로드 캐시는 Git에 넣지 않는다.
+
 ## 알아둘 것
 
 **매스는 이론값이다.** 건폐율을 꽉 채우고 용적률 상한까지 올린 최대 봉투로,
@@ -111,8 +151,10 @@ python compare_ordinances.py --gaps        # 법정 대비 격차 큰 순
 지침이 반영되면 실제 규모는 이보다 작아진다.
 
 **용도 판정표는 간이 버전이다.** `USE_MATRIX` 는 건축법 시행령 별표1 대분류
-9종만 다룬다. 세부 용도(예: 일반음식점 vs 휴게음식점)는 판정이 갈리므로
-확장이 필요하다.
+위주(단독·공동주택, 제1·2종근생, 업무·판매·숙박시설, 공장, 창고시설,
+교육연구시설 등)로 다룬다. 세부 용도(예: 일반음식점 vs 휴게음식점, 학교 vs
+학원·연구소)는 판정이 갈리므로 계속 확장이 필요하다. 일상어 용도("상가",
+"학교", "원룸")는 `_AMBIGUOUS_USE_TERMS`·`_USE_KEYWORDS` 로 정식 용도에 매핑한다.
 
 ## OGC WMS/WFS 공간규제 연계
 
@@ -138,7 +180,8 @@ python compare_ordinances.py --gaps        # 법정 대비 격차 큰 순
 계산한다.
 
 - 용도별 부설주차장 기본대수와 지상주차 필요면적
-- 대지 안의 공지 1m 가정(실제 값은 지자체 건축조례 확인)
+- 대지 안의 공지(이격): 지자체 건축조례 별표에서 읽은 실제 값(`setbacks.json`).
+  미수집 지자체는 0m로 두고 그 사유를 함께 표시한다
 - 전용·일반주거지역의 정북방향 일조 이격
 - 제약 반영 전후 건축면적과 축소율
 
