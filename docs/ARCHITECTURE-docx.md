@@ -160,13 +160,21 @@ side = √면적 ;  altitude = clamp(side × 2, 60, 700)   # 지면 위 높이
 
 ### 4.4 도구 계층 (`app/tools/`)
 
-| 모듈 | 역할 | 핵심 |
-|---|---|---|
-| `vworld.py` | 공간정보 조회 | 지오코딩 / 필지 / 용도지역 / bbox 필지목록 |
-| `zoning.py` | 용도별 허용 여부 판정 | `USE_MATRIX` (allowed / permitted) |
-| `ordinance.py` | 조례·법정 상한 조회 | `resolve_limits(zone, jurisdiction)` |
-| `jimok.py` | 지목 → 전용허가 필요성 | 농지법 / 산지관리법 플래그 |
-| `massing.py` | 밀도 → 규모 환산 | 건축면적·연면적·층수·높이 |
+사전진단 에이전트가 sub-오케스트레이터로서 아래 도구를 순서대로 호출한다.
+초기 5개에서 현재 **20개 모듈**로 확장됐다.
+
+| 모듈 | 역할 |
+|---|---|
+| `vworld.py` / `landuse.py` | 지오코딩·필지·용도지역·bbox 필지목록 |
+| `zoning.py` | 용도별 허용 판정 `USE_MATRIX`(10개 용도) + 조례 밀도 상한 |
+| `ordinance.py` / `ordinance_index.py` | 건폐율/용적률 조례(약 200개 관할) + 조문 근거 검색(TF-IDF 7,585청크) |
+| `setback_rules.py` / `site_constraints.py` | 이격(119개 지자체 별표) + 정북일조·주차 반영 개념 영역 |
+| `road_access.py` | 도로 접도(연속지적도) 사전검토 |
+| `jimok.py` / `land_conversion.py` | 지목·농지/산지 전용 규제 |
+| `regulatory_screen.py` / `local_spatial.py` / `ogc.py` | 재해·환경·국가유산 스크리닝, 산지 SQLite RTree(106만 폴리곤), OGC 클라이언트 |
+| `building_register.py` | 건축물대장 표제부(건축HUB API) |
+| `permit_requirements.py` / `conversion_charges.py` / `development_charge.py` | 인허가 단계·부담금 참고액 |
+| `massing.py` / `footprint.py` / `law_open.py` | 규모 환산·건축면적 형상·현행 법령 검증 |
 
 #### vworld.py — 실전에서 걸렸던 것들
 
@@ -373,23 +381,25 @@ VWorld 내부 Cesium Entity를 직접 쓰고 두 높이 기준을 모두 `RELATI
 
 ## 6. 데이터 — `ordinances.json`
 
-두 층위를 담는다.
+건폐율/용적률 조례는 **두 파일·세 층위**로 담고 런타임에 함께 로드한다.
 
 ```
 _meta.statutory_reference.limits   국토계획법 시행령 제84·85조 법정 상한 (21개 용도지역)
-<지자체명>.<용도지역>               해당 지자체 도시계획조례가 정한 실제 적용값
+ordinances.json      검증 조례 — 사람이 ELIS 원문 HTML과 대조한 관할
+ordinances_auto.json 자동수집 조례 — 국가법령정보센터에서 자동 수집(원문 대조 전)
 _meta.sources[]                    조례명 · 조례번호 · 시행일 · 조문 · ELIS URL
 ```
 
-수집 현황 (2026-07-19 기준, 전부 ELIS 자치법규정보시스템 **원문 HTML**에서 직접 확인):
+수집 현황 (실측 2026-07-28):
 
-| 지자체 | 조례 규정 건수 |
-|---|---|
-| 서울특별시 | 16 / 21 |
-| 부산광역시 | 17 / 21 |
-| 인천광역시 | 21 / 21 |
-| 대구광역시 | 21 / 21 |
-| 경기도 성남시 | 16 / 21 |
+| 층위 | 파일 | 관할 수 |
+|---|---|---|
+| 검증 조례 | `ordinances.json` (서울·부산·인천·대구·성남·아산 등) | **11** |
+| 자동수집 조례 | `ordinances_auto.json` | **196** |
+| 손상·수동검토 | `ordinances_needs_manual.json` | 1 |
+
+즉 전국 **약 200개 관할**의 조례 건폐율/용적률이 실제 적용된다(검증분 우선, 미수집은
+법정 상한 폴백). 자동수집분은 원문 대조 전이라 표본 검수가 필요하다.
 
 **값이 없으면 지어내지 않고 `null` 로 두고 사유를 함께 기록한다.**
 
@@ -457,7 +467,7 @@ cd frontend && npm run dev
   *"이 지자체의 도시계획조례를 수집하지 못해 법정 상한을 적용했습니다."*
 - **개발행위허가 기준 미반영.** 비도시지역에서는 진입도로 폭, 경사도, 표고, 입목축적 같은
   지자체 개발행위허가 기준이 실질적 관문인데 아직 들어 있지 않다.
-- **`USE_MATRIX` 는 간이 판정표다.** 건축법 시행령 별표1 전체가 아니라 9개 대분류만 다룬다.
+- **`USE_MATRIX` 는 간이 판정표다.** 건축법 시행령 별표1 전체가 아니라 10개 대분류(교육연구시설 포함)만 다룬다.
 
 ### 판정의 성격
 
