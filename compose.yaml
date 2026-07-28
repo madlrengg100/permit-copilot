@@ -6,6 +6,14 @@ services:
       context: ./backend
     env_file:
       - .env
+    environment:
+      # 산지 SQLite 는 이미지에 넣지 않고(1.77GB) 볼륨으로 마운트해 이 경로로 읽는다.
+      FOREST_SQLITE_PATH: /data/forest/forest_class.sqlite
+    volumes:
+      # 호스트의 산지 데이터 폴더를 컨테이너 /data/forest 로 읽기전용 마운트.
+      # FOREST_DATA_DIR 을 .env 에 지정(예: /srv/permit-copilot/forest). 미지정 시
+      # 리포지토리 내 기본 경로(git 제외 대상)를 쓴다.
+      - ${FOREST_DATA_DIR:-./backend/data/processed/forest}:/data/forest:ro
     expose:
       - "8000"
     restart: unless-stopped

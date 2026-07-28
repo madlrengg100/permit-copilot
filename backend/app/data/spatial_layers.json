@@ -22,7 +22,7 @@
       "provider": "산림청",
       "enabled": true,
       "source_type": "local_sqlite",
-      "local_path": "/home/madlrengg100/permit-copilot/backend/data/processed/forest/forest_class.sqlite",
+      "local_path": "${FOREST_SQLITE_PATH:-/home/madlrengg100/permit-copilot/backend/data/processed/forest/forest_class.sqlite}",
       "wfs_url": "",
       "wms_url": "",
       "type_name": "forest_class",

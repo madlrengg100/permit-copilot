@@ -26,14 +26,19 @@ class OGCError(RuntimeError):
     pass
 
 
-_ENV_PATTERN = re.compile(r"^\$\{([A-Z][A-Z0-9_]*)\}$")
+# ${VAR} 또는 ${VAR:-기본값} — 기본값이 있으면 env 미설정 시 기본값을 쓴다.
+# (systemd 는 절대경로 기본값 그대로, Docker 는 FOREST_SQLITE_PATH 로 덮어쓴다)
+_ENV_PATTERN = re.compile(r"^\$\{([A-Z][A-Z0-9_]*)(?::-(.*))?\}$")
 
 
 def _env_value(value: Any) -> Any:
     if not isinstance(value, str):
         return value
     match = _ENV_PATTERN.match(value)
-    return os.getenv(match.group(1), "") if match else value
+    if not match:
+        return value
+    var, default = match.group(1), match.group(2) or ""
+    return os.getenv(var) or default
 
 
 @dataclass(frozen=True)
