@@ -637,3 +637,30 @@ cd frontend && npm run dev -- --host 0.0.0.0 --port 5173
 | FastAPI | `@app.on_event("startup")` 은 deprecated — `lifespan` 으로 이전 필요 |
 | 조회 API 오류 처리 | `/api/parcel-at` 등 GET 3종은 `VWorldError` 를 그대로 500으로 노출 |
 | 버전 관리 부재 | git 저장소가 아니어서 변경 이력 추적이 불가능하다 |
+
+---
+
+## 부록 · 현행 데이터·인프라 현황 (실측 2026-07-28)
+
+### A. 배포 인프라 (GCP)
+- 클라우드: GCP · 리전 asia-northeast3(서울)
+- 인스턴스: e2-standard-8 (8 vCPU AMD EPYC 7B12 · 31 GiB RAM · 500 GB)
+- OS: Rocky Linux 9.8 · systemd 서비스 2개(backend :8000 / frontend :5173)
+
+### B. LLM
+- Google Gemini `gemini-flash-lite-latest` (OpenAI 호환 모드, GEMINI_API_KEY)
+- 역할: 자연어→구조 변환·후속 답변만. 판정·계산·묘화는 결정적 코드.
+
+### C. 데이터 저장소 (파일 기반, DB 서버 없음)
+- 벡터 색인: numpy TF-IDF 코사인 — 조문 7,585 청크
+- 공간 RDB: SQLite RTree — 산지 폴리곤 1,066,806개 · 1.77 GB
+- 정형: JSON — 건폐율/용적률 약 200개 관할, 이격 119개 지자체
+
+### D. 조례 커버리지
+- 건폐율/용적률: 검증 11 + 자동수집 196 = 약 200개 관할 (미수집 법정상한 폴백)
+- 이격(대지 안의 공지): 119개 지자체 별표
+- 조례 조문 벡터색인: 7,585 청크
+
+### E. 공간 규제 연계
+- 산지구분(전국 106만 폴리곤 SQLite), 농업진흥지역(WFS), 건축물대장(건축HUB API),
+  도로 접도(연속지적도): 연계 / 재해위험지구·생태자연도: 미연계

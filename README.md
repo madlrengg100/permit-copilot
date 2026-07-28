@@ -91,22 +91,55 @@ systemctl status permit-copilot-backend permit-copilot-frontend
 HTTPS를 강제하면(HSTS/HTTPS-First) HTTP 서버라 `ERR_SSL_PROTOCOL_ERROR` 가 날 수
 있으니 `http://` 로 접속하거나 크롬의 "항상 보안 연결 사용"을 끈다.
 
+### 운영 환경 (GCP · LLM)
+
+| 구분 | 사양 |
+|---|---|
+| 클라우드 | Google Cloud Platform, 리전 `asia-northeast3`(서울) |
+| 인스턴스 | `e2-standard-8` — 8 vCPU(AMD EPYC 7B12) · 31 GiB RAM · 500 GB 디스크 |
+| OS | Rocky Linux 9.8 (kernel 5.14) |
+| 실행 | systemd 서비스 2개(backend :8000 / frontend :5173) |
+| LLM | **Google Gemini `gemini-flash-lite-latest`** (OpenAI 호환 모드) |
+
+LLM은 `app/llm.py` 의 어댑터로 공급자를 바꿔 붙인다. 운영값은
+`LLM_PROVIDER=openai`, `LLM_MODEL=gemini-flash-lite-latest`, `GEMINI_API_KEY` 이며,
+OpenAI 호환 `/chat/completions` 엔드포인트(`generativelanguage.googleapis.com`)로
+호출한다. LLM은 **자연어 → 구조 변환과 후속 자연어 답변에만** 쓰고, 판정·계산·묘화는
+결정적 코드가 하므로 경량 모델로도 동작한다. 산지 SQLite(1.77 GB)를 상시 적재하므로
+메모리 여유가 있는 사양을 쓴다.
+
+### 데이터 저장소 (DB 서버 없이 파일 기반)
+
+별도 DBMS(PostgreSQL 등)나 벡터DB 서버를 두지 않고, 파일 기반 저장소로 동작한다.
+
+| 종류 | 구현 | 현행 규모 | 위치 |
+|---|---|---|---|
+| **벡터 색인**(조례 근거 검색) | numpy TF-IDF 코사인 유사도(외부 임베딩·벡터DB 없음) | 조문 **7,585 청크** (`.npz` 7.5MB + chunks 11MB + vocab 0.5MB) | `app/data/ordinance_index.*` |
+| **공간 RDB**(산지구분) | SQLite + RTree, read-only 조회(`local_spatial.py`) | 폴리곤 **1,066,806개**, **1.77 GB** | `data/processed/forest/forest_class.sqlite` |
+| **정형 데이터**(조례·규제) | JSON | 건폐율/용적률 200개 관할 · 이격 119개 지자체 · 공간레이어 설정 | `app/data/*.json` |
+| **실시간 API**(공간정보) | 외부 조회(캐시 없음) | VWorld(지오코딩·필지·용도지역·농업진흥), 국토부 건축HUB(건축물대장), 국가법령정보센터 | — |
+
+벡터 색인은 임베딩 모델로 교체할 수 있게 `_vectorize()`/`search()` 만 바꾸면 되도록
+분리돼 있다. 산지 SQLite와 조례 벡터 색인은 재생성 가능(대용량·`.gitignore` 대상)이라
+Git·Docker 이미지에 넣지 않고 빌드 스크립트로 만든다
+(`scripts/import_forest_shp.py`, `scripts/build_ordinance_index.py`).
+
 ## 조례 데이터
 
-건폐율·용적률 수치는 코드에 하드코딩하지 않고 `app/data/ordinances.json` 에서
-읽는다. 이 파일은 두 층위를 담는다.
+건폐율·용적률 수치는 코드에 하드코딩하지 않고 조례 데이터에서 읽는다. 세 층위다.
 
-| 층위 | 출처 | 시점 |
+| 층위 | 출처 | 규모 |
 |---|---|---|
-| 법정 상한 | 국토계획법 시행령 제84·85조 (대통령령 제36220호) | 시행 2026-03-24 |
-| 서울특별시 | 도시계획조례 제44·48조 | 시행 2026-07-13 |
-| 부산광역시 | 도시계획조례 제49·50조 | 시행 2026-04-08 |
-| 인천광역시 | 도시계획조례 제64·65조 | 시행 2026-07-13 |
-| 경기도 성남시 | 도시계획조례 제66·67조 | 시행 2026-02-24 |
-| 대구광역시 | 도시계획조례 제75·80조 | 시행 2026-05-11 |
+| 법정 상한 | 국토계획법 시행령 제84·85조 (대통령령 제36220호, 시행 2026-03-24) | 폴백 |
+| 검증 조례 | `app/data/ordinances.json` — 서울·부산·인천·성남·대구·아산 등 사람 대조 | **11개 관할** |
+| 자동수집 조례 | `app/data/ordinances_auto.json` — 국가법령정보센터에서 도시계획조례 자동 수집 | **196개 관할** |
 
-주소에서 지자체가 인식되면 조례값이, 아니면 법정 상한이 적용된다. 어느 쪽을
-썼는지는 판정 결과의 `limit_source` (`ordinance` / `statutory`) 로 확인한다.
+즉 전국 **약 200개 관할**의 도시계획조례 건폐율/용적률이 실제 적용된다(청주·경산·
+강릉 등). 두 파일 모두 런타임에 로드되며, 검증 조례가 자동수집분보다 우선한다.
+주소에서 인식된 지자체 조례가 있으면 그 값이, 없으면 법정 상한이 적용되고, 어느
+쪽을 썼는지는 판정 결과의 `limit_source` (`ordinance` / `statutory`) 로 확인한다.
+자동수집분은 원문 대조 전이므로 표본 검수가 필요하다(손상 관할은
+`ordinances_needs_manual.json` 으로 분리).
 
 ```bash
 python compare_ordinances.py              # 전체 비교표
@@ -167,7 +200,8 @@ python compare_ordinances.py --gaps        # 법정 대비 격차 큰 순
 현재 자동 판정 연결 상태:
 
 - 농업진흥지역: VWorld WFS 실시간 조회
-- 산지구분: 전국 원본을 적재한 로컬 SQLite RTree 조회
+- 산지구분: 전국 원본(폴리곤 106만 개, SQLite 1.77 GB)을 로컬 RTree로 실시간 조회
+- 건축물대장: 국토부 건축HUB API(`getBrTitleInfo`)로 전국 표제부 실시간 조회
 - 도로 접도: 연속지적도에서 지목 `도로`인 인접 필지를 찾아 사전검토
 - 재해위험지구: 공공데이터포털에는 서비스가 있으나 정확한 전용 WFS
   식별자/엔드포인트 미확보로 비활성화. 다른 용도지구가 섞인 VWorld 레이어를
