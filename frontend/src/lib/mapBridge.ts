@@ -72,7 +72,7 @@ export type MapCommand =
   | {
       /** 검은 박스 대신 지도에 직접 얹는 치수선·면적 라벨 */
       type: "show_dimensions";
-      segments: Array<{ positions: number[][]; label: string }>;
+      segments: Array<{ positions: number[][]; label: string; color?: string; width?: number; onTop?: boolean }>;
       labels: Array<{ lon: number; lat: number; text: string; height?: number; offset?: boolean }>;
     }
   | {
@@ -634,6 +634,9 @@ export class MapBridge {
   private siteNoteIds: string[] = [];
   // 치수선·면적 라벨 (검은 박스 대체)
   private dimensionIds: string[] = [];
+  // 세그먼트 라벨(가로·세로·도로접촉·건축선/이격) 겹침 방지용 앵커 + 카메라 리스너.
+  private dimLabelAnchors: { id: string; lon: number; lat: number; w: number; h: number }[] = [];
+  private dimLabelDisposer: (() => void) | null = null;
   // 팝업 접기 시 숨겼다가 펼칠 때 다시 그리기 위해 마지막 치수 명령을 보관
   private lastDimensionsCommand: Extract<MapCommand, { type: "show_dimensions" }> | null = null;
   // 용도지역 주제도 오버레이
@@ -1142,18 +1145,23 @@ export class MapBridge {
     // 치수선 + 선 중앙 라벨
     for (const seg of cmd.segments) {
       if (!seg.positions || seg.positions.length < 2) continue;
-      const flat = seg.positions.flatMap(([lon, lat]) => [lon, lat]);
+      // 세그먼트별 색(건축선·이격선 등은 눈에 띄는 색). 기본은 노란색.
+      const segColor = seg.color
+        ? ws3d.common.Color.fromCssColorString(seg.color)
+        : yellow;
+      const isCustom = Boolean(seg.color);
       const lineId = `map-dim-line-${Date.now()}-${rid()}`;
-      this.viewer.entities.add({
-        id: lineId,
-        polyline: {
-          positions: ws3d.common.Cartesian3.fromDegreesArray(flat),
-          clampToGround: true,
-          width: 3,
-          material: yellow,
-          depthFailMaterial: yellow,
-        },
-      });
+      const flat = seg.positions.flatMap(([lon, lat]) => [lon, lat]);
+      const linePoly: any = {
+        positions: ws3d.common.Cartesian3.fromDegreesArray(flat),
+        clampToGround: true,
+        width: seg.width ?? (isCustom ? 5 : 3),
+        material: segColor,
+        depthFailMaterial: segColor,
+      };
+      // onTop: 지적 경계선(청록)보다 위에 그려 선면 전체가 그 색으로 보이게 한다.
+      if (seg.onTop) linePoly.zIndex = 1000;
+      this.viewer.entities.add({ id: lineId, polyline: linePoly });
       this.dimensionIds.push(lineId);
 
       const mid = seg.positions[Math.floor(seg.positions.length / 2)];
@@ -1167,10 +1175,10 @@ export class MapBridge {
         position: ws3d.common.Cartesian3.fromDegrees(midLon, midLat, 1),
         label: {
           text: seg.label,
-          font: "12px 'Malgun Gothic', sans-serif",
-          fillColor: ws3d.common.Color.BLACK,
+          font: isCustom ? "bold 13px 'Malgun Gothic', sans-serif" : "12px 'Malgun Gothic', sans-serif",
+          fillColor: isCustom ? ws3d.common.Color.WHITE : ws3d.common.Color.BLACK,
           showBackground: true,
-          backgroundColor: yellow.withAlpha(0.92),
+          backgroundColor: isCustom ? segColor.withAlpha(0.95) : yellow.withAlpha(0.92),
           // 치수선 라벨(가로/세로)은 살짝 위로 올려, 같은 지면의 '도로 접촉'
           // 라벨과 겹치지 않게 한다.
           pixelOffset: new ws3d.common.Cartesian2(0, -20),
@@ -1179,6 +1187,14 @@ export class MapBridge {
         },
       });
       this.dimensionIds.push(labelId);
+      // 겹침 방지 대상으로 등록(글자수로 대략적 폭 추정).
+      this.dimLabelAnchors.push({
+        id: labelId,
+        lon: midLon,
+        lat: midLat,
+        w: seg.label.length * 9 + 14,
+        h: 22,
+      });
       void mid;
     }
 
@@ -1216,11 +1232,61 @@ export class MapBridge {
       });
       this.dimensionIds.push(id);
     }
+    // 세그먼트 라벨(가로·세로·도로접촉·건축선/이격) 겹침 방지 — 카메라가 움직일
+    // 때마다 화면좌표로 겹침을 검사해 라벨을 화면상에서 밀어낸다. 회전·줌아웃에도
+    // 안 붙는다. 면적 라벨(건축/대지면적)은 대상에서 제외한다.
+    const declutter = () => {
+      const C = (window as any).Cesium;
+      const scene: any = this.viewer.scene;
+      if (!C?.SceneTransforms || !scene?.camera) return;
+      const toWin = C.SceneTransforms.wgs84ToWindowCoordinates?.bind(C.SceneTransforms)
+        ?? C.SceneTransforms.worldToWindowCoordinates?.bind(C.SceneTransforms);
+      if (!toWin) return;
+      const camera = scene.camera;
+      // 화면에 나타나는 순서(가까운 것 우선)로 자리를 먼저 잡는다.
+      const placed: { x: number; y: number; w: number; h: number }[] = [];
+      // 후보 오프셋(화면 px): 라벨이 길어서 세로로 쌓아 확실히 떨어뜨린다.
+      const cands: [number, number][] = [
+        [0, -22], [0, 22], [0, -48], [0, 48], [0, -74], [0, 74],
+        [0, -100], [0, 100], [0, -126], [0, 126], [0, -152], [0, 152],
+      ];
+      const anchors = this.dimLabelAnchors
+        .map((a) => {
+          const gh = this.terrainHeight(a.lon, a.lat);
+          const world = C.Cartesian3.fromDegrees(a.lon, a.lat, gh + 1);
+          const toPt = C.Cartesian3.subtract(world, camera.positionWC, new C.Cartesian3());
+          const front = C.Cartesian3.dot(toPt, camera.directionWC) > 0;
+          const win = front ? toWin(scene, world) : undefined;
+          const dist = C.Cartesian3.magnitude(toPt);
+          return { a, win, dist };
+        })
+        .filter((x) => x.win)
+        .sort((x, y) => x.dist - y.dist);
+      for (const { a, win } of anchors) {
+        const ent = this.viewer.entities.getById(a.id);
+        if (!ent?.label) continue;
+        let chosen = cands[0];
+        for (const [cx, cy] of cands) {
+          const rect = { x: win.x + cx - a.w / 2, y: win.y + cy - a.h / 2, w: a.w, h: a.h };
+          const hit = placed.some(
+            (p) => !(rect.x + rect.w < p.x || rect.x > p.x + p.w || rect.y + rect.h < p.y || rect.y > p.y + p.h),
+          );
+          if (!hit) { chosen = [cx, cy]; break; }
+        }
+        placed.push({ x: win.x + chosen[0] - a.w / 2, y: win.y + chosen[1] - a.h / 2, w: a.w, h: a.h });
+        ent.label.pixelOffset = new C.Cartesian2(chosen[0], chosen[1]);
+      }
+    };
+    declutter();
+    this.dimLabelDisposer = this.onCameraChange(declutter);
     this.viewer.scene?.requestRender?.();
     this.note(`✓ 치수선 ${cmd.segments.length}개 · 라벨 ${cmd.labels.length}개 표시`);
   }
 
   clearDimensions(): void {
+    this.dimLabelDisposer?.();
+    this.dimLabelDisposer = null;
+    this.dimLabelAnchors = [];
     this.removeAll(this.dimensionIds);
   }
 

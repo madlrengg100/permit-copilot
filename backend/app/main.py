@@ -72,6 +72,10 @@ class ParcelSelectionRequest(BaseModel):
     pnu: str = ""
 
 
+class SetbackForUseRequest(BaseModel):
+    use: str
+
+
 class SpatialOverlapRequest(BaseModel):
     parcel_geometry: dict
     layer_ids: Optional[List[str]] = None
@@ -322,6 +326,75 @@ async def set_session_selection(
         req.address,
     )
     return {"ok": True, "address": req.address, "pnu": req.pnu}
+
+
+@app.post("/api/session/{session_id}/setback-for-use")
+async def setback_for_use(
+    session_id: str,
+    req: SetbackForUseRequest,
+    x_app_token: Optional[str] = Header(default=None),
+) -> dict:
+    """현재 진단 필지에서 '지정한 용도'의 대지 안의 공지(이격)를 계산해 돌려준다.
+    모델 버튼별로 그 용도의 실제 이격을 보여주기 위한 것(재진단·카드 없이)."""
+    if APP_TOKEN and x_app_token != APP_TOKEN:
+        raise HTTPException(status_code=401, detail="유효하지 않은 앱 토큰입니다.")
+    orch = _sessions.get(session_id)
+    diag = (orch.diagnosis if orch else None) or {}
+    if not diag:
+        return {"ok": False, "reason": "진단된 필지가 없습니다."}
+    from .tools import setback_rules
+
+    zones = (diag.get("land_use") or {}).get("zones") or [None]
+    zone = zones[0]
+    jurisdiction = diag.get("jurisdiction") or ""
+    site = diag.get("site_constraints") or {}
+    gross = float((diag.get("massing") or {}).get("gross_floor_area_m2") or 0)
+    rule = setback_rules.lookup(jurisdiction, req.use, zone or "", gross)
+    front = rule.get("front_m") or 0
+    adjacent = rule.get("adjacent_m") or 0
+
+    # 이 용도의 이격을 반영한 치수선(전면/인접 건축선 등)을 지도에 다시 그리도록,
+    # site_constraints 를 그 용도값으로 바꾼 사본으로 치수선을 만들어 함께 돌려준다.
+    from .agents import map_control
+
+    diag2 = dict(diag)
+    site2 = dict(site)
+    site2["front_setback_m"] = front
+    site2["adjacent_setback_m"] = adjacent
+    diag2["site_constraints"] = site2
+    loc = diag.get("location") or {}
+    map_commands: list[dict] = []
+    if loc.get("lon") is not None and loc.get("lat") is not None:
+        dims = map_control._build_dimensions(diag2, float(loc["lon"]), float(loc["lat"]))
+        if dims:
+            map_commands.append(dims)
+
+    # 이 용도의 판정(가능/조건부/불가)도 함께 계산해, 클릭 시 팝업 '검토 용도'와
+    # 판정 배지가 그 용도 기준으로 바뀌게 한다.
+    from .tools import zoning as zoning_tool
+    from .agents.map_control import VERDICT_COLOR, VERDICT_LABEL
+
+    districts = (diag.get("land_use") or {}).get("districts") or []
+    zr = zoning_tool.lookup_zoning_rules(zone or "", req.use, districts, jurisdiction)
+    use_verdict = zr.get("verdict", "unknown")
+
+    return {
+        "ok": True,
+        "use": req.use,
+        "zone": zone,
+        "gross_floor_area_m2": gross,
+        "verdict": use_verdict,
+        "verdict_label": VERDICT_LABEL.get(use_verdict, use_verdict),
+        "verdict_color": VERDICT_COLOR.get(use_verdict, "#616161"),
+        "front_setback_m": rule.get("front_m"),
+        "adjacent_setback_m": rule.get("adjacent_m"),
+        # 정북 일조 이격은 용도지역 기준(용도 무관)이라 현재 진단값을 그대로 쓴다.
+        "north_setback_m": site.get("north_setback_m") or 0,
+        "source": rule.get("source"),
+        "status": rule.get("status"),
+        "note": rule.get("note"),
+        "map_commands": map_commands,
+    }
 
 
 @app.delete("/api/session/{session_id}")

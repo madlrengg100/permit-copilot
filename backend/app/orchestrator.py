@@ -42,7 +42,11 @@ SYSTEM = """당신은 공간정보 기반 건축 인허가 상담 시스템의 �
 - 주소가 모호하면(예: "강남에 건물") 되묻는다. 임의로 특정 주소를 지어내지 않는다.
 - 지도 표시를 켜고 끄라는 요청("지적도 꺼줘", "용도지역 보여줘", "경사도 켜줘",
   "치수선 숨겨", "주제도 다 꺼줘")은 set_map_layers 를 쓴다. 진단을 다시 돌리지 않는다.
-  '다 꺼/켜'는 해당하는 항목을 모두 지정한다. 답변은 무엇을 켰/껐는지 한 줄로 짧게.
+  '다 꺼/켜'는 해당하는 항목을 모두 지정한다. **레이어 켜고 끄기는 화면에 즉시
+  반영되는 조용한 동작이다 — 답변 텍스트에 '경사도와 지적도를 켜고 용도지역을 껐습니다'
+  처럼 무엇을 켰/껐는지 서술하지 마라.** 사용자가 레이어 제어와 함께 다른 질문(현황·
+  이격·판정·필지분할 등)을 물었으면, 레이어 변경은 일절 언급하지 말고 그 질문에만 답하라.
+  레이어 제어만 단독으로 요청했을 때만 '○○ 표시를 변경했습니다'처럼 아주 짧게 알린다.
 - "팝업(창) 닫아/접어/열어/펼쳐" 처럼 가능여부 판정 팝업을 여닫는 요청도 set_map_layers
   의 panel 로 처리한다(닫기=false, 열기=true). 임의로 '닫았다'고만 말하지 말고 반드시
   도구를 호출한다.
@@ -78,11 +82,15 @@ SYSTEM = """당신은 공간정보 기반 건축 인허가 상담 시스템의 �
   · "상가는?" → 용도지역 기준으로 되는지/안 되는지 + 이유를 대화체로. (일반 상가가 불가면
     그 사실을 분명히.)
   · "여기 뭐가 문제야?" → 판정을 좌우한 핵심 제약만 골라 설명.
-- **근거는 이 시스템이 수집한 데이터(직전 진단 diagnosis·regulation·permit_requirements 등)를
-  1순위로 쓴다.** 데이터에 있으면 그걸로 답한다.
-- **데이터에 없으면**: 네가 아는 일반 법령·인허가 상식으로 답하되 "정확한 건 관할 행정청·
-  최신 조례 확인이 필요하다"는 캐비앗을 붙인다. 그것도 불확실하면 **모른다고 솔직히 말하고**,
-  사용자가 대신 물어볼 만한 것(예: 구체 지번, 특정 시설·용도, 조례명)을 제안한다.
+- **근거는 이 시스템이 수집한 데이터(직전 진단 diagnosis·regulation·site_constraints·
+  conversion_charge·permit_requirements 등)를 반드시 1순위로 쓴다.** 물어본 항목의 값이
+  이 데이터에 있으면 **그 수치·근거를 먼저 명시해 답한다.** 이격·건폐율·용적률·규모·부담금·
+  도로 접함처럼 값이 이미 계산돼 있는 항목을 두고 "관할 행정청에 문의하라"는 일반 회피로
+  빠지지 마라 — 값이 있는데 일반론으로만 답하는 것은 오답이다. 계산값이 0이거나 미수집이면
+  그 사실(예: 조례 미수집으로 0m)을 근거와 함께 밝힌다.
+- **정말 데이터에 없는 항목만**: 네가 아는 일반 법령·인허가 상식으로 답하되 "정확한 건 관할
+  행정청·최신 조례 확인이 필요하다"는 캐비앗을 붙인다. 그것도 불확실하면 **모른다고 솔직히
+  말하고**, 사용자가 대신 물어볼 만한 것(예: 구체 지번, 특정 시설·용도, 조례명)을 제안한다.
   없는 걸 지어내지 마라.
 - 인허가 절차·서류·처리기간·민원 접수 방법은 대화하듯 자연스럽게 설명한다(permit_requirements
   가 있으면 근거로, 없으면 일반 절차 + 캐비앗).
@@ -366,6 +374,32 @@ def _normalize_numbered_headings(text: str) -> str:
     return re.sub(r"(?m)^\*\*\d+\.(\s*)", replace, text)
 
 
+def _strip_internal_field_names(text: str) -> str:
+    """LLM이 답변에 흘린 내부 데이터 필드명(영어 snake_case)을 제거한다.
+
+    front_setback_m·zone_use_overview 같은 필드명이 사용자에게 노출되면 안 된다.
+    한국어 문장에는 밑줄이 들어간 영어 토큰이 없으므로, 밑줄 포함 영어 토큰과
+    그 앞의 괄호 병기를 안전하게 걷어낸다.
+    """
+    if not text:
+        return text
+    # "…이격(front_setback_m)" / "(regulation.zone_use_overview)" 괄호 병기 → 괄호째 제거
+    text = re.sub(
+        r"\s*[\(（]\s*[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)*\s*[\)）]",
+        "",
+        text,
+    )
+    # 점으로 이어붙인 필드 경로(regulation.zone_use_overview, site_constraints.front_setback_m)
+    text = re.sub(r"\b[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+", "", text)
+    # 본문에 그대로 노출된 snake_case 필드명 제거
+    text = re.sub(r"[A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_]+", "", text)
+    # 제거하면서 생긴 이중 공백·공백 앞 문장부호·문두 부호 정리
+    text = re.sub(r"\s{2,}", " ", text)
+    text = re.sub(r"\s+([,.·)\]）])", r"\1", text)
+    text = re.sub(r"^[\s,.·)\]）]+", "", text)
+    return text.strip()
+
+
 def _same_parcel_address(address_in_query: str, diagnosis: dict | None) -> bool:
     """질의의 전체 지번이 직전 진단 필지와 같은지 공백 차이를 무시해 비교한다."""
     if not address_in_query or not diagnosis:
@@ -413,6 +447,9 @@ class Orchestrator:
         self._last_query = ""                # 직전 사용자 질의(추천 농막류 감지용)
         self.selected_parcel: dict | None = None
         self._selection_changed = False
+        # 필지(PNU)별로 마지막 진단을 기억한다. 이전에 진단한 필지를 다시 클릭하면
+        # 새 카드가 아니라 그 진단을 복원해 후속질문(자연어)으로 이어가게 한다.
+        self._diagnosis_by_pnu: dict[str, dict] = {}
 
     def set_selected_parcel(
         self,
@@ -425,20 +462,26 @@ class Orchestrator:
     ) -> None:
         diagnosed_pnu = ((self.diagnosis or {}).get("parcel") or {}).get("pnu") or ""
         if from_mouse:
-            # 진단 전 최초 클릭 또는 현재 진단과 다른 PNU 클릭은 다음 질문에서
-            # 반드시 새 종합 진단을 시작해야 한다.
             parcel_changed = bool(
                 pnu and (not diagnosed_pnu or pnu != diagnosed_pnu)
             )
-            self._selection_changed = parcel_changed
-            if parcel_changed:
-                # 필지 전환은 새 상담의 시작이다. 이전 필지의 진단·추천·LLM
-                # 대화문맥을 남겨 두면 주소 없는 후속 질문에 섞일 수 있으므로
-                # 활성 필지 문맥을 완전히 분리한다.
+            if parcel_changed and pnu in self._diagnosis_by_pnu:
+                # 이전에 진단한 필지를 다시 클릭 → 그 진단을 복원하고, 다음 질문은
+                # 새 카드가 아니라 후속질문(자연어)으로 이어간다.
+                self.diagnosis = self._diagnosis_by_pnu[pnu]
+                self.recommendations = None
+                self.messages = []
+                self._diag_shown = False
+                self._selection_changed = False
+            elif parcel_changed:
+                # 처음 보는 새 필지 → 새 상담의 시작. 다음 질문에서 종합 카드.
+                self._selection_changed = True
                 self.diagnosis = None
                 self.recommendations = None
                 self.messages = []
                 self._diag_shown = False
+            else:
+                self._selection_changed = False
         elif pnu and diagnosed_pnu == pnu:
             self._selection_changed = False
         self.selected_parcel = {
@@ -765,6 +808,57 @@ class Orchestrator:
             user_query,
         )
 
+        # "선택 필지에 단독주택 건물 보여줘"처럼 용도 모델 '표시'를 요청하는데 새 좌표·
+        # 주소가 없으면, 이미 선택·진단된 필지 위에 세우려는 것이다. 이를 주소검색
+        # (move_to_parcel)이나 LLM 도구선택에 맡기면 '선택 필지'를 주소로 오해해
+        # "주소가 여러 곳…" 으로 새므로, 여기서 결정적으로 현재 필지에 모델을 올린다.
+        if (
+            requests_specific_model
+            and not has_new_location
+            and not coordinate_match
+            and re.search(r"(보여|올려|세워|배치|표시)", compact_query)
+            and (self.diagnosis or self.selected_parcel)
+        ):
+            _model_map = {
+                "창고": "warehouse", "공장": "factory", "상가": "commercial",
+                "단독주택": "detached", "주택": "detached",
+                "공동주택": "lowrise", "주거": "lowrise",
+            }
+            requested_model = next(
+                (m for k, m in _model_map.items() if k in compact_query), "detached"
+            )
+            floor_match = re.search(r"(\d+)\s*층", compact_query)
+            floors = int(floor_match.group(1)) if floor_match else None
+            before = bool(
+                re.search(r"(토공|절토|성토|평탄화)(하기)?(전|이전)", compact_query)
+                or re.search(r"(원지형|원래지형)", compact_query)
+            )
+            yield {
+                "event": "map_commands",
+                "data": {"commands": [{
+                    "type": "show_housing_model",
+                    "model": requested_model,
+                    "floors": floors,
+                    "earthwork_mode": "original" if before else "graded",
+                    "hide_envelope": True,
+                }]},
+            }
+            _addr = (
+                ((self.diagnosis or {}).get("parcel") or {}).get("jibun")
+                or ((self.diagnosis or {}).get("location") or {}).get("matched_address")
+                or (self.selected_parcel or {}).get("address")
+                or "선택한 필지"
+            )
+            _label = {
+                "warehouse": "창고", "factory": "공장", "commercial": "상가",
+                "detached": "단독주택", "lowrise": "공동주택",
+            }.get(requested_model, "건물")
+            yield {
+                "event": "message",
+                "data": {"text": f"**{_addr}**에 {_label} 모델을 지도에 올렸습니다."},
+            }
+            return
+
         # 지번 이동은 모델의 도구 선택에 맡기지 않는다. 프론트 주소 선확인은
         # 카메라만 옮기므로, 모델이 move_to_parcel 호출을 생략하면 필지 경계가
         # 없는 산 화면만 남는다. 주소+이동 의도가 명확하면 여기서 경계까지 그린다.
@@ -777,6 +871,12 @@ class Orchestrator:
             parcel_move_match
             and re.search(r"(이동|가\s*줘|찾아\s*줘|보여\s*줘)", user_query)
             and not re.search(r"(건축|지을|짓|가능|진단|검토)", user_query)
+            # '단독주택 건물 보여줘'처럼 특정 모델/건물 표시 요청은 주소 이동이 아니다.
+            and not requests_specific_model
+            and not re.search(r"(건물|모델)", user_query)
+            # 좌표가 붙은 건 이미 선택된 필지 맥락 — 주소 재검색으로 빠지면 안 된다.
+            and not has_new_location
+            and not coordinate_match
         ):
             yield {"event": "tool_start", "data": {"tool": "move_to_parcel"}}
             try:
@@ -1046,7 +1146,7 @@ class Orchestrator:
                             tools=[],
                             max_tokens=600,
                         )
-                        text = " ".join(natural.texts).strip()
+                        text = _strip_internal_field_names(" ".join(natural.texts).strip())
                         if not text:
                             text = (
                                 f"{address}의 대장상 기존 건물은 {existing_floor}층이고, "
@@ -1149,7 +1249,7 @@ class Orchestrator:
                     tools=[],
                     max_tokens=900,
                 )
-                text = " ".join(natural.texts).strip()
+                text = _strip_internal_field_names(" ".join(natural.texts).strip())
             except Exception:
                 text = ""
             if not text:
@@ -1350,6 +1450,50 @@ class Orchestrator:
                 yield {"event": "error", "data": {"tool": "prediagnose", "message": str(exc)}}
             return
 
+        # 개념·정의·해석 질문("건축선 후퇴가 이격거리야?", "필지 분할해야 해?",
+        # "용적률이 뭐야?", "협의 필요해?")은 '건축(선)·필지' 같은 단어가 들어가도
+        # 재진단·카드 대상이 아니다. 이미 진단된 같은 필지면 자연어로 해석해 답한다.
+        _concept_q = re.search(
+            r"(뭐(?:야|예요|니|냐)|무엇(?:이|인가|인지)|무슨\s*(?:뜻|의미|말)|의미(?:가|는|야|니)|"
+            r"뜻(?:이|은|을|인|이야)?|정의|차이(?:가|는|야|점)?|란\s*(?:뭐|무엇)|이란|"
+            r"이격거리(?:야|냐|인가|인지)|후퇴(?:가|는|해야|하면|한다는)|"
+            r"분할(?:해야|하면|이\s*필요|필요한|되나|하는\s*거|하는거)|"
+            r"협의(?:가\s*필요|해야|필요한|가\s*있)|절차(?:가|는)?\s*(?:어떻게|뭐))",
+            user_query,
+        )
+        _build_intent = re.search(
+            r"(지을\s*수|지어도\s*(?:되|돼)|신축|몇\s*층|\d+\s*층|모델|배치|올려|세워|"
+            r"건물\s*(?:지|올|세))",
+            user_query,
+        )
+        if coordinate_match and _concept_q and not _build_intent:
+            if self.diagnosis and _same_parcel_coordinate(coordinate_match, self.diagnosis):
+                # 이미 진단된 같은 필지 → 재진단 없이 바로 자연어로 해석해 답한다.
+                yield {
+                    "event": "message",
+                    "data": {"text": await self._natural_followup_answer(user_query)},
+                }
+            else:
+                # 진단 데이터가 없거나(세션 초기화 등) 다른 필지면 데이터는 갱신하되,
+                # 개념 질문이므로 종합 판정 카드는 찍지 않고(emit_card=False) 개념
+                # 답변만 준다.
+                yield {"event": "tool_start", "data": {"tool": "prediagnose"}}
+                try:
+                    _out, events = await self._diagnose_and_emit(user_query, emit_card=False)
+                    for event in events:
+                        yield event
+                    yield {
+                        "event": "message",
+                        "data": {"text": await self._natural_followup_answer(user_query)},
+                    }
+                except Exception as exc:
+                    yield {
+                        "event": "error",
+                        "data": {"tool": "prediagnose", "message": str(exc)},
+                    }
+            self._selection_changed = False
+            return
+
         coordinate_diagnosis = bool(
             coordinate_match
             and (
@@ -1416,28 +1560,12 @@ class Orchestrator:
                         },
                     }
                 elif "원룸" in user_query:
-                    verdict = (self.diagnosis or {}).get("verdict")
-                    address = (
-                        ((self.diagnosis or {}).get("parcel") or {}).get("jibun")
-                        or ((self.diagnosis or {}).get("location") or {}).get("matched_address")
-                        or "선택한 위치"
-                    )
-                    verdict_text = {
-                        "allowed": "가능",
-                        "conditional": "조건부 가능",
-                        "not_allowed": "불가",
-                        "unknown": "추가 확인 필요",
-                    }.get(verdict, "추가 확인 필요")
+                    # 원룸·복합용도(1층 임대+2층 자가 등) 질문 — 용도지역을 하드코딩하지
+                    # 않고, 실제 진단 데이터(용도지역·zone_use_overview 등)를 읽어 답한다.
                     yield {
                         "event": "message",
                         "data": {
-                            "text": (
-                                f"선택하신 필지는 **{address}**이며, 이 계획은 **{verdict_text}**입니다. "
-                                "2층에 주인이 거주하고 1층을 원룸으로 임대하는 계획은 보통 "
-                                "다가구주택(단독주택)으로 검토합니다. 제1종전용주거지역에서는 "
-                                "지구단위계획·조례의 다가구 제한과 주차 기준을 확인하기 전에는 "
-                                "이 임대형 계획을 확정할 수 없습니다."
-                            )
+                            "text": await self._natural_followup_answer(user_query)
                         },
                     }
                 elif same_parcel:
@@ -1447,6 +1575,10 @@ class Orchestrator:
                             "text": await self._natural_followup_answer(user_query)
                         },
                     }
+                # 새 필지 클릭 플래그는 '첫 진단' 한 번만 소비한다. 이후 같은 필지
+                # 후속 질문은 새 진단(카드)이 아니라 자연어 답변으로 가야 하므로,
+                # 진단을 한 번 돌렸으면 여기서 반드시 해제한다.
+                self._selection_changed = False
             except Exception as exc:
                 yield {"event": "error", "data": {"tool": "prediagnose", "message": str(exc)}}
             return
@@ -1474,7 +1606,10 @@ class Orchestrator:
             self.messages.append(response.raw_assistant)
 
             for text in response.texts:
-                yield {"event": "message", "data": {"text": text}}
+                yield {
+                    "event": "message",
+                    "data": {"text": _strip_internal_field_names(text)},
+                }
 
             if not response.tool_calls:
                 return
@@ -1557,7 +1692,7 @@ class Orchestrator:
                 tools=[],
                 max_tokens=700,
             )
-            text = " ".join(natural.texts).strip()
+            text = _strip_internal_field_names(" ".join(natural.texts).strip())
             if text:
                 return text
         except Exception:
@@ -1634,9 +1769,65 @@ class Orchestrator:
                     "같은 필지에 대한 후속 질문이다. 제공된 최신 진단 데이터만 근거로 "
                     "사용자가 방금 물은 내용에만 한국어 자연어로 직접 답하라. 종합 판정 "
                     "보고서, 섹션 제목, 번호 목록, 건축 모델 추천을 다시 출력하지 마라. "
-                    "주소는 혼동 방지를 위해 첫 문장에 한 번만 자연스럽게 언급하고, "
-                    "결론과 핵심 이유를 최대 3문장으로 간결하게 설명하라. 질문하지 않은 수치와 "
-                    "절차를 전부 나열하지 마라. 확인되지 않은 내용은 확정하지 마라."
+                    "주소는 혼동 방지를 위해 첫 문장에 한 번만 자연스럽게 언급하라. "
+                    # 단순 사실 질문은 짧게, 가능여부·절차 질문은 육하원칙 요소가 다 드러나게.
+                    "단순 사실 하나를 묻는 질문(예: 이격이 얼마야, 공시지가 얼마야)이면 결론과 "
+                    "핵심 이유를 1~3문장으로 간결하게 답하라. 다만 '○○ 지을 수 있냐'처럼 가능 "
+                    "여부·절차를 묻는 질문이면 육하원칙 요소가 빠짐없이 드러나게 구조적으로 답하라 "
+                    "— ①무엇이 가능한지(판정)와 이 필지 현황(무엇/어디), ②왜 그런지(조건부·제한 "
+                    "사유), ③무엇이 필요하고 어떻게 진행하는지(필요 절차·요건·언제), ④어디에·누구에게 "
+                    "문의하는지(토목/건축 설계사무소·관할청)를 각각 한두 문장으로 순서대로 짚어라. "
+                    "단 '1.무엇 2.왜' 같은 번호·라벨은 붙이지 말고 자연스러운 문단으로 이어 써라. "
+                    "질문하지 않은 수치를 무작정 전부 나열하지는 말고, 확인되지 않은 내용은 "
+                    "확정하지 마라. "
+                    # 이격거리는 반드시 진단 데이터의 계산값을 그대로 읽어 답한다.
+                    "이격거리를 물으면 진단 데이터의 전면 건축선 이격, 인접 대지경계 이격, "
+                    "정북 일조 이격 계산값을 그대로 근거로 제시하라. 값이 0이면 '0m로 "
+                    "확인됩니다'처럼 명확히 답하되, '시스템 계산상' 같은 표현은 쓰지 마라. "
+                    "조례 별표를 아직 수집하지 못해 0m인 경우에는 '관할 건축조례 대지 안의 공지 "
+                    "별표가 아직 수집되지 않아 0m로 확인됩니다'라고 사유를 밝혀라. 일반적인 "
+                    "건축법 시행령 수치(1m, 50cm 등)를 진단값 대신 임의로 지어내지 마라. "
+                    # 용어의 뜻·개념을 물으면 사전적 의미 + 현황 + 실질적 함의까지 해석한다.
+                    "용어의 뜻·개념을 물으면(예: '건축선 후퇴가 이격거리야?', '이격거리가 뭐야', "
+                    "'용적률이 뭐야') ①먼저 그 용어의 사전적 의미를 한두 문장으로 쉽게 설명하고, "
+                    "②이어서 이 필지의 현황(진단 데이터의 해당 계산값)을 짚고, ③거기서 그치지 "
+                    "말고 그 개념이 이 필지에서 갖는 실질적 의미까지 해석해 답하라. 예를 들어 "
+                    "'이대로 지으려면 필지 분할이나 도로 편입이 필요한지, 어떤 절차·관계기관 협의가 "
+                    "따르는지, 토목 설계사무소·건축 설계사무소·관할 행정청 중 어디에 문의해야 하는지'를 "
+                    "자연스럽게 안내하라. (참고: 건축선 후퇴는 대체로 같은 대지 안에서 건축물을 "
+                    "띄우는 것이라 필지 분할과는 다르며, 도로 폭이 부족하면 도로 중심선 후퇴선 안쪽이 "
+                    "대지면적에서 제외될 수 있다.) 단, 확인되지 않은 구체 수치·절차·요건은 지어내지 "
+                    "말고 방향과 문의처를 정성적으로 안내하라. "
+                    # '다른 용도/건물'을 물으면 방금 물은 용도가 아니라 다른 대안을 제시.
+                    "사용자가 '다른 건물/다른 용도/이 밖에 무엇을 지을 수 있나'를 명시적으로 물을 "
+                    "때만, 방금 물은 용도(예: 단독주택)를 반복하지 말고 진단 데이터 "
+                    "regulation.zone_use_overview 의 allowed(건축 가능)와 conditional(조건부 가능) "
+                    "목록을 읽어, 이 용도지역에서 지을 수 있는 '다른' 건축물 종류를 알려줘라. "
+                    "목록이 비어 있으면 그 사유를 설명하라. 용어 정의·이격·현황 등 '무엇을 지을 수 "
+                    "있나'가 아닌 질문에는 이 '다른 건축물 목록'을 절대 덧붙이지 마라. "
+                    # 말투: 딱딱한 수치 나열이 아니라 상담하듯 친절하게.
+                    "말투는 고객 상담하듯 친절하게: 가능해 보이면 '수치적(사전검토)으로 볼 때 "
+                    "…가 가능할 것으로 보입니다'처럼 안내하라. "
+                    # 문의처는 '이 필지 현황상 실제로 무엇이 필요한지'를 보고 케이스로 나눠 안내한다.
+                    "그리고 이 필지의 현황(진단 데이터의 지목·전용 필요 여부, 개발행위허가 대상 "
+                    "여부, 도로 접함·경사도·토지형질변경 필요성 등)을 보고, 실제로 어떤 절차가 "
+                    "필요한지 구체적으로 짚어 준 뒤 문의처를 케이스로 나눠 안내하라 — 즉 부지 조성· "
+                    "절토/성토·옹벽·배수·경사도·개발행위허가·산지/농지 전용·도로 개설·현황측량 같은 "
+                    "'땅을 만드는' 작업이 필요한 경우에는 '토목 설계사무소'에도 함께 문의하도록 "
+                    "안내하고, 그런 토목 작업 없이 건축물만 올리면 되는 단순한 경우에는 '건축허가만 "
+                    "필요하니 건축 설계사무소만으로 충분하다'고 명확히 구분해 알려줘라. 건축물 배치· "
+                    "구조·용도·이격·건축허가는 '건축 설계사무소' 소관이다. 최종 인허가 가능 여부는 "
+                    "관할 행정청(시·군·구청)에 확인하도록 정성적으로 안내하라. "
+                    # 필요한 것을 다 쏟아내기보다, 의도가 갈리면 되물어 방향을 좁힌다.
+                    "핵심만 답한 뒤, 사용자의 질문 의도가 여러 갈래로 해석될 수 있거나 이어서 "
+                    "궁금해할 만한 방향이 있으면, 답변 끝에 '혹시 …가 궁금하신 게 맞을까요? 아니면 "
+                    "…도 함께 확인해 드릴까요?'처럼 한 문장으로 되물어 방향을 좁혀라. 단, 매 답변마다 "
+                    "억지로 붙이지 말고 되물음이 자연스러울 때만 짧게 덧붙여라. "
+                    # 내부 데이터 필드명(영어)은 사용자에게 절대 노출하지 않는다.
+                    "답변에는 front_setback_m, adjacent_setback_m, north_setback_m, "
+                    "zone_use_overview, site_constraints 같은 영어 필드명·변수명을 절대 쓰지 "
+                    "마라. 괄호로도 병기하지 마라. 반드시 '전면 건축선 이격', '인접 대지경계 이격', "
+                    "'정북 일조 이격'처럼 한국어 용어로만 표현하라."
                 ),
                 messages=[
                     {
@@ -1651,7 +1842,7 @@ class Orchestrator:
                 tools=[],
                 max_tokens=400,
             )
-            text = " ".join(response.texts).strip()
+            text = _strip_internal_field_names(" ".join(response.texts).strip())
             if text:
                 return text
         except Exception:
@@ -1664,6 +1855,63 @@ class Orchestrator:
         }.get(diagnosis.get("verdict"), "추가 확인이 필요합니다")
         reason = (diagnosis.get("regulation") or {}).get("reason") or ""
         return f"**{address}**은 {verdict}. {reason}".strip()
+
+    async def _verdict_judgment(self, user_query: str) -> str:
+        """단일·복합 용도 질문에 대해 진단 데이터를 읽어 유의사항 아래 붙일 판단 문단.
+
+        사용자가 특정 용도(단독주택·업무시설·창고 등)나 층별 복합 용도(1층 임대
+        원룸+2층 자가 등)를 물었을 때, 종합 판정 카드 아래에 제미나이가 진단
+        데이터를 읽고 해석한 결론 문단을 붙인다. 값을 지어내지 않는다.
+        """
+        diagnosis = self.diagnosis or {}
+        address = (
+            (diagnosis.get("parcel") or {}).get("jibun")
+            or (diagnosis.get("location") or {}).get("matched_address")
+            or "선택한 필지"
+        )
+        use = (
+            (diagnosis.get("request") or {}).get("building_use")
+            or (diagnosis.get("regulation") or {}).get("building_use")
+            or "요청 용도"
+        )
+        try:
+            response = await self.client.complete(
+                system=(
+                    "너는 건축 인허가 사전검토 상담원이다. 아래 진단 데이터만 근거로, "
+                    "사용자가 물은 용도(단일 용도 또는 층별 복합 용도)를 이 필지에 지을 수 "
+                    "있는지 판단해 한 문단(2~4문장)으로 답하라. 반드시 첫 문장을 "
+                    "'○○(전체 지번 주소) 필지에 △△은(는) …' 형태로 시작하라. "
+                    "마지막 문장은 진단 verdict 에 맞춰 '건축 가능합니다 / 조건부 "
+                    "가능합니다 / 건축이 어렵습니다 / 추가 확인이 필요합니다' 중 하나로 "
+                    "끝맺어라(allowed=가능, conditional=조건부 가능이며 선행조건을 명시, "
+                    "not_allowed=건축이 어렵습니다이며 사유 명시, unknown=추가 확인 필요). "
+                    "판단 근거는 데이터의 용도지역, regulation.zone_use_overview 의 "
+                    "allowed(건축 가능)·conditional(조건부 가능), use_restriction(개별 제한), "
+                    "건폐율·용적률, 도로 접함, site_constraints 이격에서만 가져오고 "
+                    "수치나 근거를 지어내지 마라. 층별 복합 용도를 물었으면 각 층 용도가 "
+                    "이 용도지역에서 허용되는지 함께 짚어라. 표·목록·섹션 제목 없이 "
+                    "상담하듯 자연스러운 한국어 문단 하나로만 답하라. "
+                    "front_setback_m, adjacent_setback_m, north_setback_m, zone_use_overview "
+                    "같은 영어 필드명·변수명을 답변에 절대 쓰지 말고(괄호 병기도 금지), "
+                    "'전면 건축선 이격', '인접 대지경계 이격'처럼 한국어 용어로만 표현하라."
+                ),
+                messages=[
+                    {
+                        "role": "user",
+                        "content": (
+                            f"질문: {user_query}\n"
+                            f"필지 주소: {address}\n"
+                            f"검토 용도: {use}\n"
+                            f"진단 데이터: {compact(diagnosis)}"
+                        ),
+                    }
+                ],
+                tools=[],
+                max_tokens=350,
+            )
+            return _strip_internal_field_names(" ".join(response.texts).strip())
+        except Exception:
+            return ""
 
     def _render_event(self) -> dict:
         """현재 진단을 지도 명령으로 바꿔 프론트로 보낼 이벤트."""
@@ -1703,6 +1951,10 @@ class Orchestrator:
                     address=parcel.get("jibun") or location.get("matched_address") or "",
                     pnu=diagnosed_pnu,
                 )
+        # 필지별 진단 기억 — 이전 필지 재클릭 시 복원해 후속질문으로 잇기 위함.
+        _pnu = (self.diagnosis.get("parcel") or {}).get("pnu")
+        if _pnu:
+            self._diagnosis_by_pnu[_pnu] = self.diagnosis
         events.extend(steps)
         events.append({"event": "diagnosis", "data": self.diagnosis})
 
@@ -1777,17 +2029,38 @@ class Orchestrator:
 
         if emit_card:
             # 최초 진단만 확정 형식 카드를 한 번 표시한다.
+            card_text = format_diagnosis_answer(self.diagnosis)
+            # 사용자가 특정 용도(단일)나 층별 복합 용도를 물었으면(inferred=False)
+            # 유의사항 아래에 제미나이가 데이터를 읽어 해석한 판단 문단을 붙인다.
+            # 용도 미지정 일반 질문(inferred=True)은 종합 판정 카드만 그대로 둔다.
+            names_specific_use = not (self.diagnosis.get("request") or {}).get(
+                "inferred", True
+            )
+            judgment = ""
+            if names_specific_use:
+                judgment = await self._verdict_judgment(query)
+            if judgment:
+                card_text = f"{card_text}\n\n## 검토 의견\n{judgment}"
             events.append(
-                {"event": "message", "data": {"text": format_diagnosis_answer(self.diagnosis)}}
+                {"event": "message", "data": {"text": card_text}}
             )
             self._diag_shown = True
-            note = (
-                "종합 판정·건폐율/용적률·규모·부담금·인허가 단계 등 표준 진단 카드는 "
-                "시스템이 이미 화면에 표시했다. 그 내용을 표로 다시 나열하지 마라. "
-                "자연어 답변 첫 문장에는 진단 데이터의 전체 지번 주소를 한 번 명시하고, "
-                "주소 없이 '해당 필지'라고만 쓰지 마라. "
-                "사용자가 물은 것의 의도에 맞춰 1~3문장 자연어로 이어 답하라."
-            )
+            if judgment:
+                # 판단 문단까지 카드에 이미 실었으므로 모델이 결론을 되풀이하지 않게 한다.
+                note = (
+                    "종합 판정 카드와 그 아래 '검토 의견'(가능/불가 판단 문단)까지 시스템이 "
+                    "이미 화면에 표시했다. 같은 판정을 다시 서술하거나 표·번호목록으로 "
+                    "나열하지 마라. 필요하면 사용자가 이어서 확인하면 좋을 다음 단계 한 문장만 "
+                    "덧붙이거나, 덧붙일 것이 없으면 생략하라."
+                )
+            else:
+                note = (
+                    "종합 판정·건폐율/용적률·규모·부담금·인허가 단계 등 표준 진단 카드는 "
+                    "시스템이 이미 화면에 표시했다. 그 내용을 표로 다시 나열하지 마라. "
+                    "자연어 답변 첫 문장에는 진단 데이터의 전체 지번 주소를 한 번 명시하고, "
+                    "주소 없이 '해당 필지'라고만 쓰지 마라. "
+                    "사용자가 물은 것의 의도에 맞춰 1~3문장 자연어로 이어 답하라."
+                )
         else:
             # 후속 용도 검토 — 카드를 다시 찍지 않는다. 모델이 자연어로 답한다.
             note = (
@@ -2035,6 +2308,27 @@ class Orchestrator:
             _P = 3.3058  # 1평 = 3.3058㎡
             from .agents.prediagnosis import jimok_label
 
+            # 도로 접촉·이격은 직전 진단이 같은 필지면 그 계산값을 그대로 실어
+            # LLM이 '확인 필요'로 뭉개지 않고 수치를 읽어 답하게 한다(기하는 제외).
+            same_parcel_diag = bool(
+                parcel.get("pnu") and diag_parcel.get("pnu") == parcel.get("pnu")
+            )
+            road_access = (self.diagnosis or {}).get("road_access") if same_parcel_diag else None
+            site = (self.diagnosis or {}).get("site_constraints") if same_parcel_diag else None
+            road_compact = (
+                {k: v for k, v in road_access.items() if k != "road_contact_geometry"}
+                if isinstance(road_access, dict) else None
+            )
+            setback_compact = (
+                {
+                    "front_setback_m": site.get("front_setback_m"),
+                    "adjacent_setback_m": site.get("adjacent_setback_m"),
+                    "north_setback_m": site.get("north_setback_m"),
+                    "setback_rule_status": (site.get("setback_rule") or {}).get("status"),
+                }
+                if isinstance(site, dict) else None
+            )
+
             return {
                 "address": parcel.get("jibun"),
                 "jimok": jimok_label(parcel.get("jimok")),
@@ -2045,9 +2339,33 @@ class Orchestrator:
                 "jiga_total_won": (round(jiga * area) if jiga and area else None),
                 "zone": (land_use.get("zones") or [None])[0],
                 "districts": districts,
+                "road_access": road_compact,
+                "setback": setback_compact,
+                # 같은 필지면 전체 진단 데이터를 실어, 어떤 사실 질문이든 수집·계산값으로
+                # 답하게 한다(농지/산지 전용, 기존 건축물, 부담금, 인허가 단계, 조례 근거 등).
+                "diagnosis": (
+                    compact(self.diagnosis) if same_parcel_diag and self.diagnosis else None
+                ),
                 "note": (
-                    "용도지구를 물으면 districts 목록을 그대로 알려줘라(있으면 '없다'고 하지 마라). "
-                    "이 값으로 사용자 질문에 자연어 한두 문장으로 답하라. 종합 판정 카드나 "
+                    "이 필지에 대해 시스템이 수집·계산한 값은 위 데이터(특히 diagnosis)에 모두 "
+                    "들어 있다. 사용자가 물은 것(도로 접촉·이격거리·농지/산지 전용·기존 건축물·"
+                    "부담금·인허가 단계·용도지구·조례 근거 등)에 해당하는 값이 있으면 그 값을 반드시 "
+                    "읽어 근거로 제시하라(있는 계산값을 숨기고 일반론만 말하지 마라). 다만 딱딱한 수치 "
+                    "나열이 아니라, 고객에게 상담하듯 친절하고 자연스러운 문장으로 설명하라. 정량 "
+                    "수치가 없거나 사전검토만으로 확정할 수 없는 부분은 '데이터상 …로 보이며, 최종 "
+                    "판단·확정은 관할 행정청(시·군·구청) 확인이 필요합니다'처럼 정성적으로 안내해도 "
+                    "된다. 말투 예시: 가능해 보이면 '수치적(사전검토)으로 볼 때 …가 가능할 것으로 "
+                    "보입니다'처럼 안내하라. 상세 검토·설계가 필요하면 주제에 맞는 전문가로 나눠 "
+                    "안내하라 — 부지 조성·절토/성토·옹벽·배수·경사도·개발행위허가·도로·현황측량은 "
+                    "'토목 설계사무소', 건축물 배치·구조·용도·이격·건축허가는 '건축 설계사무소'로 "
+                    "문의하도록 하고, 최종 인허가 가능 여부는 관할 행정청(시·군·구청)에 확인하도록 "
+                    "안내하라. 요지: 있는 값은 반드시 읽어 답하고, 확정이 어려운 부분은 정성적 안내와 "
+                    "(주제에 맞는 토목/건축 설계사무소·관할청) 문의 권고를 자연스럽게 덧붙인다. "
+                    "'다른 건물/다른 용도/이 밖에 무엇을 지을 수 있나'를 물으면 방금 물은 용도를 "
+                    "반복하지 말고 diagnosis 의 regulation.zone_use_overview 의 allowed·conditional "
+                    "목록으로 '이 지역에서 지을 수 있는 다른 건축물'을 알려줘라. "
+                    "용도지구를 물으면 districts 목록을 그대로 "
+                    "알려줘라(있으면 '없다'고 하지 마라). 자연어 두세 문장으로 답하고, 종합 판정 카드나 "
                     "1·2·3·4 섹션, 유의사항은 절대 쓰지 마라. 실무 관례대로 면적은 평, 공시지가는 "
                     "평당을 우선 말하고 ㎡는 괄호로 덧붙여라(예: 1,757평(5,808㎡), 평당 약 …원)."
                 ),

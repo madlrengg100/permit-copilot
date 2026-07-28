@@ -231,27 +231,174 @@ def _build_dimensions(
             }
         )
 
-    # 이격거리 — 값이 있을 때만(아산 계획관리는 0이라 생략됨)
+    # 이격거리 — 값이 있을 때만(수집된 지자체만; 아산 등). 건물 용도·지역·규모에
+    # 따라 정해진 전면(건축선)·인접경계 이격을, 필지 경계선에서 '안쪽으로 그 거리만큼'
+    # 뻗는 오프셋 치수선으로 각각 표시해 가상 건물이 얼마나 물러나 앉는지 보이게 한다.
+    # 이격거리 — 값이 0이면 표시하지 않고, 값이 있으면 '방향을 맞춰' 실제 경계에서
+    # 안쪽으로 그 거리만큼 오프셋 치수선을 그린다.
+    #   · 전면(건축선): 실제 도로측 경계(도로 접촉 geometry)에서 안쪽으로.
+    #   · 정북일조: 진북(북쪽) 경계에서 남쪽 안쪽으로.
+    #   · 인접경계: 전면(도로)과 겹치지 않는 대표 측면 경계에서 안쪽으로.
     sc = diagnosis.get("site_constraints") or {}
-    front = sc.get("front_setback_m") or 0
-    adjacent = sc.get("adjacent_setback_m") or 0
-    setback = max(float(front), float(adjacent))
-    if setback > 0:
-        segments.append(
-            {
-                "positions": [[minlon, maxlat + pad_lat], [maxlon, maxlat + pad_lat]],
-                "label": f"이격 {setback:g}m",
-            }
-        )
+    front = float(sc.get("front_setback_m") or 0)
+    adjacent = float(sc.get("adjacent_setback_m") or 0)
+    north = float(sc.get("north_setback_m") or 0)
+    mid_lon = (minlon + maxlon) / 2
+    deg_per_m_lat = 1.0 / 111320.0
+    deg_per_m_lon = 1.0 / (111320.0 * max(0.1, math.cos(math.radians(mid_lat))))
 
-    # 도로 접촉 길이 — 접촉 세그먼트 기하가 없어 라벨만(남쪽 변 중앙 아래)
-    road = (diagnosis.get("road_access") or {}).get("roads") or []
-    if road and road[0].get("contact_length_m"):
+    # bbox 네 변의 중점과 '안쪽(중심)으로' 향하는 단위방향(경도·위도 부호).
+    edges = {
+        "S": (mid_lon, minlat, 0, +1),
+        "N": (mid_lon, maxlat, 0, -1),
+        "W": (minlon, mid_lat, +1, 0),
+        "E": (maxlon, mid_lat, -1, 0),
+    }
+
+    def _offset_segment(edge_key: str, dist_m: float, label: str) -> dict:
+        lo, la, sx, sy = edges[edge_key]
+        return {
+            "positions": [
+                [lo, la],
+                [lo + sx * dist_m * deg_per_m_lon, la + sy * dist_m * deg_per_m_lat],
+            ],
+            "label": label,
+        }
+
+    def _building_line(edge_key: str, dist_m: float, label: str) -> dict:
+        """해당 변에서 안쪽으로 dist_m 물러난 '건축선'을, 그 변과 나란한 선으로
+        (변 전체 길이만큼) 그린다. 건물이 물러나 앉는 기준선이 보이게 한다."""
+        if edge_key in ("S", "N"):
+            la = (minlat if edge_key == "S" else maxlat) + (
+                dist_m * deg_per_m_lat * (1 if edge_key == "S" else -1)
+            )
+            return {"positions": [[minlon, la], [maxlon, la]], "label": label}
+        lo = (minlon if edge_key == "W" else maxlon) + (
+            dist_m * deg_per_m_lon * (1 if edge_key == "W" else -1)
+        )
+        return {"positions": [[lo, minlat], [lo, maxlat]], "label": label}
+
+    # 도로측 변 찾기 — 도로 접촉선 중점에 가장 가까운 bbox 변. 도로중점(rmx,rmy)은
+    # 전면이격 눈금을 '실제 도로측 경계점'에서 시작하는 데 쓴다.
+    front_edge = "S"
+    rmx = rmy = None
+    road_geom = (diagnosis.get("road_access") or {}).get("road_contact_geometry")
+    try:
+        coords = []
+        if road_geom and road_geom.get("type") == "MultiLineString":
+            for ln in road_geom["coordinates"]:
+                coords.extend(ln)
+        elif road_geom and road_geom.get("type") == "LineString":
+            coords = road_geom["coordinates"]
+        if coords:
+            rmx = sum(c[0] for c in coords) / len(coords)
+            rmy = sum(c[1] for c in coords) / len(coords)
+            front_edge = min(
+                edges,
+                key=lambda k: (edges[k][0] - rmx) ** 2 + (edges[k][1] - rmy) ** 2,
+            )
+    except Exception:
+        front_edge = "S"
+
+    # 필지 경계 점들 — 이격 눈금을 '실제 경계점'에서 건축선까지 잇는 데 쓴다.
+    try:
+        _pg = shape(geometry)
+        _poly = _pg if _pg.geom_type == "Polygon" else max(_pg.geoms, key=lambda g: g.area)
+        ring_pts = [(float(x), float(y)) for x, y in _poly.exterior.coords]
+    except Exception:
+        ring_pts = []
+
+    # 이격거리 = '인접대지경계선(지적선) → 건축선' 사이 거리.
+    #   · 건축선: 실제 필지 경계를 안쪽으로 이격만큼 오프셋한 선(경계 모양을 따라감).
+    #   · 이격 눈금: 주황, 경계선에서 건축선까지 수직으로 이은 선(그 거리 라벨).
+    building_line = "#E53935"
+    tick_color = "#FF8A00"
+
+    def _inset_ring(setback_m: float) -> list[list[float]] | None:
+        """필지 경계를 안쪽으로 setback_m 만큼 들인 '건축선'(경계 형상 유지)."""
+        try:
+            d_deg = setback_m / (111320.0 * max(0.1, math.cos(math.radians(mid_lat))))
+            inner = shape(geometry).buffer(-d_deg)
+            if inner.is_empty:
+                return None
+            poly = inner if inner.geom_type == "Polygon" else max(inner.geoms, key=lambda g: g.area)
+            return [[float(x), float(y)] for x, y in poly.exterior.coords]
+        except Exception:
+            return None
+
+    # 건축선(경계 형상을 따라 이격만큼 안쪽) — 전면·인접 이격 중 큰 값으로 한 줄.
+    main_setback = max(front, adjacent)
+    if main_setback > 0:
+        ring = _inset_ring(main_setback)
+        if ring:
+            segments.append(
+                {"positions": ring, "label": "건축선(이격 후)", "color": building_line, "width": 4}
+            )
+
+    # 이격 눈금: '실제 경계점 → 안쪽(중심 방향)으로 이격만큼' = 경계↔건축선을 잇는다.
+    def _tick_from_point(px: float, py: float, dist_m: float, label: str) -> dict | None:
+        dxm = (mid_lon - px) * 111320.0 * math.cos(math.radians(mid_lat))
+        dym = (mid_lat - py) * 111320.0
+        d = math.hypot(dxm, dym)
+        if d < 1e-6:
+            return None
+        ex = px + (dxm / d * dist_m) / (111320.0 * max(0.1, math.cos(math.radians(mid_lat))))
+        ey = py + (dym / d * dist_m) / 111320.0
+        return {"positions": [[px, py], [ex, ey]], "label": label, "color": tick_color, "width": 6}
+
+    # 전면: 실제 도로측 경계점(도로중점)에서. 없으면 남쪽 변 중점.
+    fpx, fpy = (rmx, rmy) if (rmx is not None) else (mid_lon, minlat)
+    if front > 0:
+        tk = _tick_from_point(fpx, fpy, front, f"전면이격 {front:g}m")
+        if tk:
+            segments.append(tk)
+    # 정북: 최북단 경계점에서 남쪽으로.
+    if north > 0 and ring_pts:
+        npx, npy = max(ring_pts, key=lambda p: p[1])
+        tk = _tick_from_point(npx, npy, north, f"정북일조 {north:g}m")
+        if tk:
+            segments.append(tk)
+    # 인접: 도로중점에서 가장 먼 경계점(실제 인접경계)에서.
+    if adjacent > 0 and ring_pts:
+        ax, ay = (
+            max(ring_pts, key=lambda p: (p[0] - (rmx if rmx is not None else mid_lon)) ** 2
+                + (p[1] - (rmy if rmy is not None else mid_lat)) ** 2)
+        )
+        tk = _tick_from_point(ax, ay, adjacent, f"인접이격 {adjacent:g}m")
+        if tk:
+            segments.append(tk)
+
+    # 도로 접촉 — 필지가 실제로 도로와 맞닿는 '그 선'을 파란색으로 그리고 길이를
+    # 라벨로 붙인다. 접촉선 기하(road_contact_geometry)를 그대로 사용한다.
+    road_access = diagnosis.get("road_access") or {}
+    roads = road_access.get("roads") or []
+    rgeom = road_access.get("road_contact_geometry")
+    road_color = "#D500F9"  # 자주(마젠타) = 도로 접촉선 (파란 지적 경계선과 구분)
+    contact_lines: list[list[list[float]]] = []
+    if isinstance(rgeom, dict):
+        if rgeom.get("type") == "MultiLineString":
+            contact_lines = [ln for ln in rgeom.get("coordinates", []) if len(ln) >= 2]
+        elif rgeom.get("type") == "LineString" and len(rgeom.get("coordinates", [])) >= 2:
+            contact_lines = [rgeom["coordinates"]]
+    if contact_lines:
+        for i, line in enumerate(contact_lines):
+            length = roads[i].get("contact_length_m") if i < len(roads) else None
+            segments.append(
+                {
+                    "positions": [[float(p[0]), float(p[1])] for p in line],
+                    "label": f"도로 접촉 {length:g}m" if length else "도로 접촉",
+                    "color": road_color,
+                    "width": 9,  # 굵게
+                    "onTop": True,  # 지적 경계선(청록) 위 우선순위로 그려 통짜 자주색
+                }
+            )
+    elif roads and roads[0].get("contact_length_m"):
+        # 접촉선 기하가 없으면(구버전) 라벨만.
         labels.append(
             {
                 "lon": (minlon + maxlon) / 2,
                 "lat": minlat - pad_lat * 2.2,
-                "text": f"도로 접촉 {road[0]['contact_length_m']}m",
+                "text": f"도로 접촉 {roads[0]['contact_length_m']}m",
             }
         )
 
@@ -385,9 +532,12 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
 
     # 4.5) 치수선·면적 라벨 — 검은 텍스트 박스 대신 지도에 직접 얹는다.
     #      건축면적은 매스 중심(anchor), 대지면적은 필지 중심에 배치한다.
-    dims = _build_dimensions(diagnosis, anchor_lon, anchor_lat)
-    if dims:
-        commands.append(dims)
+    #      단, 건축 불가면 세울 건물이 없으므로 가로·세로·도로접촉·이격 치수선을
+    #      그리지 않는다(매스를 안 그리는 것과 동일한 기준).
+    if verdict != "not_allowed":
+        dims = _build_dimensions(diagnosis, anchor_lon, anchor_lat)
+        if dims:
+            commands.append(dims)
 
     # 5) 정보 패널
     #    anchor 는 패널을 매스 꼭대기 위에 띄우기 위한 지도상 기준점이다.
@@ -445,7 +595,11 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
             "zone": regulation.get("zone") or (land_use.get("zones") or [""])[0],
             "districts": land_use.get("districts", []),
             "jimok": (parcel or {}).get("jimok", ""),
-            "building_use": regulation.get("building_use", ""),
+            "building_use": (
+                "시설물"
+                if (diagnosis.get("request") or {}).get("inferred")
+                else regulation.get("building_use", "")
+            ),
             "site_area_m2": (parcel or {}).get("area_m2"),
             "jiga_won_per_m2": (parcel or {}).get("jiga_won_per_m2"),
             "bcr_max_pct": regulation.get("bcr_max_pct"),

@@ -163,10 +163,20 @@ extract_request(client, query)   # "테헤란로 152에 업무시설" → (주�
 
 요약문(`_summarize`)도 LLM 없이 값에서 조립한다.
 
-### 4.3 지도제어 에이전트 (`app/agents/map_control.py`)
+### 4.3 지도제어(2D) · 3D(매스) 에이전트 (`app/agents/map_control.py`)
 
 **LLM을 쓰지 않는 순수 변환기.** 진단이 이미 판단을 끝냈으니 여기서는
-'무엇을 어떻게 그릴지'만 정하면 되고, 그 규칙은 확정적이다.
+'무엇을 어떻게 그릴지'만 정하면 되고, 그 규칙은 확정적이다. 한 모듈이지만 기능이
+둘로 나뉜다.
+
+- **지도제어(2D)** — 카메라 이동(`fly_to`), 필지 강조(`highlight_parcel`),
+  용도지역 조각(`show_zone_pieces`), 결과 패널(`show_panel`)
+- **3D(매스)** — 건축 가능 규모의 3D 입체(`extrude_mass`), 치수선(`show_dimensions`),
+  용도별 건물 모델(`show_housing_model`: 주택/공장/상가/창고). **실제 3D 렌더링은
+  백엔드가 아니라 프론트 `lib/mapBridge.ts` 가 VWorld 3D(ws3d/Cesium)에서** 한다.
+
+> 별표1의 4번째 에이전트 — `agents/area_recommender.py` (지역추천): "○○ 비도시
+> 지역에서 농막 지을 데 찾아줘" 류 탐색형 질의를 처리한다.
 
 `build_map_commands(diagnosis)` → 명령 배열:
 
@@ -192,13 +202,30 @@ side = √면적 ;  altitude = clamp(side × 2, 60, 700)   # 지면 위 높이
 
 ### 4.4 도구 계층 (`app/tools/`)
 
-| 모듈 | 역할 | 핵심 |
-|---|---|---|
-| `vworld.py` | 공간정보 조회 | 지오코딩 / 필지 / 용도지역 / bbox 필지목록 |
-| `zoning.py` | 용도별 허용 여부 판정 | `USE_MATRIX` (allowed / permitted) |
-| `ordinance.py` | 조례·법정 상한 조회 | `resolve_limits(zone, jurisdiction)` |
-| `jimok.py` | 지목 → 전용허가 필요성 | 농지법 / 산지관리법 플래그 |
-| `massing.py` | 밀도 → 규모 환산 | 건축면적·연면적·층수·높이 |
+사전진단 에이전트가 sub-오케스트레이터로서 아래 도구들을 정해진 순서로 호출한다.
+초기 5개에서 현재 **20개 모듈**로 확장됐다.
+
+| 모듈 | 역할 |
+|---|---|
+| `vworld.py` | 지오코딩 / 필지 / 용도지역 / bbox 필지목록 (VWorld) |
+| `landuse.py` | 용도지역·지구 상세 조회 |
+| `zoning.py` | 용도별 허용 판정 `USE_MATRIX`(10개 용도) + 조례 밀도 상한 |
+| `ordinance.py` | 건폐율/용적률 조례·법정 상한 `resolve_limits` (약 200개 관할) |
+| `ordinance_index.py` | 조례 조문 근거 검색 (numpy TF-IDF, 7,585 청크) |
+| `setback_rules.py` | 대지 안의 공지(이격) 조회 (119개 지자체 별표) |
+| `site_constraints.py` | 이격·정북일조·주차 반영 개념 건축 가능 영역 |
+| `road_access.py` | 도로 접도(연속지적도 지목 '도로' 인접) 사전검토 |
+| `jimok.py` | 지목 → 전용허가 필요성 (농지법/산지관리법) |
+| `land_conversion.py` | 농지·산지 전용 규제 판정 |
+| `regulatory_screen.py` | 재해·환경·국가유산 스크리닝 |
+| `local_spatial.py` | 대용량 로컬 벡터 SQLite RTree 조회 (산지 106만 폴리곤) |
+| `ogc.py` | OGC WFS/WMS 범용 클라이언트 + 필지 중첩 |
+| `building_register.py` | 건축물대장 표제부 (국토부 건축HUB API) |
+| `permit_requirements.py` | 인허가 단계·서류·부서 산출 |
+| `conversion_charges.py` / `development_charge.py` | 농지보전부담금·개발부담금 참고액 |
+| `massing.py` | 밀도 → 건축면적·연면적·층수·높이 |
+| `footprint.py` | 건축면적 형상 계산 |
+| `law_open.py` | 국가법령정보센터 현행 법령 검증 |
 
 #### vworld.py — 실전에서 걸렸던 것들
 
@@ -407,23 +434,26 @@ VWorld 내부 Cesium Entity를 직접 쓰고 두 높이 기준을 모두 `RELATI
 
 ## 6. 데이터 — `ordinances.json`
 
-두 층위를 담는다.
+건폐율/용적률 조례는 **두 파일·세 층위**로 담고 런타임에 함께 로드한다.
 
 ```
 _meta.statutory_reference.limits   국토계획법 시행령 제84·85조 법정 상한 (21개 용도지역)
-<지자체명>.<용도지역>               해당 지자체 도시계획조례가 정한 실제 적용값
+ordinances.json      검증 조례 — 사람이 ELIS 원문 HTML과 대조한 관할
+ordinances_auto.json 자동수집 조례 — 국가법령정보센터에서 자동 수집(원문 대조 전)
 _meta.sources[]                    조례명 · 조례번호 · 시행일 · 조문 · ELIS URL
 ```
 
-수집 현황 (2026-07-19 기준, 전부 ELIS 자치법규정보시스템 **원문 HTML**에서 직접 확인):
+수집 현황 (실측 2026-07-28):
 
-| 지자체 | 조례 규정 건수 |
-|---|---|
-| 서울특별시 | 16 / 21 |
-| 부산광역시 | 17 / 21 |
-| 인천광역시 | 21 / 21 |
-| 대구광역시 | 21 / 21 |
-| 경기도 성남시 | 16 / 21 |
+| 층위 | 파일 | 관할 수 |
+|---|---|---|
+| 검증 조례 | `ordinances.json` (서울·부산·인천·대구·성남·아산 등) | **11** |
+| 자동수집 조례 | `ordinances_auto.json` | **196** |
+| 손상·수동검토 | `ordinances_needs_manual.json` | 1 |
+
+즉 전국 **약 200개 관할**의 조례 건폐율/용적률이 실제 적용된다(검증분 우선, 미수집은
+법정 상한 폴백). 자동수집분은 원문 대조 전이라 표본 검수가 필요하다. 검증분은 ELIS
+자치법규정보시스템 **원문 HTML**에서 직접 확인했다(예: 인천·대구 21/21, 서울 16/21).
 
 **값이 없으면 지어내지 않고 `null` 로 두고 사유를 함께 기록한다.**
 
@@ -491,7 +521,7 @@ cd frontend && npm run dev
   *"이 지자체의 도시계획조례를 수집하지 못해 법정 상한을 적용했습니다."*
 - **개발행위허가 기준 미반영.** 비도시지역에서는 진입도로 폭, 경사도, 표고, 입목축적 같은
   지자체 개발행위허가 기준이 실질적 관문인데 아직 들어 있지 않다.
-- **`USE_MATRIX` 는 간이 판정표다.** 건축법 시행령 별표1 전체가 아니라 9개 대분류만 다룬다.
+- **`USE_MATRIX` 는 간이 판정표다.** 건축법 시행령 별표1 전체가 아니라 10개 대분류(교육연구시설 포함)만 다룬다.
 
 ### 판정의 성격
 
@@ -515,3 +545,58 @@ cd frontend && npm run dev
   (예전에는 200m 띄우는 방식을 썼으나, 위치는 맞고 높이는 가짜라 오해를 불렀고 제거했다.
   현재는 비도시 지역 테스트를 권장한다.)
 - 건물 형상은 필지 경계를 건폐율만큼 축소한 것이다. 실제 배치·형태와는 다르다.
+
+---
+
+## 부록 · 현행 데이터·인프라 현황 (실측 2026-07-28)
+
+> 초기 문서 작성 이후 데이터·인프라가 크게 확장됐다. 아래는 운영 서버에서 직접
+> 측정한 현행 수치다.
+
+### A. 배포 인프라 (GCP)
+
+| 구분 | 사양 |
+|---|---|
+| 클라우드 | Google Cloud Platform · 리전 `asia-northeast3`(서울) · zone `-c` |
+| 인스턴스 | `e2-standard-8` — 8 vCPU(AMD EPYC 7B12) · 31 GiB RAM · 500 GB 디스크 |
+| OS / 커널 | Rocky Linux 9.8 (Blue Onyx) · kernel 5.14 |
+| 프로세스 관리 | systemd 서비스 2개 — `permit-copilot-backend`(uvicorn :8000), `permit-copilot-frontend`(node server.mjs, dist 서빙+/api 프록시 :5173). 프론트는 `Requires=backend` |
+
+### B. LLM 사양
+
+| 항목 | 값 |
+|---|---|
+| 공급자 | Google Gemini (OpenAI 호환 모드) |
+| 모델 | `gemini-flash-lite-latest` |
+| 설정 | `LLM_PROVIDER=openai` · `LLM_MODEL=gemini-flash-lite-latest` · `GEMINI_API_KEY` |
+| 엔드포인트 | `generativelanguage.googleapis.com` OpenAI 호환 `/chat/completions` |
+| 어댑터 | `app/llm.py` — Anthropic/OpenAI 동일 인터페이스, 공급자 교체 가능 |
+| 역할 | 자연어→구조 변환, 후속 자연어 답변만. 판정·계산·묘화는 결정적 코드(경량 모델로 동작) |
+
+### C. 데이터 저장소 (DB 서버 없이 파일 기반)
+
+| 종류 | 구현 | 현행 규모 |
+|---|---|---|
+| 벡터 색인(조례 근거) | numpy **TF-IDF 코사인**(외부 임베딩·벡터DB 없음) | 조문 **7,585 청크** · `.npz` 7.5MB + chunks 11MB + vocab 0.5MB |
+| 공간 RDB(산지구분) | **SQLite + RTree** read-only(`local_spatial.py`) | 폴리곤 **1,066,806개** · **1.77 GB** |
+| 정형 데이터 | JSON | 건폐율/용적률 조례 **약 200개 관할**, 이격 조례 **119개 지자체** |
+| 실시간 API | 외부 조회 | VWorld, 국토부 건축HUB, 국가법령정보센터 |
+
+### D. 조례 커버리지 (실측)
+
+| 조례 | 파일 | 관할 수 | 비고 |
+|---|---|---|---|
+| 건폐율/용적률 도시계획조례 | `ordinances.json` + `ordinances_auto.json` | 검증 11 + 자동수집 196 = **약 200** | 미수집은 법정 상한 폴백, 자동수집분 검수 필요 |
+| 대지 안의 공지(이격) 건축조례 별표 | `setbacks.json` | **119** | 아산 검증, 나머지 `auto_parsed` |
+| 조례 조문 벡터색인 | `ordinance_index.*` | **7,585 청크** | TF-IDF 근거 검색 |
+
+### E. 공간 규제 연계 (현행)
+
+| 레이어 | 방식 | 상태 |
+|---|---|---|
+| 산지구분(보전/임업용산지) | 로컬 SQLite RTree(106만 폴리곤, 전국) | ✅ enabled |
+| 농업진흥지역 | VWorld WFS 실시간 | ✅ enabled |
+| 건축물대장 표제부 | 국토부 건축HUB API(전국 실시간) | ✅ |
+| 도로 접도 | 연속지적도 지목 '도로' 인접 판정 | ✅ |
+| 재해위험지구 | 전용 WFS 미확보 | ⛔ disabled |
+| 생태·자연도 | 서비스 활용신청 전 | ⛔ 미연계 |

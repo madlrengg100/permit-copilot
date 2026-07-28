@@ -228,7 +228,7 @@ SDK 원문 오류를 조치 가능한 문장으로 변환한다. 판정 순서:
   주소 없는 일반 법령 질문 → 도구 없이 답변 / 모호한 주소 → 되묻고 **임의 생성 금지**
 - 답변: 결론 우선 → 근거 수치 제시 → **법정 상한 이론값이며 조례·일조·이격·주차로 축소됨을 필수 명시**
 - 용도 열거 질의는 `regulation.zone_use_overview` 근거로 가능/조건부/불가 전부 나열하되
-  **9개 대분류 개요이며 별표1 전체가 아님**을 함께 밝힌다
+  **10개 대분류(교육연구시설 포함) 개요이며 별표1 전체가 아님**을 함께 밝힌다
 - 용적률 초과 요청(`exceeds_far_limit`) 시 요청 규모의 층수·연면적을 제시하지 말고
   적용 불가 결론과 건폐율 기준 최대 건축면적만 제시
 - 산출 결과는 **'건축 가능 규모'** 로 호칭. `'매스'`(설계 실무 용어)는 사용 금지
@@ -391,7 +391,7 @@ Gemini는 `extra_content.google.thought_signature` 동반을 요구하며, 누�
 
 ### 6.2 `zoning.py` — 용도별 허용 판정
 
-`USE_MATRIX` — 9개 건축물 용도 × `allowed`(조례 없이 원칙 허용) / `permitted`(조례가 정하는
+`USE_MATRIX` — 10개 건축물 용도(교육연구시설 포함) × `allowed`(조례 없이 원칙 허용) / `permitted`(조례가 정하는
 범위에서 조건부). 어느 쪽에도 없으면 불허.
 
 `uses_for_zone(zone)` — 역인덱스. "이 필지에 뭘 지을 수 있어?" 열거 질의에 사용하며
@@ -646,7 +646,7 @@ cd frontend && npm run dev -- --host 0.0.0.0 --port 5173
   **판정 불가**가 된다(법정 상한 대체 계산을 의도적으로 하지 않음).
 - **개발행위허가 기준 미반영** — 비도시지역의 실질적 관문인 진입도로 폭·경사도·표고·입목축적
   기준이 포함되지 않았다.
-- **`USE_MATRIX` 는 간이 판정표** — 건축법 시행령 별표1 전체가 아니라 **9개 대분류**만 다룬다.
+- **`USE_MATRIX` 는 간이 판정표** — 건축법 시행령 별표1 전체가 아니라 **10개 대분류(교육연구시설 포함)**만 다룬다.
   이 사실은 답변과 화면 고지에 명시된다.
 
 ### 11.2 판정의 성격
@@ -679,3 +679,58 @@ cd frontend && npm run dev -- --host 0.0.0.0 --port 5173
 | FastAPI | `@app.on_event("startup")` 은 deprecated — `lifespan` 으로 이전 필요 |
 | 조회 API 오류 처리 | `/api/parcel-at` 등 GET 3종은 `VWorldError` 를 그대로 500으로 노출 |
 | 버전 관리 부재 | git 저장소가 아니어서 변경 이력 추적이 불가능하다 |
+
+---
+
+## 부록 · 현행 데이터·인프라 현황 (실측 2026-07-28)
+
+> 초기 문서 작성 이후 데이터·인프라가 크게 확장됐다. 아래는 운영 서버에서 직접
+> 측정한 현행 수치다.
+
+### A. 배포 인프라 (GCP)
+
+| 구분 | 사양 |
+|---|---|
+| 클라우드 | Google Cloud Platform · 리전 `asia-northeast3`(서울) · zone `-c` |
+| 인스턴스 | `e2-standard-8` — 8 vCPU(AMD EPYC 7B12) · 31 GiB RAM · 500 GB 디스크 |
+| OS / 커널 | Rocky Linux 9.8 (Blue Onyx) · kernel 5.14 |
+| 프로세스 관리 | systemd 서비스 2개 — `permit-copilot-backend`(uvicorn :8000), `permit-copilot-frontend`(node server.mjs, dist 서빙+/api 프록시 :5173). 프론트는 `Requires=backend` |
+
+### B. LLM 사양
+
+| 항목 | 값 |
+|---|---|
+| 공급자 | Google Gemini (OpenAI 호환 모드) |
+| 모델 | `gemini-flash-lite-latest` |
+| 설정 | `LLM_PROVIDER=openai` · `LLM_MODEL=gemini-flash-lite-latest` · `GEMINI_API_KEY` |
+| 엔드포인트 | `generativelanguage.googleapis.com` OpenAI 호환 `/chat/completions` |
+| 어댑터 | `app/llm.py` — Anthropic/OpenAI 동일 인터페이스, 공급자 교체 가능 |
+| 역할 | 자연어→구조 변환, 후속 자연어 답변만. 판정·계산·묘화는 결정적 코드(경량 모델로 동작) |
+
+### C. 데이터 저장소 (DB 서버 없이 파일 기반)
+
+| 종류 | 구현 | 현행 규모 |
+|---|---|---|
+| 벡터 색인(조례 근거) | numpy **TF-IDF 코사인**(외부 임베딩·벡터DB 없음) | 조문 **7,585 청크** · `.npz` 7.5MB + chunks 11MB + vocab 0.5MB |
+| 공간 RDB(산지구분) | **SQLite + RTree** read-only(`local_spatial.py`) | 폴리곤 **1,066,806개** · **1.77 GB** |
+| 정형 데이터 | JSON | 건폐율/용적률 조례 **약 200개 관할**, 이격 조례 **119개 지자체** |
+| 실시간 API | 외부 조회 | VWorld, 국토부 건축HUB, 국가법령정보센터 |
+
+### D. 조례 커버리지 (실측)
+
+| 조례 | 파일 | 관할 수 | 비고 |
+|---|---|---|---|
+| 건폐율/용적률 도시계획조례 | `ordinances.json` + `ordinances_auto.json` | 검증 11 + 자동수집 196 = **약 200** | 미수집은 법정 상한 폴백, 자동수집분 검수 필요 |
+| 대지 안의 공지(이격) 건축조례 별표 | `setbacks.json` | **119** | 아산 검증, 나머지 `auto_parsed` |
+| 조례 조문 벡터색인 | `ordinance_index.*` | **7,585 청크** | TF-IDF 근거 검색 |
+
+### E. 공간 규제 연계 (현행)
+
+| 레이어 | 방식 | 상태 |
+|---|---|---|
+| 산지구분(보전/임업용산지) | 로컬 SQLite RTree(106만 폴리곤, 전국) | ✅ enabled |
+| 농업진흥지역 | VWorld WFS 실시간 | ✅ enabled |
+| 건축물대장 표제부 | 국토부 건축HUB API(전국 실시간) | ✅ |
+| 도로 접도 | 연속지적도 지목 '도로' 인접 판정 | ✅ |
+| 재해위험지구 | 전용 WFS 미확보 | ⛔ disabled |
+| 생태·자연도 | 서비스 활용신청 전 | ⛔ 미연계 |

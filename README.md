@@ -8,25 +8,41 @@ VWorld 3D 지도에서 해당 필지로 이동해 건폐율·용적률 범위 �
 ```
 사용자 질의
     ↓
-오케스트레이터 (Claude Opus 4.8 · tool-use 루프)   backend/app/orchestrator.py
-    ├─ prediagnose      → 사전진단 에이전트          backend/app/agents/prediagnosis.py
-    ├─ render_on_map    → 지도제어 에이전트          backend/app/agents/map_control.py
-    └─ restudy_massing  → 매스 재산출 (후속 질의용)
+오케스트레이터 (LLM 도구 루프 · Gemini gemini-flash-lite-latest)   backend/app/orchestrator.py
+    │
+    ├─ ① 사전진단 에이전트        진단 (도구 20개 sub-오케스트레이션)   agents/prediagnosis.py
+    │        · LLM 1회(주소·용도 추출) + 결정적 파이프라인
+    │        · vworld·zoning·ordinance·setback_rules·site_constraints·
+    │          road_access·building_register·land_conversion … (20개)
+    │
+    ├─ ② 지도제어(2D) 에이전트      2D 지도 명령                       agents/map_control.py
+    │        · fly_to(카메라)·highlight_parcel(필지)·
+    │          show_zone_pieces(용도지역)·show_panel(결과 패널)
+    │
+    ├─ ③ 3D(매스) 에이전트          건물 입체·치수선                    agents/map_control.py + lib/mapBridge.ts
+    │        · extrude_mass(건축 가능 규모 3D 입체)·show_dimensions(치수선)·
+    │          show_housing_model(주택/공장/상가/창고 모델)
+    │        · 실제 3D 렌더링은 프론트 mapBridge.ts 가 VWorld 3D(ws3d/Cesium)에서
+    │
+    └─ ④ 지역추천 에이전트          탐색형 질의                        agents/area_recommender.py
+             · "○○ 비도시 지역에서 농막 지을 데 찾아줘" 류
 ```
 
-사전진단 에이전트는 자체 tool-use 루프를 돌며 공간 도구를 순서대로 호출한다.
+② 지도제어(2D)와 ③ 3D(매스)는 **코드상 `map_control.py` 한 모듈**이지만 기능적으로
+2D 지도 묘화와 3D 건물 입체(매스)로 나뉜다. 둘 다 **LLM 없이** 진단 결과를 지도 명령으로
+번역하고(판단은 이미 끝났으므로), 명령은 SSE로 프론트에 흘러가 `lib/mapBridge.ts` 가
+VWorld 3D 위에서 실행한다.
+
+사전진단 에이전트가 순서대로 호출하는 핵심 공간 도구:
 
 | 단계 | 도구 | 소스 |
 |---|---|---|
 | 주소 → 좌표 | `geocode_address` | `tools/vworld.py` (VWorld 지오코더) |
 | 좌표 → 필지 | `get_parcel` | `tools/vworld.py` (연속지적도) |
 | 좌표 → 용도지역 | `get_land_use` | `tools/vworld.py` (용도지역지구도) |
-| 규제 판정 | `lookup_zoning` | `tools/zoning.py` (국토계획법 시행령) |
-| 매스 산출 | `calc_massing` | `tools/massing.py` |
-
-지도제어 에이전트는 LLM 없이 진단 결과를 지도 명령으로 번역한다 —
-판단은 이미 끝났고, 무엇을 그릴지는 확정적이기 때문이다. 명령은 SSE 로 프론트에
-흘러가 `lib/mapBridge.ts` 가 VWorld 3D 위에서 실행한다.
+| 규제 판정 | `lookup_zoning` | `tools/zoning.py` (국토계획법 시행령·조례) |
+| 이격 조회 | `setback_rules` | `tools/setback_rules.py` (119개 지자체 별표) |
+| 3D(매스) 산출 | `calc_massing` | `tools/massing.py` |
 
 ## 실행
 
@@ -70,22 +86,76 @@ API 키, 향후 데이터베이스 볼륨은 Git과 Docker 이미지에 포함�
 `VWORLD_KEY` 는 [vworld.kr](https://www.vworld.kr) 에서 발급받고,
 개발용으로 `localhost` 를 인증 도메인에 등록해야 한다.
 
+### 운영 배포 (systemd)
+
+운영 서버에서는 백엔드·프론트를 **systemd 서비스**로 띄운다. 코드 수정 후에는
+수동으로 `uvicorn`/`node`를 실행하지 말 것 — 포트(8000/5173) 충돌로 서비스가
+크래시-재시작 루프에 빠지고, 프론트는 `Requires=` 로 백엔드에 묶여 함께 재시작돼
+진행 중인 SSE 채팅이 끊긴다("network error").
+
+```bash
+# 프론트: dist 를 서빙 + /api 를 백엔드로 프록시 (frontend/server.mjs)
+sudo systemctl restart permit-copilot-backend      # uvicorn, :8000
+npm --prefix frontend run build                    # 프론트 변경 시 dist 재빌드
+sudo systemctl restart permit-copilot-frontend     # node server.mjs, :5173
+
+systemctl status permit-copilot-backend permit-copilot-frontend
+```
+
+백엔드만 고쳤으면 백엔드 서비스만 재시작하면 되고, 프론트(dist)만 고쳤으면
+재빌드 후 브라우저 하드 새로고침이면 된다. 공인 IP로 접속할 때 브라우저가
+HTTPS를 강제하면(HSTS/HTTPS-First) HTTP 서버라 `ERR_SSL_PROTOCOL_ERROR` 가 날 수
+있으니 `http://` 로 접속하거나 크롬의 "항상 보안 연결 사용"을 끈다.
+
+### 운영 환경 (GCP · LLM)
+
+| 구분 | 사양 |
+|---|---|
+| 클라우드 | Google Cloud Platform, 리전 `asia-northeast3`(서울) |
+| 인스턴스 | `e2-standard-8` — 8 vCPU(AMD EPYC 7B12) · 31 GiB RAM · 500 GB 디스크 |
+| OS | Rocky Linux 9.8 (kernel 5.14) |
+| 실행 | systemd 서비스 2개(backend :8000 / frontend :5173) |
+| LLM | **Google Gemini `gemini-flash-lite-latest`** (OpenAI 호환 모드) |
+
+LLM은 `app/llm.py` 의 어댑터로 공급자를 바꿔 붙인다. 운영값은
+`LLM_PROVIDER=openai`, `LLM_MODEL=gemini-flash-lite-latest`, `GEMINI_API_KEY` 이며,
+OpenAI 호환 `/chat/completions` 엔드포인트(`generativelanguage.googleapis.com`)로
+호출한다. LLM은 **자연어 → 구조 변환과 후속 자연어 답변에만** 쓰고, 판정·계산·묘화는
+결정적 코드가 하므로 경량 모델로도 동작한다. 산지 SQLite(1.77 GB)를 상시 적재하므로
+메모리 여유가 있는 사양을 쓴다.
+
+### 데이터 저장소 (DB 서버 없이 파일 기반)
+
+별도 DBMS(PostgreSQL 등)나 벡터DB 서버를 두지 않고, 파일 기반 저장소로 동작한다.
+
+| 종류 | 구현 | 현행 규모 | 위치 |
+|---|---|---|---|
+| **벡터 색인**(조례 근거 검색) | numpy TF-IDF 코사인 유사도(외부 임베딩·벡터DB 없음) | 조문 **7,585 청크** (`.npz` 7.5MB + chunks 11MB + vocab 0.5MB) | `app/data/ordinance_index.*` |
+| **공간 RDB**(산지구분) | SQLite + RTree, read-only 조회(`local_spatial.py`) | 폴리곤 **1,066,806개**, **1.77 GB** | `data/processed/forest/forest_class.sqlite` |
+| **정형 데이터**(조례·규제) | JSON | 건폐율/용적률 200개 관할 · 이격 119개 지자체 · 공간레이어 설정 | `app/data/*.json` |
+| **실시간 API**(공간정보) | 외부 조회(캐시 없음) | VWorld(지오코딩·필지·용도지역·농업진흥), 국토부 건축HUB(건축물대장), 국가법령정보센터 | — |
+
+벡터 색인은 임베딩 모델로 교체할 수 있게 `_vectorize()`/`search()` 만 바꾸면 되도록
+분리돼 있다. 산지 SQLite와 조례 벡터 색인은 재생성 가능(대용량·`.gitignore` 대상)이라
+Git·Docker 이미지에 넣지 않고 빌드 스크립트로 만든다
+(`scripts/import_forest_shp.py`, `scripts/build_ordinance_index.py`).
+
 ## 조례 데이터
 
-건폐율·용적률 수치는 코드에 하드코딩하지 않고 `app/data/ordinances.json` 에서
-읽는다. 이 파일은 두 층위를 담는다.
+건폐율·용적률 수치는 코드에 하드코딩하지 않고 조례 데이터에서 읽는다. 세 층위다.
 
-| 층위 | 출처 | 시점 |
+| 층위 | 출처 | 규모 |
 |---|---|---|
-| 법정 상한 | 국토계획법 시행령 제84·85조 (대통령령 제36220호) | 시행 2026-03-24 |
-| 서울특별시 | 도시계획조례 제44·48조 | 시행 2026-07-13 |
-| 부산광역시 | 도시계획조례 제49·50조 | 시행 2026-04-08 |
-| 인천광역시 | 도시계획조례 제64·65조 | 시행 2026-07-13 |
-| 경기도 성남시 | 도시계획조례 제66·67조 | 시행 2026-02-24 |
-| 대구광역시 | 도시계획조례 제75·80조 | 시행 2026-05-11 |
+| 법정 상한 | 국토계획법 시행령 제84·85조 (대통령령 제36220호, 시행 2026-03-24) | 폴백 |
+| 검증 조례 | `app/data/ordinances.json` — 서울·부산·인천·성남·대구·아산 등 사람 대조 | **11개 관할** |
+| 자동수집 조례 | `app/data/ordinances_auto.json` — 국가법령정보센터에서 도시계획조례 자동 수집 | **196개 관할** |
 
-주소에서 지자체가 인식되면 조례값이, 아니면 법정 상한이 적용된다. 어느 쪽을
-썼는지는 판정 결과의 `limit_source` (`ordinance` / `statutory`) 로 확인한다.
+즉 전국 **약 200개 관할**의 도시계획조례 건폐율/용적률이 실제 적용된다(청주·경산·
+강릉 등). 두 파일 모두 런타임에 로드되며, 검증 조례가 자동수집분보다 우선한다.
+주소에서 인식된 지자체 조례가 있으면 그 값이, 없으면 법정 상한이 적용되고, 어느
+쪽을 썼는지는 판정 결과의 `limit_source` (`ordinance` / `statutory`) 로 확인한다.
+자동수집분은 원문 대조 전이므로 표본 검수가 필요하다(손상 관할은
+`ordinances_needs_manual.json` 으로 분리).
 
 ```bash
 python compare_ordinances.py              # 전체 비교표
@@ -104,6 +174,25 @@ python compare_ordinances.py --gaps        # 법정 대비 격차 큰 순
 조항이 조례에 아예 없다. 이런 항목은 법정 상한으로 폴백하되 조례를 근거로
 인용하지 않는다 — 없는 조문을 인용하는 것이 틀린 수치보다 위험하다.
 
+### 이격거리(대지 안의 공지) — 전국 조례 별표
+
+이격거리도 코드에 하드코딩하지 않고 `app/data/setbacks.json` 에서 읽는다. 전국
+**119개 지자체**의 건축조례 「대지 안의 공지」 별표를 국가법령정보센터(ELIS)에서
+첨부 HWP로 내려받아 표 셀을 추출·파싱한 것이다(수집·파싱 스크립트:
+`scripts/collect_setback_tables.py`, `scripts/parse_setbacks_grid.py`).
+
+- `setback_rules.lookup(지자체, 용도, 용도지역, 연면적)` — first-match 규칙 평가로
+  전면(건축선)·인접(대지경계) 이격을 돌려준다. 미수집 지자체는 `NOT_COLLECTED`.
+- `setback_rules.applicable_setbacks(...)` — 이 필지의 용도지역·연면적 기준으로
+  **실제 이격이 발생하는 용도와 수치**를 산출한다(예: 연면적 632㎡ 계획관리지역 →
+  공장 전면 3m·인접 1.5m, 창고 전면 3m). 규모 조건 미달 용도는 자동 제외.
+- 규칙은 규모(`min_gross`)·용도지역(`zone`/`zone_contains`) 조건을 지원한다.
+
+이격은 고정값이 아니라 `용도 + 연면적 규모 + 용도지역` 조건 조합으로 결정된다.
+아산은 검증값이고 나머지 118개는 별표 자동 파싱값(`review_status: auto_parsed`)이라
+운영 투입 전 표본 검수가 필요하다. 파생 데이터(`setbacks_parsed.json`,
+`setbacks_tables_raw.json`)는 재생성 가능하며, HWP 다운로드 캐시는 Git에 넣지 않는다.
+
 ## 알아둘 것
 
 **매스는 이론값이다.** 건폐율을 꽉 채우고 용적률 상한까지 올린 최대 봉투로,
@@ -111,8 +200,10 @@ python compare_ordinances.py --gaps        # 법정 대비 격차 큰 순
 지침이 반영되면 실제 규모는 이보다 작아진다.
 
 **용도 판정표는 간이 버전이다.** `USE_MATRIX` 는 건축법 시행령 별표1 대분류
-9종만 다룬다. 세부 용도(예: 일반음식점 vs 휴게음식점)는 판정이 갈리므로
-확장이 필요하다.
+위주(단독·공동주택, 제1·2종근생, 업무·판매·숙박시설, 공장, 창고시설,
+교육연구시설 등)로 다룬다. 세부 용도(예: 일반음식점 vs 휴게음식점, 학교 vs
+학원·연구소)는 판정이 갈리므로 계속 확장이 필요하다. 일상어 용도("상가",
+"학교", "원룸")는 `_AMBIGUOUS_USE_TERMS`·`_USE_KEYWORDS` 로 정식 용도에 매핑한다.
 
 ## OGC WMS/WFS 공간규제 연계
 
@@ -125,7 +216,8 @@ python compare_ordinances.py --gaps        # 법정 대비 격차 큰 순
 현재 자동 판정 연결 상태:
 
 - 농업진흥지역: VWorld WFS 실시간 조회
-- 산지구분: 전국 원본을 적재한 로컬 SQLite RTree 조회
+- 산지구분: 전국 원본(폴리곤 106만 개, SQLite 1.77 GB)을 로컬 RTree로 실시간 조회
+- 건축물대장: 국토부 건축HUB API(`getBrTitleInfo`)로 전국 표제부 실시간 조회
 - 도로 접도: 연속지적도에서 지목 `도로`인 인접 필지를 찾아 사전검토
 - 재해위험지구: 공공데이터포털에는 서비스가 있으나 정확한 전용 WFS
   식별자/엔드포인트 미확보로 비활성화. 다른 용도지구가 섞인 VWorld 레이어를
@@ -138,7 +230,8 @@ python compare_ordinances.py --gaps        # 법정 대비 격차 큰 순
 계산한다.
 
 - 용도별 부설주차장 기본대수와 지상주차 필요면적
-- 대지 안의 공지 1m 가정(실제 값은 지자체 건축조례 확인)
+- 대지 안의 공지(이격): 지자체 건축조례 별표에서 읽은 실제 값(`setbacks.json`).
+  미수집 지자체는 0m로 두고 그 사유를 함께 표시한다
 - 전용·일반주거지역의 정북방향 일조 이격
 - 제약 반영 전후 건축면적과 축소율
 
