@@ -57,6 +57,42 @@ def _estimated_width_m(road) -> float | None:
     return round(min(positive), 1) if positive else None
 
 
+# 우수·오수를 방류할 수 있는 공공 배수처의 지목(단자·정식명 둘 다).
+# 배수로가 사유지(전·답·대 등)를 지나면 토지사용승낙 없이는 불가하므로, 인접에
+# 이 지목이 있는지가 방류처 확보의 1차 근거가 된다.
+_DRAINAGE_OUTLET_JIMOK = {
+    "구": "구거", "구거": "구거",
+    "천": "하천", "하천": "하천",
+}
+
+
+def _drainage(roads: list, adjacent_nonroads: list) -> dict:
+    """인접 지목으로 우수·오수 방류처(도로측구·구거·하천) 확보 여부를 사전검토한다.
+    지적도 인접 판정일 뿐, 실제 방류 가능·경사·관경은 현황측량·토목설계로 확정한다.
+    """
+    outlets: list[str] = []
+    if roads:
+        outlets.append("도로(도로측구)")
+    seen = set()
+    for item in adjacent_nonroads:
+        name = _DRAINAGE_OUTLET_JIMOK.get(item.get("jimok"))
+        if name and name not in seen:
+            seen.add(name)
+            outlets.append(name)
+    if outlets:
+        note = (
+            f"인접에 공공 배수처({' · '.join(outlets)})가 있어 우수·오수 방류가 "
+            "비교적 유리합니다. 실제 방류 가능 여부·경사·관경은 현황측량으로 확인합니다."
+        )
+    else:
+        note = (
+            "인접 필지에 지목 '도로·구거·하천' 같은 공공 배수처가 확인되지 않았습니다. "
+            "우수·오수 배수로가 사유지를 지나야 하면 토지사용승낙이 필요하거나 공유지로 "
+            "우회해야 하며, 방류처 확보는 개발행위허가 심사 대상입니다(현황측량·토목설계 확인)."
+        )
+    return {"public_outlet": bool(outlets), "outlets": outlets, "note": note}
+
+
 async def assess(
     parcel_geometry: dict,
     pnu: str = "",
@@ -130,6 +166,7 @@ async def assess(
             ),
             "roads": [],
             "adjacent_nonroad_parcels": adjacent_nonroads,
+            "drainage": _drainage(roads, adjacent_nonroads),
             "unknowns": ["건축법상 도로 지정 여부", "현황도로·통행권"],
             "legal_basis": "건축법 제2조제1항제11호, 제44조",
             "verification_sources": _verification_sources(),
@@ -152,6 +189,7 @@ async def assess(
         "message": f"지목 '도로' 필지 {len(roads)}개와 접합니다. {setback}",
         "roads": roads,
         "adjacent_nonroad_parcels": adjacent_nonroads,
+        "drainage": _drainage(roads, adjacent_nonroads),
         "road_contact_geometry": (
             transform(inverse.transform, road_contact).__geo_interface__
             if not road_contact.is_empty else None

@@ -685,6 +685,34 @@ def format_diagnosis_answer(d: dict) -> str:
         "이격거리·주차대수 산정으로 실제 규모는 줄어들 수 있습니다."
     )
     out.append("- 공공데이터·법령 기반 추정이므로 구체 인허가는 관할 행정청 확인이 필요합니다.")
+
+    # 기존 건축물 — 있으면 신축 시 철거·멸실이 선행되거나, 개발제한·보전구역에서는
+    # 개축·재축만 허용되고 신축이 제한·불가할 수 있음을 짚는다(판정을 단정하지 않는다).
+    existing_b = d.get("existing_buildings") or {}
+    if existing_b.get("status") == "FOUND" and existing_b.get("has_buildings"):
+        _cnames = " ".join(
+            (c.get("name", "") + c.get("note", "")) if isinstance(c, dict) else str(c)
+            for c in (reg.get("constraints") or [])
+        )
+        if "개발제한" in _cnames or "보전산지" in _cnames or "보전" in _cnames:
+            out.append(
+                "- 이 필지엔 기존 건축물이 있고 개발제한·보전 규제가 감지됩니다 — 이런 "
+                "구역은 기존 건축물의 개축·재축만 허용되고 신축은 제한·불가할 수 있습니다. "
+                "최종 가부는 관할청·건축 설계사무소 확인이 필요합니다."
+            )
+        else:
+            out.append(
+                "- 이 필지엔 기존 건축물이 있어, 신축하려면 철거·멸실(해체허가·신고)과 "
+                "소유권 확인이 선행됩니다. 용도지역·구역에 따라 개축·재축만 허용되거나 "
+                "신축이 제한될 수 있어 최종 가부는 관할청 확인이 필요합니다."
+            )
+
+    # 우수·오수 배수 — 인접에 공공 배수처(도로·구거·하천)가 없으면 배수로가 사유지를
+    # 지나야 할 수 있어, 토지사용승낙 또는 공유지 우회가 필요함을 짚는다.
+    drainage = (d.get("road_access") or {}).get("drainage") or {}
+    if drainage.get("public_outlet") is False:
+        out.append(f"- {drainage.get('note')}")
+
     if d.get("jurisdiction_warning"):
         out.append(f"- {d['jurisdiction_warning']}")
 
