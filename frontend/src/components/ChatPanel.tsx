@@ -78,8 +78,9 @@ function renderMarkdownCore(text: string): ReactNode {
 
 // 접기/펼치기로 만들 섹션 규칙. 헤더 제목이 test 에 맞으면 그 섹션을 <details>로 감싼다.
 const COLLAPSIBLE_SECTIONS: Array<{ test: RegExp; label: string }> = [
-  { test: /국가법령정보센터 원문 확인/, label: "법령 원문" },
-  { test: /관련 조례 조문\(근거\)/, label: "관련 조례 조문" },
+  { test: /국가법령정보센터 원문 확인/, label: "국가법령정보센터 원문" },
+  { test: /관련 법령 조문\(근거\)/, label: "인허가 단계 관련 법령 조문" },
+  { test: /관련 조례 조문\(근거\)/, label: "지자체 관련 조례 조문" },
 ];
 
 function renderMarkdown(text: string): ReactNode {

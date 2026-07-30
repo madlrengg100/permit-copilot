@@ -115,6 +115,15 @@ _VERDICT_TEXT = {
     "unknown": "판단 불가",
 }
 
+# 법률 적용 관계 절의 상태 줄. 충돌로 막히는 경우와 요건이 쌓이기만 하는 경우를
+# 사용자가 한눈에 구분하도록 legal_conflicts.evaluate() 의 status 를 그대로 옮긴다.
+_CONFLICT_STATUS_LABELS = {
+    "BLOCKED": "충돌 — 최종 허가 제한",
+    "UNRESOLVED_CONFLICT": "충돌 미해소 — 예외 요건 입증 필요",
+    "CUMULATIVE_REQUIREMENTS": "충돌 없음 · 요건 누적 적용",
+    "CLEAR": "충돌 없음",
+}
+
 
 def _won(n) -> str:
     try:
@@ -577,12 +586,25 @@ def format_diagnosis_answer(d: dict) -> str:
         out.append("")
         out.append(f"## {n}. 법률 적용 관계")
         n += 1
+        out.append(f"- 상태: {_CONFLICT_STATUS_LABELS.get(conflicts.get('status'), '검토 필요')}")
         for evaluation in evaluations[:6]:
+            # 요건이 쌓이는 규칙은 무엇과 무엇이 더해져 최종 허가가 되는지를
+            # 문장이 아니라 한 줄 구성식으로 먼저 보여준다.
+            requirements = evaluation.get("requirements") or []
+            permits = [r.get("permit") for r in requirements if r.get("permit")]
+            laws = [r.get("law") for r in requirements if r.get("law")]
+            if permits:
+                out.append(f"- **{' + '.join(permits)} → 최종 허가**")
             effect = evaluation.get("effect")
             if effect:
                 out.append(f"- {effect}")
+            if laws:
+                out.append(f"- 근거: {' · '.join(laws)}")
         if conflicts.get("blocks_final_approval"):
-            out.append("- **최종 허가 제한:** 위 충돌 또는 예외 요건을 해소하기 전에는 최종 허가가 불가능합니다.")
+            out.append(
+                "- **최종 허가 제한:** 위 금지 규정 또는 예외 요건을 해소하기 전에는 "
+                "건축허가를 받을 수 없습니다."
+            )
 
     # 예상 인허가·협의 단계
     pr = d.get("permit_requirements") or {}
@@ -624,7 +646,7 @@ def format_diagnosis_answer(d: dict) -> str:
     legal_evidence = d.get("legal_evidence") or legal.get("evidence") or []
     if legal_evidence:
         out.append("")
-        out.append(f"## {n}. 관련 법령 조문(근거)")
+        out.append(f"## {n}. 인허가 단계 관련 법령 조문(근거)")
         n += 1
         for evidence in legal_evidence[:6]:
             label = " ".join(
@@ -642,7 +664,7 @@ def format_diagnosis_answer(d: dict) -> str:
     evidence = d.get("ordinance_evidence") or []
     if evidence:
         out.append("")
-        out.append(f"## {n}. 관련 조례 조문(근거)")
+        out.append(f"## {n}. 지자체 관련 조례 조문(근거)")
         n += 1
         for ev in evidence[:3]:
             eff = ev.get("effective_date") or ""
