@@ -32,6 +32,7 @@ from ..tools import (
     conversion_charges,
     development_charge,
     law_open,
+    legal_conflicts,
     land_conversion,
     massing,
     ordinance,
@@ -1180,6 +1181,11 @@ async def run_prediagnosis(
         )
     ):
         reg["verdict"] = "conditional"
+
+    state["legal_conflicts"] = legal_conflicts.evaluate(state)
+    if state["legal_conflicts"]["blocks_final_approval"] and reg.get("verdict") in {"allowed", "conditional"}:
+        reg["verdict"] = "unknown"
+        reg["reason"] = state["legal_conflicts"]["summary"]
 
     # 불허면 매스를 만들지 않는다 — 지을 수 없는 건물을 그려 보여주지 않기 위해
     if reg["verdict"] in {"allowed", "conditional"} and reg.get("bcr_max_pct"):

@@ -744,3 +744,6 @@ cd frontend && npm run dev -- --host 0.0.0.0 --port 5173
 `permit_requirements.items[]` 계약을 유지하면서 `rule_id`,
 `legal_references`, `depends_on`과 `workflow_graph`를 추가하며, LLM은 이
 계산 결과를 변경하지 않는다.
+
+종합 판정 전 `legal_conflict_rules.json`을 평가해 명시적 금지, 예외 미확정,
+법률별 요건의 누적 적용을 `legal_conflicts`로 반환한다.

@@ -157,6 +157,10 @@ OpenAI 호환 `/chat/completions` 엔드포인트(`generativelanguage.googleapis
 법령 참조와 선행단계 `depends_on`이 붙고, Gemini는 계산 결과와 관련
 법령·조례 청크를 읽어 설명만 한다.
 
+법률 적용 관계는 `legal_conflict_rules.json`과 `legal_conflicts.py`가 종합
+판정 전에 평가한다. 명시적 금지, 예외 입증 필요, 독립 법률 요건의 누적 적용을
+구조화하며 Gemini가 우선순위를 임의로 결정하지 않는다.
+
 ## 조례 데이터
 
 건폐율·용적률 수치는 코드에 하드코딩하지 않고 조례 데이터에서 읽는다. 세 층위다.

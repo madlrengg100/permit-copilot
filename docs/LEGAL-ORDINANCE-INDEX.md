@@ -87,6 +87,10 @@ LLM이나 검색 청크가 건폐율·용적률·이격거리 같은 수치를 �
 
 ## 조례 조문 청킹
 
+법률 간 적용 관계는 `legal_conflict_rules.json`을 `legal_conflicts.py`가
+종합 판정 전에 평가한다. 명시적 금지, 예외 입증 필요, 독립 법률의 누적 적용을
+구분하며 특별법 우선·완화·인허가 의제는 검수된 명시 규칙이 있을 때만 적용한다.
+
 `backend/scripts/build_ordinance_index.py`가 색인을 만든다.
 
 ### 입력

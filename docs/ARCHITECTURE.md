@@ -214,6 +214,7 @@ side = √면적 ;  altitude = clamp(side × 2, 60, 700)   # 지면 위 높이
 | `ordinance.py` | 건폐율/용적률 조례·법정 상한 `resolve_limits` (약 200개 관할) |
 | `ordinance_index.py` | 전국 법령·관할 조례 근거 검색 (numpy TF-IDF, 범위 분리) |
 | `permit_requirements.py` | `permit_rules.json` 조건 평가, 인허가 단계·선행관계 그래프 생성 |
+| `legal_conflicts.py` | 명시적 금지·예외 미확정·독립 법률 누적 적용 평가 |
 | `setback_rules.py` | 대지 안의 공지(이격) 조회 (119개 지자체 별표) |
 | `site_constraints.py` | 이격·정북일조·주차 반영 개념 건축 가능 영역 |
 | `road_access.py` | 도로 접도(연속지적도 지목 '도로' 인접) 사전검토 |
