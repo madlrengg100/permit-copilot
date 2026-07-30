@@ -1,0 +1,238 @@
+{
+  "_meta": {
+    "schema_version": 1,
+    "ruleset_version": "2026-07-30",
+    "name": "토지·개발·건축 인허가 단계 정형 규칙",
+    "principle": "판정과 절차 생성은 정형 조건식이 수행하고 LLM은 결과를 설명만 한다.",
+    "status": "screening_rules",
+    "source_review": "법령 원문과 관할 조례의 최신 시행일을 표본 대조해야 한다."
+  },
+  "sets": {
+    "non_urban_zones": [
+      "계획관리지역",
+      "생산관리지역",
+      "보전관리지역",
+      "농림지역",
+      "자연환경보전지역"
+    ],
+    "buildable_verdicts": ["allowed", "conditional", "unknown"]
+  },
+  "rules": [
+    {
+      "rule_id": "permit.demolition",
+      "order": 10,
+      "when": {
+        "path": "existing_buildings.has_buildings",
+        "op": "truthy"
+      },
+      "emit": {
+        "id": "demolition",
+        "phase": "site_preparation",
+        "name": "기존 건축물 해체허가·신고 및 멸실 정리",
+        "required": true,
+        "department": "${authority} 건축 담당부서",
+        "processing_days": null,
+        "documents": [
+          "해체계획서",
+          "소유권·사용권 증빙",
+          "해체공사 안전관리 자료"
+        ],
+        "basis": "건축물관리법 및 건축물대장 관련 규정",
+        "legal_ref_ids": ["law.building_management.demolition"],
+        "note": "소유자가 아닌 경우 임의 철거할 수 없으며 권리관계를 먼저 확인해야 합니다."
+      }
+    },
+    {
+      "rule_id": "permit.farmland_conversion",
+      "order": 20,
+      "when": {
+        "path": "jimok_info.category",
+        "op": "equals",
+        "value": "farmland"
+      },
+      "emit": {
+        "id": "farmland_conversion",
+        "phase": "land_conversion",
+        "name": "농지전용허가·협의",
+        "required": true,
+        "department": "${authority} 농지 담당부서",
+        "processing_days": null,
+        "documents": [
+          "농지전용허가 신청서",
+          "사업계획서",
+          "소유권 또는 사용권 증빙",
+          "지적도·지형도",
+          "피해방지계획 및 복구계획"
+        ],
+        "basis": "농지법 제34조",
+        "legal_ref_ids": ["law.farmland.article_34"],
+        "note": "농업진흥지역 여부, 시설 용도와 감면조건에 따라 협의 범위가 달라집니다."
+      }
+    },
+    {
+      "rule_id": "permit.forest_conversion",
+      "order": 20,
+      "when": {
+        "path": "jimok_info.category",
+        "op": "equals",
+        "value": "forest"
+      },
+      "emit": {
+        "id": "forest_conversion",
+        "phase": "land_conversion",
+        "name": "산지전용허가",
+        "required": true,
+        "department": "${authority} 산림 담당부서",
+        "processing_days": 30,
+        "documents": [
+          "산지전용허가 신청서",
+          "사업계획서",
+          "산지전용 예정지 실측도",
+          "산림조사서·입목축적조사서",
+          "복구계획서",
+          "재해위험성 검토자료(해당 시)"
+        ],
+        "basis": "산지관리법 제14조 및 같은 법 시행규칙",
+        "legal_ref_ids": [
+          "law.mountainous_district.article_14",
+          "law.mountainous_district.enforcement_rule"
+        ],
+        "note": "평균경사도·표고·입목축적과 지자체 조례 기준을 추가 확인해야 합니다."
+      }
+    },
+    {
+      "rule_id": "permit.road_review",
+      "order": 30,
+      "when": {
+        "any": [
+          {
+            "path": "road_access.status",
+            "op": "not_equals",
+            "value": "CADASTRAL_CONTACT"
+          },
+          {
+            "path": "road_access.unknowns",
+            "op": "nonempty"
+          }
+        ]
+      },
+      "emit": {
+        "id": "road_review",
+        "phase": "site_access",
+        "name": "건축법상 도로·접도 확인",
+        "required": true,
+        "department": "${authority} 건축·도로 담당부서",
+        "processing_days": null,
+        "documents": [
+          "도로대장",
+          "현황측량도",
+          "도로 지정자료 또는 통행권 증빙(해당 시)"
+        ],
+        "basis": "건축법 제2조제1항제11호 및 제44조",
+        "legal_ref_ids": [
+          "law.building.article_2_road",
+          "law.building.article_44"
+        ],
+        "note": "지적도상 도로 접촉만으로 건축법상 접도요건 충족이 확정되지는 않습니다."
+      }
+    },
+    {
+      "rule_id": "permit.special_review",
+      "order": 40,
+      "for_each": "regulatory_screen.findings",
+      "when": {
+        "path": "item.severity",
+        "op": "equals",
+        "value": "REVIEW"
+      },
+      "emit": {
+        "id": "special_${item.category}",
+        "phase": "agency_review",
+        "name": "${item.category} 관련 협의·영향진단",
+        "required": true,
+        "department": "${authority} 관련 전문부서",
+        "processing_days": null,
+        "documents": [
+          "사업계획 및 배치도",
+          "해당 구역 중첩도",
+          "저감·보존대책"
+        ],
+        "basis": "${item.basis}",
+        "legal_ref_ids": [],
+        "note": "${item.note}"
+      }
+    },
+    {
+      "rule_id": "permit.development_activity",
+      "order": 50,
+      "when": {
+        "any": [
+          {
+            "path": "regulation.zone",
+            "op": "in_set",
+            "set": "non_urban_zones"
+          },
+          {
+            "path": "jimok_info.category",
+            "op": "in",
+            "value": ["farmland", "forest"]
+          }
+        ]
+      },
+      "emit": {
+        "id": "development_activity",
+        "phase": "development_permission",
+        "name": "개발행위허가",
+        "required": true,
+        "department": "${authority} 도시계획·개발행위 담당부서",
+        "processing_days": null,
+        "documents": [
+          "개발행위허가 신청서",
+          "토지이용계획서",
+          "배치도·공사계획도",
+          "배수·재해방지계획",
+          "소유권 또는 사용권 증빙"
+        ],
+        "basis": "국토의 계획 및 이용에 관한 법률 제56조",
+        "legal_ref_ids": ["law.national_land_planning.article_56"],
+        "depends_on_if_present": [
+          "farmland_conversion",
+          "forest_conversion",
+          "road_review"
+        ],
+        "note": "진입도로, 경사도, 배수와 주변 토지 피해방지 기준을 함께 심사합니다."
+      }
+    },
+    {
+      "rule_id": "permit.building_permission",
+      "order": 90,
+      "when": {
+        "path": "regulation.verdict",
+        "op": "in_set_or_missing",
+        "set": "buildable_verdicts"
+      },
+      "emit": {
+        "id": "building_permission",
+        "phase": "building_permission",
+        "name": "건축허가 또는 건축신고",
+        "required": true,
+        "department": "${authority} 건축 담당부서",
+        "processing_days": null,
+        "documents": [
+          "건축허가·신고 신청서",
+          "대지 권리관계 증빙",
+          "배치도·평면도·입면도·단면도",
+          "구조·설비 관련 도서",
+          "의제 처리할 개별 인허가 신청서류"
+        ],
+        "basis": "건축법 제11조·제14조",
+        "legal_ref_ids": [
+          "law.building.article_11",
+          "law.building.article_14"
+        ],
+        "depends_on_all_previous": true,
+        "note": "허가·신고 구분과 처리기간은 건축물 규모·용도 및 관계기관 협의에 따라 달라집니다."
+      }
+    }
+  ]
+}

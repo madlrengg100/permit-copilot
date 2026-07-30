@@ -7,13 +7,15 @@ services:
     env_file:
       - .env
     environment:
-      # 산지 SQLite 는 이미지에 넣지 않고(1.77GB) 볼륨으로 마운트해 이 경로로 읽는다.
-      FOREST_SQLITE_PATH: /data/forest/forest_class.sqlite
+      # 전국 공간데이터는 이미지에 넣지 않고 하나의 읽기 전용 볼륨으로 연결한다.
+      FOREST_SQLITE_PATH: /data/processed/forest/forest_class.sqlite
+      FOREST_INVENTORY_SQLITE_PATH: /data/processed/forest_inventory/forest_inventory.sqlite
+      ECOLOGICAL_NATURE_SQLITE_PATH: /data/processed/ecological_nature_map/ecological_nature.sqlite
+      ECOLOGICAL_SEPARATE_SQLITE_PATH: /data/processed/ecological_nature_map/separate_management.sqlite
+      TERRAIN_DEM_PATH: /data/processed/terrain/dem/cop30_korea.tif
     volumes:
-      # 호스트의 산지 데이터 폴더를 컨테이너 /data/forest 로 읽기전용 마운트.
-      # FOREST_DATA_DIR 을 .env 에 지정(예: /srv/permit-copilot/forest). 미지정 시
-      # 리포지토리 내 기본 경로(git 제외 대상)를 쓴다.
-      - ${FOREST_DATA_DIR:-./backend/data/processed/forest}:/data/forest:ro
+      # 패키지를 푼 processed 폴더를 지정한다. 미지정 시 로컬 가공 폴더를 쓴다.
+      - ${SPATIAL_DATA_DIR:-./backend/data/processed}:/data/processed:ro
     expose:
       - "8000"
     restart: unless-stopped
@@ -44,4 +46,3 @@ services:
       backend:
         condition: service_healthy
     restart: unless-stopped
-

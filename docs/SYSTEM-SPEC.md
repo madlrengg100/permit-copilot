@@ -715,7 +715,7 @@ cd frontend && npm run dev -- --host 0.0.0.0 --port 5173
 
 | 종류 | 구현 | 현행 규모 |
 |---|---|---|
-| 벡터 색인(조례 근거) | numpy **TF-IDF 코사인**(외부 임베딩·벡터DB 없음) | **7,585청크·193관할·어휘 24,382개** |
+| 벡터 색인(법령·조례 근거) | numpy **TF-IDF 코사인**(외부 임베딩·벡터DB 없음) | **9,333청크(법령 1,748 + 조례 7,585)·어휘 35,194개** |
 | 공간 RDB(산지·임상·생태) | **SQLite + RTree** read-only(`local_spatial.py`) | 산지 1,066,806 · 임상 3,382,312 · 생태 1,599,058 · 별도관리 24,944 |
 | 정형 데이터 | JSON | 건폐율/용적률 조례 **약 200개 관할**, 이격 조례 **119개 지자체** |
 | 실시간 API | 외부 조회 + TTL 캐시 | VWorld(재해위험지구 포함), 국토부 건축HUB, 국가법령정보센터 |
@@ -726,7 +726,7 @@ cd frontend && npm run dev -- --host 0.0.0.0 --port 5173
 |---|---|---|---|
 | 건폐율/용적률 도시계획조례 | `ordinances.json` + `ordinances_auto.json` | 검증 11 + 자동수집 196 = **약 200** | 미수집은 법정 상한 폴백, 자동수집분 검수 필요 |
 | 대지 안의 공지(이격) 건축조례 별표 | `setbacks.json` | **119** | 아산 검증, 나머지 `auto_parsed` |
-| 조례 조문 벡터색인 | `ordinance_index.*` | **7,585청크·193관할** | TF-IDF 근거 검색, 수치 판정에는 미사용 |
+| 법령·조례 조문 벡터색인 | `ordinance_index.*` | **9,333청크** | 전국 법령/관할 조례 범위 분리 검색, 수치 판정에는 미사용 |
 
 ### E. 공간 규제 연계 (현행)
 
@@ -740,3 +740,7 @@ cd frontend && npm run dev -- --host 0.0.0.0 --port 5173
 | 생태·자연도 | 국립생태원 2026 정기고시 GDB → 로컬 SQLite RTree | ✅ enabled |
 | 생태·자연도 별도관리지역 | 같은 정기고시 GDB → 로컬 SQLite RTree | ✅ enabled |
 | 1:5,000 임상도 | 전국 SHP → 로컬 SQLite RTree, 갱신연도 속성 보존 | ✅ enabled |
+인허가 절차는 `permit_rules.json`의 정형 조건을 평가해 생성한다. 기존
+`permit_requirements.items[]` 계약을 유지하면서 `rule_id`,
+`legal_references`, `depends_on`과 `workflow_graph`를 추가하며, LLM은 이
+계산 결과를 변경하지 않는다.

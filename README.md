@@ -83,6 +83,11 @@ docker compose down
 `compose.yaml`, Dockerfile과 `.env.example`은 Git에 포함한다. 실제 `.env`,
 API 키, 향후 데이터베이스 볼륨은 Git과 Docker 이미지에 포함하지 않는다.
 
+전국 산지·임상·생태·DEM 가공 데이터는 별도 tar로 패키징하고, `.env`의
+`SPATIAL_DATA_DIR`로 압축을 푼 `processed` 폴더를 지정한다. Compose는 이
+폴더를 `/data/processed`에 읽기 전용으로 마운트한다. 생성·체크섬 검증·배포
+절차는 [대형 공간데이터 패키징·배포](docs/SPATIAL-DATA-DEPLOYMENT.md)를 따른다.
+
 `VWORLD_KEY` 는 [vworld.kr](https://www.vworld.kr) 에서 발급받고,
 개발용으로 `localhost` 를 인증 도메인에 등록해야 한다.
 
@@ -130,7 +135,7 @@ OpenAI 호환 `/chat/completions` 엔드포인트(`generativelanguage.googleapis
 
 | 종류 | 구현 | 현행 규모 | 위치 |
 |---|---|---|---|
-| **벡터 색인**(조례 근거 검색) | numpy TF-IDF 코사인 유사도(외부 임베딩·벡터DB 없음) | **7,585청크·193개 관할·어휘 24,382개** | `app/data/ordinance_index.*` |
+| **벡터 색인**(법령·조례 근거 검색) | numpy TF-IDF 코사인 유사도(외부 임베딩·벡터DB 없음) | **9,333청크(국가 법령 1,748 + 조례 7,585)·어휘 35,194개** | `app/data/ordinance_index.*` |
 | **공간 RDB**(산지·임상·생태) | SQLite + RTree, read-only 조회(`local_spatial.py`) | 산지 1,066,806개 · 임상도 3,382,312개 · 생태·자연도 1,599,058개 · 별도관리 24,944개 | `data/processed/*/*.sqlite` |
 | **정형 데이터**(조례·규제) | JSON | 건폐율/용적률 200개 관할 · 이격 119개 지자체 · 공간레이어 설정 | `app/data/*.json` |
 | **실시간 API**(공간정보) | 외부 조회 + TTL 캐시 | VWorld(지오코딩·필지·용도지역·농업진흥·재해위험지구), 국토부 건축HUB, 국가법령정보센터 | — |
@@ -138,13 +143,19 @@ OpenAI 호환 `/chat/completions` 엔드포인트(`generativelanguage.googleapis
 벡터 색인은 임베딩 모델로 교체할 수 있게 `_query_vector()`/`search()`의
 벡터화 경계를 분리해 두었다. 다만 교체할 때도 관할·시행일 필터와 정형 수치
 판정 분리는 유지해야 한다.
-산지 SQLite와 조례 벡터 색인은 재생성 가능(대용량·`.gitignore` 대상)이라
-Git·Docker 이미지에 넣지 않고 빌드 스크립트로 만든다
-(`scripts/import_forest_shp.py`, `scripts/build_ordinance_index.py`).
+산지·임상·생태 SQLite와 DEM 및 조례 벡터 색인은 대용량·재생성 가능
+데이터라 Git·Docker 이미지에 넣지 않는다. 공간데이터는
+`scripts/spatial_data_package.py`로 manifest와 별도 tar를 만들고 Compose
+읽기 전용 볼륨으로 연결하며, 원천자료에서 재생성할 때는 각 import 스크립트를 쓴다.
 
 법률·조례의 수집, 조문 단위 청킹, TF-IDF 색인, 관할·시점 필터, 정형 수치
 판정과 근거 검색의 분리는
 [법률·조례 수집 및 청킹 문서](docs/LEGAL-ORDINANCE-INDEX.md)에 상세히 기록한다.
+
+인허가 단계는 `app/data/permit_rules.json`의 조건식을
+`tools/permit_requirements.py`가 평가해 생성한다. 각 단계에는 `rule_id`,
+법령 참조와 선행단계 `depends_on`이 붙고, Gemini는 계산 결과와 관련
+법령·조례 청크를 읽어 설명만 한다.
 
 ## 조례 데이터
 

@@ -9,9 +9,11 @@ dist/
 .env.local
 backend/data/source/
 backend/data/processed/
+artifacts/
 
 # 조례 수집 캐시·로그 (재생성 가능)
 backend/scripts/.cache_ordin/
+backend/scripts/.cache_law/
 backend/scripts/.cache_build/
 backend/scripts/out/
 

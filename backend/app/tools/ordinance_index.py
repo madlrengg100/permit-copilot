@@ -74,6 +74,21 @@ def available() -> bool:
     return _load_index() is not None
 
 
+def _same_jurisdiction(requested: str, indexed: str | None) -> bool:
+    """`아산시`와 수집 원문 메타의 `충청남도 아산시`를 같은 관할로 본다."""
+    indexed = " ".join(str(indexed or "").split())
+    requested = " ".join(str(requested or "").split())
+    return bool(
+        indexed
+        and requested
+        and (
+            indexed == requested
+            or indexed.endswith(f" {requested}")
+            or requested.endswith(f" {indexed}")
+        )
+    )
+
+
 def _query_vector(query: str, vocab: dict, idf: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     tf = _tf(tokenize(query))
     idx, val = [], []
@@ -97,6 +112,7 @@ def search(
     jurisdiction: str | None = None,
     effective_on: str | None = None,
     top_k: int = 5,
+    scope: str = "all",
 ) -> list[dict]:
     """질의와 가장 관련 있는 조례 조문/별표 청크를 근거로 돌려준다.
 
@@ -116,7 +132,17 @@ def search(
     indptr, indices, data = ix["indptr"], ix["indices"], ix["data"]
     scored: list[tuple[float, int]] = []
     for i, ch in enumerate(chunks):
-        if jurisdiction and ch.get("jurisdiction") != jurisdiction:
+        is_law = str(ch.get("kind") or "").startswith("법령-")
+        if scope == "law" and not is_law:
+            continue
+        if scope == "ordinance" and is_law:
+            continue
+        # 국가 법령은 모든 관할에 공통 적용한다. 관할 조례만 선택 지자체로 격리한다.
+        if (
+            jurisdiction
+            and ch.get("jurisdiction") != "전국"
+            and not _same_jurisdiction(jurisdiction, ch.get("jurisdiction"))
+        ):
             continue
         if effective_on and ch.get("effective_date") and ch["effective_date"] > effective_on:
             continue
@@ -137,6 +163,8 @@ def search(
             "score": round(float(s), 4),
             "jurisdiction": ch.get("jurisdiction"),
             "ordinance": ch.get("ordinance"),
+            "law": ch.get("law"),
+            "chunk_id": ch.get("chunk_id"),
             "article": ch.get("article"),
             "title": ch.get("title"),
             "kind": ch.get("kind"),

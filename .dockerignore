@@ -8,3 +8,6 @@
 **/__pycache__
 **/*.py[cod]
 **/tsconfig.tsbuildinfo
+backend/data/source
+backend/data/processed
+artifacts

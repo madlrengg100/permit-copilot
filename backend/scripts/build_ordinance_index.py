@@ -32,6 +32,7 @@ CACHE = BASE / ".cache_ordin"
 DATA = BASE.parent / "app" / "data"
 AUTO = DATA / "ordinances_auto.json"
 SETBACKS = DATA / "setbacks_raw.json"
+LEGAL_CORPUS = DATA / "legal_corpus_chunks.json"
 
 _KEYWORDS = re.compile(
     r"건폐율|용적률|용도지역|높이|이격|공지|층수|용도|별표|건축선|일조|경관|지구단위|"
@@ -126,6 +127,26 @@ def build_chunks() -> list[dict]:
                     "url": rec.get("_meta", {}).get("source_url"),
                     "kind": "건축조례-이격",
                 })
+    # 토지·개발·건축 관련 국가 법령 조문·별표 corpus. 정형 판정 수치를
+    # 만들지 않고, permit_rules.json이 선택한 절차의 원문 근거 검색에만 쓴다.
+    if LEGAL_CORPUS.exists():
+        corpus = json.loads(LEGAL_CORPUS.read_text(encoding="utf-8"))
+        for item in corpus.get("chunks", []):
+            text = item.get("text", "")
+            if not text:
+                continue
+            chunks.append({
+                "chunk_id": item.get("chunk_id"),
+                "jurisdiction": "전국",
+                "ordinance": item.get("law"),
+                "law": item.get("law"),
+                "article": item.get("article"),
+                "title": item.get("title"),
+                "text": text,
+                "effective_date": item.get("effective_date"),
+                "url": item.get("url"),
+                "kind": item.get("kind", "법령-조문"),
+            })
     return chunks
 
 

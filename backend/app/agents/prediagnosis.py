@@ -606,6 +606,23 @@ def format_diagnosis_answer(d: dict) -> str:
         out.append("")
         out.append(f"- ⚠ 법령 원문 검증 상태: {legal.get('message', '확인 불가')}")
 
+    legal_evidence = d.get("legal_evidence") or legal.get("evidence") or []
+    if legal_evidence:
+        out.append("")
+        out.append(f"## {n}. 관련 법령 조문(근거)")
+        n += 1
+        for evidence in legal_evidence[:6]:
+            label = " ".join(
+                part for part in (
+                    evidence.get("law") or evidence.get("ordinance"),
+                    evidence.get("article"),
+                    f"({evidence.get('title')})" if evidence.get("title") else "",
+                )
+                if part
+            )
+            url = evidence.get("url")
+            out.append(f"- [{label}]({url})" if url else f"- {label}")
+
     # 관할 조례 근거 조문 (벡터 검색으로 찾은 실제 조문 — 판정 근거 추적용)
     evidence = d.get("ordinance_evidence") or []
     if evidence:
@@ -1250,9 +1267,30 @@ async def run_prediagnosis(
             query=f"{zone} {use} 건폐율 용적률 이격 대지 안의 공지 건축 제한",
             jurisdiction=jurisdiction,
             top_k=4,
+            scope="ordinance",
         )
     else:
         state["ordinance_evidence"] = []
+
+    # 정형 인허가 규칙이 선택한 단계명·근거만으로 전국 법령 corpus를 검색한다.
+    # 조례 검색과 범위를 분리해 다른 지자체 조례나 일반론이 섞이지 않게 한다.
+    permit_items = (state.get("permit_requirements") or {}).get("items", [])
+    legal_query = " ".join(
+        f"{item.get('name', '')} {item.get('basis', '')}"
+        for item in permit_items
+    ).strip()
+    state["legal_evidence"] = (
+        ordinance_index.search(
+            query=legal_query,
+            jurisdiction=jurisdiction,
+            top_k=6,
+            scope="law",
+        )
+        if legal_query and ordinance_index.available()
+        else []
+    )
+    if isinstance(state.get("legal_sources"), dict):
+        state["legal_sources"]["evidence"] = state["legal_evidence"]
 
     warning = ordinance.separate_ordinance_warning(
         state["location"]["matched_address"], jurisdiction
