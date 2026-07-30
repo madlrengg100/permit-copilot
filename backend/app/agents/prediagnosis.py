@@ -570,6 +570,20 @@ def format_diagnosis_answer(d: dict) -> str:
         for u in (rs.get("unknowns") or [])[:4]:
             out.append(f"- 추가 확인: {u}")
 
+    # 법률 간 금지·예외·누적 적용 관계
+    conflicts = d.get("legal_conflicts") or {}
+    evaluations = conflicts.get("evaluations") or []
+    if evaluations:
+        out.append("")
+        out.append(f"## {n}. 법률 적용 관계")
+        n += 1
+        for evaluation in evaluations[:6]:
+            effect = evaluation.get("effect")
+            if effect:
+                out.append(f"- {effect}")
+        if conflicts.get("blocks_final_approval"):
+            out.append("- **최종 허가 제한:** 위 충돌 또는 예외 요건을 해소하기 전에는 최종 허가가 불가능합니다.")
+
     # 예상 인허가·협의 단계
     pr = d.get("permit_requirements") or {}
     items = pr.get("items") or []
