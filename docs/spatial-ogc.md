@@ -13,7 +13,8 @@
 ## 레이어 활성화
 
 1. 제공기관의 `GetCapabilities`에서 WFS/WMS 주소와 레이어명을 확인한다.
-2. `.env`에 주소와 레이어명을 입력한다.
+2. 인증값이 필요한 서비스는 `.env`에 키와 등록 도메인을 입력한다. 주소와
+   레이어명은 비밀이 아니므로 `spatial_layers.json`에 명시한다.
 3. `spatial_layers.json`에서 해당 레이어의 `enabled`를 `true`로 바꾼다.
 4. 백엔드를 재시작하고 `/api/spatial-layers`의 `wfs_ready`를 확인한다.
 
@@ -29,7 +30,12 @@ HTTP 엔드포인트가 불가피한 공공기관은 `.env`에 `OGC_ALLOW_HTTP=t
     "coordinates": [[[127.0, 37.0], [127.1, 37.0], [127.1, 37.1],
                      [127.0, 37.1], [127.0, 37.0]]]
   },
-  "layer_ids": ["agricultural_promotion", "forest_class"]
+  "layer_ids": [
+    "agricultural_promotion",
+    "forest_class",
+    "ecological_nature",
+    "disaster_risk_zone"
+  ]
 }
 ```
 
@@ -41,6 +47,44 @@ HTTP 엔드포인트가 불가피한 공공기관은 `.env`에 `OGC_ALLOW_HTTP=t
 - `UNAVAILABLE`: 외부 서비스 오류, 형식 오류 또는 조회 상한 초과
 
 `UNAVAILABLE`과 `NOT_CONFIGURED`를 규제 없음으로 해석해서는 안 된다.
+
+## 현행 레이어
+
+| ID | 자료 | 방식 | 판정 사용 |
+|---|---|---|---|
+| `agricultural_promotion` | 농업진흥지역 | VWorld WFS | 농지전용 검토 |
+| `forest_class` | 산지구분 | 전국 SHP → 로컬 SQLite RTree | 공익용·임업용·준보전산지 |
+| `forest_inventory` | 1:5,000 임상도 | 전국 SHP → 로컬 SQLite RTree | 수종·영급·밀도·임분고 참고 |
+| `ecological_nature` | 생태·자연도 | 2026 정기고시 GDB → 로컬 SQLite RTree | 1~3등급 중첩 |
+| `ecological_separate_management` | 별도관리지역 | 같은 GDB → 로컬 SQLite RTree | 개별 보호법령 추가 확인 |
+| `disaster_risk_zone` | 재해위험지구 | VWorld WFS `lt_c_up201` | 유형·면적·비율·방재협의 |
+
+### 재해위험지구
+
+- WMS명·WFS명: `lt_c_up201`
+- WFS 주소: `https://api.vworld.kr/req/wfs`
+- WMS 주소: `https://api.vworld.kr/req/wms`
+- WFS 속성: `uname`(지구명), `ucode`(코드), 지정연도·고시번호·시군구 등
+- WFS 폴리곤으로 필지 교차 면적과 비율을 계산한다.
+- WMS는 화면 표시에만 사용하며 픽셀 색으로 중첩을 판정하지 않는다.
+- 정상 조회 후 교차가 없으면 `CLEAR`, API 장애나 인증 오류는 `UNAVAILABLE`이다.
+
+### 생태·자연도
+
+국립생태원 2026년 정기고시 FileGDB의 `F_생태자연도_A`와
+`F_별도관리지역_A`를 `scripts/import_ecological_nature.py`로 변환한다.
+
+```bash
+cd backend
+./.venv/bin/python scripts/import_ecological_nature.py \
+  --source "data/source/ecological_nature_map/붙임 1. 2026년 생태자연도 정기고시.gdb.zip" \
+  --output-dir data/processed/ecological_nature_map
+```
+
+현재 가공 DB는 생태·자연도 1,599,058개와 별도관리지역 24,944개 도형을
+포함한다. 1·2등급은 환경성 검토에서 중점 확인하지만 등급만으로 건축 불가를
+단정하지 않는다. 별도관리지역은 실제 유형에 해당하는 자연공원·습지·백두대간·
+산림보호·국가유산 등 개별 법령을 추가로 적용한다.
 
 ## 전국 산지구분 데이터
 

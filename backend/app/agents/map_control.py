@@ -424,6 +424,29 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
     legal_sources = diagnosis.get("legal_sources", {})
     site_constraints = diagnosis.get("site_constraints", {})
     verdict = diagnosis.get("verdict", "unknown")
+    presentation = regulation.get("map_presentation") or {}
+    use_restriction = diagnosis.get("use_restriction") or {}
+    use_is_not_allowed = bool(
+        use_restriction
+        and use_restriction.get("kind") != "verification_required"
+    )
+    display_verdict = presentation.get("verdict") or verdict
+    display_label = presentation.get("label")
+    display_color = presentation.get("color") or VERDICT_COLOR[verdict]
+    show_building_mass = presentation.get(
+        "show_building_mass", verdict in {"allowed", "conditional"}
+    )
+    show_building_dimensions = presentation.get(
+        "show_building_dimensions", verdict in {"allowed", "conditional"}
+    )
+    # 호출 순서나 구버전 진단 객체와 무관하게, 확정 용도 제한이 있으면 지도에
+    # 건물·치수를 절대 내보내지 않는다.
+    if use_is_not_allowed:
+        display_verdict = "not_allowed"
+        display_label = "건축 불가"
+        display_color = "#C62828"
+        show_building_mass = False
+        show_building_dimensions = False
 
     if not location:
         return commands
@@ -455,7 +478,7 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
                 "geometry": parcel["geometry"],
                 "pnu": parcel.get("pnu", ""),
                 "label": f"{parcel.get('jibun', '')} · {parcel.get('area_m2', 0):,.0f}㎡",
-                "color": VERDICT_COLOR[verdict],
+                "color": display_color,
             }
         )
 
@@ -464,7 +487,12 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
     #      따로 그리지 않아도 어디서 규제가 바뀌는지 눈에 보인다.
     #      프론트 우측 범례 창도 이 명령의 pieces 를 그대로 쓴다.
     zone_shares = land_use.get("zone_shares") or []
-    pieces = [s for s in zone_shares if s.get("geometry")]
+    pieces = [
+        s for s in zone_shares
+        if s.get("geometry")
+        and float(s.get("share_pct") or 0) > 0
+        and float(s.get("area_m2") or 0) > 0
+    ]
     if len(pieces) >= 2:
         piece_colors = _piece_colors([s["zone"] for s in pieces])
         commands.append(
@@ -492,7 +520,7 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
         and mass.get("layout_feasible", True)
         and parcel
         and parcel.get("geometry")
-        and verdict != "not_allowed"
+        and show_building_mass
     ):
         footprint_geometry = site_constraints.get("footprint_geometry")
         if not footprint_geometry and not site_constraints:
@@ -520,7 +548,7 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
                 "flat_only": mass.get("exceeds_far_limit", False),
                 # 건폐율만큼만 바닥을 차지하므로 폴리곤을 그 비율로 축소해 그린다
                 "footprint_ratio": mass["bcr_applied_pct"] / 100.0,
-                "color": VERDICT_COLOR[verdict],
+                "color": display_color,
                 "opacity": 0.55,
                 "label": (
                     f"최대 건축면적 {mass['building_area_m2']:,.0f}㎡"
@@ -534,10 +562,27 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
     #      건축면적은 매스 중심(anchor), 대지면적은 필지 중심에 배치한다.
     #      단, 건축 불가면 세울 건물이 없으므로 가로·세로·도로접촉·이격 치수선을
     #      그리지 않는다(매스를 안 그리는 것과 동일한 기준).
-    if verdict != "not_allowed":
+    if show_building_dimensions:
         dims = _build_dimensions(diagnosis, anchor_lon, anchor_lat)
         if dims:
             commands.append(dims)
+
+    # 경사도 버튼과 본문이 서로 다른 지형값을 표시하지 않도록 서버에서 계산한
+    # COP30 DEM 셀·통계를 지도에 전달한다. 이 명령은 즉시 표시하지 않고,
+    # 프론트가 경사도 버튼을 켰을 때 같은 셀을 그리는 데이터 갱신 명령이다.
+    terrain_analysis = conversion.get("terrain") or {}
+    if terrain_analysis.get("status") == "REFERENCE_AVAILABLE":
+        commands.append({
+            "type": "set_slope_data",
+            "source": terrain_analysis.get("source"),
+            "resolution_m": terrain_analysis.get("resolution_m"),
+            "min_elevation_m": terrain_analysis.get("elevation_min_m"),
+            "max_elevation_m": terrain_analysis.get("elevation_max_m"),
+            "mean_elevation_m": terrain_analysis.get("elevation_mean_m"),
+            "max_slope_deg": terrain_analysis.get("slope_max_deg"),
+            "mean_slope_deg": terrain_analysis.get("slope_mean_deg"),
+            "cells": terrain_analysis.get("grid_cells") or [],
+        })
 
     # 5) 정보 패널
     #    anchor 는 패널을 매스 꼭대기 위에 띄우기 위한 지도상 기준점이다.
@@ -546,7 +591,7 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
     #    height 는 **지면 위 높이**다(프론트에서 지형 표고를 더한다).
     mass_top = (
         mass["mass_height_m"]
-        if mass and not mass.get("exceeds_far_limit")
+        if mass and show_building_mass and not mass.get("exceeds_far_limit")
         else 0.0
     )
 
@@ -560,18 +605,13 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
     panel_verdict = (
         "limit_exceeded" if limit_exceeded
         else "site_infeasible" if layout_infeasible
-        else verdict
+        else display_verdict
     )
     panel_label = (
         "요청값 적용 불가" if limit_exceeded
         else "실질 배치 불가" if layout_infeasible
-        else (
-            "전용·개별규제 확인 필요"
-            if verdict == "unknown"
-            and regulation.get("reason")
-            and conversion.get("status") == "RESTRICTED_REVIEW"
-            else "개별규제 확인 필요"
-        )
+        else display_label if display_label
+        else "개별규제 확인 필요"
         if verdict == "unknown" and regulation.get("reason")
         else VERDICT_LABEL[verdict]
     )
@@ -579,9 +619,7 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
         "#C62828"
         if limit_exceeded
         or layout_infeasible
-        else "#616161"
-        if verdict == "unknown" and regulation.get("reason")
-        else VERDICT_COLOR[verdict]
+        else display_color
     )
 
     commands.append(
@@ -592,6 +630,7 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
             "verdict_label": panel_label,
             "color": panel_color,
             "address": location.get("matched_address", ""),
+            "pnu": (parcel or {}).get("pnu", ""),
             "zone": regulation.get("zone") or (land_use.get("zones") or [""])[0],
             "districts": land_use.get("districts", []),
             "jimok": (parcel or {}).get("jimok", ""),
@@ -607,7 +646,9 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
             "legal_basis": regulation.get("legal_basis", ""),
             "constraints": regulation.get("constraints", []),
             "zone_use_overview": regulation.get("zone_use_overview", {}),
-            "massing": mass,
+            # 계산 자료는 진단 객체에 보존하되, 건축 불가 패널에는 가능 규모나
+            # 모델 생성의 근거로 노출하지 않는다.
+            "massing": mass if display_verdict != "not_allowed" else None,
             "land_conversion": conversion,
             "existing_buildings": existing_buildings,
             "conversion_charge": conversion_charge,

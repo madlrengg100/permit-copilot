@@ -155,8 +155,9 @@ extract_request(client, query)   # "테헤란로 152에 업무시설" → (주�
 ```
 
 `submit_request` 도구를 강제해 `{address, lon?, lat?, building_use, inferred, far_target_pct?}` 를 받고,
-`building_use` 는 9개 값(`BUILDING_USES`)으로 정규화한다. 용도가 명시되지 않으면
-문맥에서 추론하고 `inferred=true` 로 표시한다.
+`building_use`는 `시설물`을 포함한 11개 값(`BUILDING_USES`, 실제 건축물 대분류
+10개)으로 정규화한다. 용도가 명시되지 않으면 임의의 단일 용도를 추측하지 않고
+`시설물`, `inferred=true`로 표시해 지원 용도 전체를 검토한다.
 
 이후는 전부 결정적 코드다. 판정 근거가 되는 수치는 어차피 도구가 계산하므로
 정확성이 떨어지지 않고, 오히려 모델이 순서를 건너뛰거나 인자를 잘못 넣을 여지가 사라진다.
@@ -211,7 +212,7 @@ side = √면적 ;  altitude = clamp(side × 2, 60, 700)   # 지면 위 높이
 | `landuse.py` | 용도지역·지구 상세 조회 |
 | `zoning.py` | 용도별 허용 판정 `USE_MATRIX`(10개 용도) + 조례 밀도 상한 |
 | `ordinance.py` | 건폐율/용적률 조례·법정 상한 `resolve_limits` (약 200개 관할) |
-| `ordinance_index.py` | 조례 조문 근거 검색 (numpy TF-IDF, 7,585 청크) |
+| `ordinance_index.py` | 조례 조문 근거 검색 (numpy TF-IDF, 7,585청크·193관할) |
 | `setback_rules.py` | 대지 안의 공지(이격) 조회 (119개 지자체 별표) |
 | `site_constraints.py` | 이격·정북일조·주차 반영 개념 건축 가능 영역 |
 | `road_access.py` | 도로 접도(연속지적도 지목 '도로' 인접) 사전검토 |
@@ -226,6 +227,10 @@ side = √면적 ;  altitude = clamp(side × 2, 60, 700)   # 지면 위 높이
 | `massing.py` | 밀도 → 건축면적·연면적·층수·높이 |
 | `footprint.py` | 건축면적 형상 계산 |
 | `law_open.py` | 국가법령정보센터 현행 법령 검증 |
+
+법률·조례 수집과 청킹의 입력·필터·메타데이터·TF-IDF 수식·관할 격리·LLM
+전달 구조는 [LEGAL-ORDINANCE-INDEX.md](LEGAL-ORDINANCE-INDEX.md)를 기준으로
+한다. 정형 JSON이 수치를 결정하고 조문 색인은 근거 검색에만 사용한다.
 
 #### vworld.py — 실전에서 걸렸던 것들
 
@@ -443,7 +448,7 @@ ordinances_auto.json 자동수집 조례 — 국가법령정보센터에서 자�
 _meta.sources[]                    조례명 · 조례번호 · 시행일 · 조문 · ELIS URL
 ```
 
-수집 현황 (실측 2026-07-28):
+수집 현황 (실측 2026-07-30):
 
 | 층위 | 파일 | 관할 수 |
 |---|---|---|
@@ -548,7 +553,7 @@ cd frontend && npm run dev
 
 ---
 
-## 부록 · 현행 데이터·인프라 현황 (실측 2026-07-28)
+## 부록 · 현행 데이터·인프라 현황 (실측 2026-07-30)
 
 > 초기 문서 작성 이후 데이터·인프라가 크게 확장됐다. 아래는 운영 서버에서 직접
 > 측정한 현행 수치다.
@@ -577,8 +582,8 @@ cd frontend && npm run dev
 
 | 종류 | 구현 | 현행 규모 |
 |---|---|---|
-| 벡터 색인(조례 근거) | numpy **TF-IDF 코사인**(외부 임베딩·벡터DB 없음) | 조문 **7,585 청크** · `.npz` 7.5MB + chunks 11MB + vocab 0.5MB |
-| 공간 RDB(산지구분) | **SQLite + RTree** read-only(`local_spatial.py`) | 폴리곤 **1,066,806개** · **1.77 GB** |
+| 벡터 색인(조례 근거) | numpy **TF-IDF 코사인**(외부 임베딩·벡터DB 없음) | **7,585청크·193관할·어휘 24,382개** |
+| 공간 RDB(산지·임상·생태) | **SQLite + RTree** read-only(`local_spatial.py`) | 산지 1,066,806 · 임상 3,382,312 · 생태 1,599,058 · 별도관리 24,944 |
 | 정형 데이터 | JSON | 건폐율/용적률 조례 **약 200개 관할**, 이격 조례 **119개 지자체** |
 | 실시간 API | 외부 조회 | VWorld, 국토부 건축HUB, 국가법령정보센터 |
 
@@ -588,7 +593,7 @@ cd frontend && npm run dev
 |---|---|---|---|
 | 건폐율/용적률 도시계획조례 | `ordinances.json` + `ordinances_auto.json` | 검증 11 + 자동수집 196 = **약 200** | 미수집은 법정 상한 폴백, 자동수집분 검수 필요 |
 | 대지 안의 공지(이격) 건축조례 별표 | `setbacks.json` | **119** | 아산 검증, 나머지 `auto_parsed` |
-| 조례 조문 벡터색인 | `ordinance_index.*` | **7,585 청크** | TF-IDF 근거 검색 |
+| 조례 조문 벡터색인 | `ordinance_index.*` | **7,585청크·193관할** | TF-IDF 근거 검색, 수치 판정 미사용 |
 
 ### E. 공간 규제 연계 (현행)
 
@@ -598,5 +603,7 @@ cd frontend && npm run dev
 | 농업진흥지역 | VWorld WFS 실시간 | ✅ enabled |
 | 건축물대장 표제부 | 국토부 건축HUB API(전국 실시간) | ✅ |
 | 도로 접도 | 연속지적도 지목 '도로' 인접 판정 | ✅ |
-| 재해위험지구 | 전용 WFS 미확보 | ⛔ disabled |
-| 생태·자연도 | 서비스 활용신청 전 | ⛔ 미연계 |
+| 재해위험지구 | VWorld WFS `lt_c_up201`, 전국 실시간 교차 계산 | ✅ enabled |
+| 생태·자연도 | 국립생태원 2026 정기고시 GDB → 로컬 SQLite RTree | ✅ enabled |
+| 생태·자연도 별도관리지역 | 같은 정기고시 GDB → 로컬 SQLite RTree | ✅ enabled |
+| 1:5,000 임상도 | 전국 SHP → 로컬 SQLite RTree, 구역별 갱신연도 보존 | ✅ enabled |

@@ -272,6 +272,9 @@ def calculate_overlaps(
             "code": props.get(code_field, "") if code_field else "",
             "area_m2": round(area, 1),
             "share_pct": round(area / parcel_area * 100, 1) if parcel_area else 0,
+            # 임상도처럼 판정에 여러 속성이 필요한 로컬 레이어가 원본 값을
+            # 잃지 않도록 교차 결과에 함께 보존한다.
+            "properties": props,
             "geometry": mapping(intersection),
         })
 

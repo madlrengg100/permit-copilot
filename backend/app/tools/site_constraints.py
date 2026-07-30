@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import math
+from functools import lru_cache
+from pathlib import Path
 
 from pyproj import CRS, Transformer
 from shapely.geometry import LineString, mapping, shape
@@ -14,7 +17,15 @@ from ..config import FLOOR_HEIGHT_M
 MIN_PRACTICAL_FOOTPRINT_M2 = 10.0
 from . import setback_rules
 
-PARKING_AREA_PER_SPACE_M2 = 25.0  # 주차구획+통로를 포함한 개념 지상주차 면적
+_BUILDING_RULES_PATH = (
+    Path(__file__).resolve().parent.parent / "data" / "building_use_rules.json"
+)
+
+
+@lru_cache(maxsize=1)
+def _parking_rules() -> dict:
+    with _BUILDING_RULES_PATH.open(encoding="utf-8") as file:
+        return json.load(file).get("parking_rules", {})
 
 # 주차 방식 상태 -> 완결된 한국어 문장 (caveat 문구용).
 # 상태코드를 그대로 노출하지 않고, 주어·서술어를 갖춘 자연스러운 문장으로 쓴다.
@@ -33,34 +44,35 @@ NORTH_DAYLIGHT_ZONES = {
 
 def parking_requirement(building_use: str, gross_floor_area_m2: float) -> dict:
     area = max(0.0, float(gross_floor_area_m2 or 0))
-    if building_use == "단독주택":
-        count = 0 if area <= 50 else (1 if area <= 150 else 1 + math.ceil((area - 150) / 100))
-        formula = "50㎡ 초과 150㎡ 이하 1대, 초과 100㎡당 1대 추가"
-    elif building_use == "공동주택":
-        # 세대수 입력이 없으므로 전용면적 85㎡/세대의 개념 규모로 추정한다.
-        estimated_households = max(1, math.ceil(area / 85)) if area else 0
+    rules = _parking_rules()
+    rule = rules.get(building_use)
+    meta = rules.get("_meta", {})
+    if building_use == "시설물" or not rule:
+        count = 0
+        formula = "전체 용도 통합 검토이므로 용도별로 다른 주차대수 산정 제외"
+    elif rule["mode"] == "detached_house":
+        free = float(rule["free_up_to_m2"])
+        one = float(rule["one_space_up_to_m2"])
+        additional = float(rule["additional_area_per_space_m2"])
+        count = 0 if area <= free else (1 if area <= one else 1 + math.ceil((area - one) / additional))
+        formula = f"{free:g}㎡ 초과 {one:g}㎡ 이하 1대, 초과 {additional:g}㎡당 1대 추가"
+    elif rule["mode"] == "household_proxy":
+        household_area = float(rule["area_per_household_m2"])
+        estimated_households = max(1, math.ceil(area / household_area)) if area else 0
         count = estimated_households
-        formula = "세대수 미확인으로 85㎡당 1세대·세대당 1대 가정"
-    elif building_use in {"업무시설", "판매시설"}:
-        count = math.ceil(area / 150) if area else 0
-        formula = "시설면적 150㎡당 1대"
-    elif building_use in {"제1종근린생활시설", "제2종근린생활시설", "숙박시설"}:
-        count = math.ceil(area / 200) if area else 0
-        formula = "시설면적 200㎡당 1대"
-    elif building_use == "공장":
-        count = math.ceil(area / 350) if area else 0
-        formula = "시설면적 350㎡당 1대 참고"
-    elif building_use == "창고시설":
-        count = math.ceil(area / 400) if area else 0
-        formula = "시설면적 400㎡당 1대 참고"
+        formula = f"세대수 미확인으로 {household_area:g}㎡당 1세대·세대당 1대 가정"
     else:
-        count = math.ceil(area / 300) if area else 0
-        formula = "기타 시설 300㎡당 1대 참고"
+        ratio = float(rule["area_per_space_m2"])
+        count = math.ceil(area / ratio) if area else 0
+        formula = f"시설면적 {ratio:g}㎡당 1대 참고"
+    surface_area_per_space = float(meta.get("surface_area_per_space_m2") or 0)
     return {
         "spaces": count,
+        "estimated": bool(rule) and building_use != "시설물",
         "formula": formula,
-        "surface_area_m2": round(count * PARKING_AREA_PER_SPACE_M2, 1),
-        "basis": "주차장법 시행령 제6조 및 별표 1",
+        "surface_area_m2": round(count * surface_area_per_space, 1),
+        "basis": meta.get("source", ""),
+        "rule_status": meta.get("status", "unknown"),
         "caveat": "지자체 주차장 조례, 세대수, 장애인주차 및 기계식·지하주차 계획에 따라 달라집니다.",
     }
 

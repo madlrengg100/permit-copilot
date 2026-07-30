@@ -130,15 +130,21 @@ OpenAI 호환 `/chat/completions` 엔드포인트(`generativelanguage.googleapis
 
 | 종류 | 구현 | 현행 규모 | 위치 |
 |---|---|---|---|
-| **벡터 색인**(조례 근거 검색) | numpy TF-IDF 코사인 유사도(외부 임베딩·벡터DB 없음) | 조문 **7,585 청크** (`.npz` 7.5MB + chunks 11MB + vocab 0.5MB) | `app/data/ordinance_index.*` |
-| **공간 RDB**(산지구분) | SQLite + RTree, read-only 조회(`local_spatial.py`) | 폴리곤 **1,066,806개**, **1.77 GB** | `data/processed/forest/forest_class.sqlite` |
+| **벡터 색인**(조례 근거 검색) | numpy TF-IDF 코사인 유사도(외부 임베딩·벡터DB 없음) | **7,585청크·193개 관할·어휘 24,382개** | `app/data/ordinance_index.*` |
+| **공간 RDB**(산지·임상·생태) | SQLite + RTree, read-only 조회(`local_spatial.py`) | 산지 1,066,806개 · 임상도 3,382,312개 · 생태·자연도 1,599,058개 · 별도관리 24,944개 | `data/processed/*/*.sqlite` |
 | **정형 데이터**(조례·규제) | JSON | 건폐율/용적률 200개 관할 · 이격 119개 지자체 · 공간레이어 설정 | `app/data/*.json` |
-| **실시간 API**(공간정보) | 외부 조회(캐시 없음) | VWorld(지오코딩·필지·용도지역·농업진흥), 국토부 건축HUB(건축물대장), 국가법령정보센터 | — |
+| **실시간 API**(공간정보) | 외부 조회 + TTL 캐시 | VWorld(지오코딩·필지·용도지역·농업진흥·재해위험지구), 국토부 건축HUB, 국가법령정보센터 | — |
 
-벡터 색인은 임베딩 모델로 교체할 수 있게 `_vectorize()`/`search()` 만 바꾸면 되도록
-분리돼 있다. 산지 SQLite와 조례 벡터 색인은 재생성 가능(대용량·`.gitignore` 대상)이라
+벡터 색인은 임베딩 모델로 교체할 수 있게 `_query_vector()`/`search()`의
+벡터화 경계를 분리해 두었다. 다만 교체할 때도 관할·시행일 필터와 정형 수치
+판정 분리는 유지해야 한다.
+산지 SQLite와 조례 벡터 색인은 재생성 가능(대용량·`.gitignore` 대상)이라
 Git·Docker 이미지에 넣지 않고 빌드 스크립트로 만든다
 (`scripts/import_forest_shp.py`, `scripts/build_ordinance_index.py`).
+
+법률·조례의 수집, 조문 단위 청킹, TF-IDF 색인, 관할·시점 필터, 정형 수치
+판정과 근거 검색의 분리는
+[법률·조례 수집 및 청킹 문서](docs/LEGAL-ORDINANCE-INDEX.md)에 상세히 기록한다.
 
 ## 조례 데이터
 
@@ -217,12 +223,14 @@ python compare_ordinances.py --gaps        # 법정 대비 격차 큰 순
 
 - 농업진흥지역: VWorld WFS 실시간 조회
 - 산지구분: 전국 원본(폴리곤 106만 개, SQLite 1.77 GB)을 로컬 RTree로 실시간 조회
+- 1:5,000 임상도: 전국 338만 폴리곤을 로컬 RTree로 조회. 파일 수집일과
+  구역별 실제 갱신연도(2017~2025)를 구분하고 산림조사서를 대체하지 않음
 - 건축물대장: 국토부 건축HUB API(`getBrTitleInfo`)로 전국 표제부 실시간 조회
 - 도로 접도: 연속지적도에서 지목 `도로`인 인접 필지를 찾아 사전검토
-- 재해위험지구: 공공데이터포털에는 서비스가 있으나 정확한 전용 WFS
-  식별자/엔드포인트 미확보로 비활성화. 다른 용도지구가 섞인 VWorld 레이어를
-  재해 레이어로 오인하지 않도록 `NOT_CONFIGURED`로 처리
-- 생태·자연도: 별도 공공데이터포털 서비스 활용신청 전까지 미연계로 표시
+- 재해위험지구: VWorld WFS `lt_c_up201` 전국 실시간 중첩 조회. WMS는 지도
+  표시용이며 판정은 WFS 벡터의 교차 면적·비율을 사용
+- 생태·자연도: 국립생태원 2026 정기고시 FileGDB를 로컬 SQLite RTree로 변환해
+  1~3등급과 별도관리지역의 필지별 중첩 면적·비율을 조회
 - 국가유산: 토지이용 용도지구에서 확인된 보호구역을 1차 스크리닝하며,
   국가유산청 정밀 공간정보는 별도 연계 필요
 

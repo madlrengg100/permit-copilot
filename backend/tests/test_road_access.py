@@ -28,6 +28,16 @@ class RoadAccessTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["status"], "NO_CADASTRAL_ROAD")
         self.assertIn("맹지", result["message"])
 
+    async def test_adjacent_field_is_reported_as_nonroad_parcel(self):
+        async def fetch(*_args):
+            return [{"pnu": "field", "jimok": "전", "address": "인접 밭", "geometry": ROAD}]
+
+        result = await assess(PARCEL, "parcel", fetch)
+
+        self.assertEqual(result["status"], "NO_CADASTRAL_ROAD")
+        self.assertIn("지목 '전' 1필지", result["message"])
+        self.assertEqual(result["adjacent_nonroad_parcels"][0]["jimok"], "전")
+
     async def test_failure_is_unknown_not_no_road(self):
         async def fetch(*_args):
             raise RuntimeError("down")

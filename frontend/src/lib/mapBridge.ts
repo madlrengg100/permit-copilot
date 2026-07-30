@@ -27,6 +27,11 @@ declare global {
 export type MapCommand =
   | { type: "clear_mass" }
   | {
+      /** 같은 필지 후속 질문에서 법적 진단 원본은 보존하고 현재 표시 범위만 바꾼다. */
+      type: "set_panel_context";
+      building_use: string;
+    }
+  | {
       type: "fly_to";
       lon: number;
       lat: number;
@@ -70,6 +75,18 @@ export type MapCommand =
       }>;
     }
   | {
+      /** 공익용·임업용산지 등 규제 레이어와 필지의 교차 영역 */
+      type: "show_restriction_pieces";
+      title: string;
+      pieces: Array<{
+        label: string;
+        share_pct: number;
+        area_m2: number;
+        color: string;
+        geometry: GeoJSONPolygon;
+      }>;
+    }
+  | {
       /** 검은 박스 대신 지도에 직접 얹는 치수선·면적 라벨 */
       type: "show_dimensions";
       segments: Array<{ positions: number[][]; label: string; color?: string; width?: number; onTop?: boolean }>;
@@ -86,6 +103,22 @@ export type MapCommand =
       panel?: boolean;
     }
   | {
+      /** 서버의 전국 DEM 분석값. 경사도 버튼을 켤 때 이 셀만 표시한다. */
+      type: "set_slope_data";
+      source: string;
+      resolution_m: number;
+      min_elevation_m: number;
+      max_elevation_m: number;
+      mean_elevation_m: number;
+      max_slope_deg: number;
+      mean_slope_deg: number;
+      cells: Array<{
+        geometry: GeoJSONPolygon;
+        elevation_m: number;
+        slope_deg: number;
+      }>;
+    }
+  | {
       /** 자연어로 실행한 지도 도구(측정·내 위치). MapCanvas가 처리. */
       type: "run_tool";
       action: "measure_line" | "measure_area" | "measure_height" | "erase" | "my_location";
@@ -96,6 +129,11 @@ export type MapCommand =
       open: boolean;
     }
   | {
+      /** 2D 필지 선택 화면과 3D 규모 화면을 자연어로 전환한다. */
+      type: "set_view_mode";
+      mode: "2d" | "3d";
+    }
+  | {
       /** 자연어로 동일 건물의 토공 전/평탄화 후 상태를 전환한다. */
       type: "set_earthwork_mode";
       mode: "original" | "graded";
@@ -103,6 +141,18 @@ export type MapCommand =
   | {
       /** 상세 건물 모델을 숨기고 진단에서 계산된 단순 LOD1 매스만 다시 표시한다. */
       type: "show_lod1";
+    }
+  | {
+      /** 입체 건물을 숨기고 진단에서 계산된 건축면적 평면 윤곽만 표시한다. */
+      type: "show_building_footprint";
+    }
+  | {
+      /** 직전에 보던 상세 3D 모델을 복원하고, 없으면 진단 LOD1 매스를 복원한다. */
+      type: "show_building_shape";
+    }
+  | {
+      /** LOD1·상세 모델·건축면적 윤곽을 모두 숨긴다. */
+      type: "hide_building_shape";
     }
   | {
       /** 자연어로 요청한 건물 하나만 지정 층수·토공 상태로 표시한다. */
@@ -630,6 +680,7 @@ export class MapBridge {
   private cadastreLoadGeneration = 0;
   // 걸침 필지의 용도지역 조각 오버레이
   private zonePieceIds: string[] = [];
+  private restrictionPieceIds: string[] = [];
   // 지형·배치·도로 접도 등 '공간에서 확인할 수치'를 건물 옆에 띄우는 라벨
   private siteNoteIds: string[] = [];
   // 치수선·면적 라벨 (검은 박스 대체)
@@ -649,6 +700,7 @@ export class MapBridge {
   private zoningLabelDisposer: (() => void) | null = null;
   // 경사도 격자
   private slopeGridIds: string[] = [];
+  private slopeData: Extract<MapCommand, { type: "set_slope_data" }> | null = null;
   // 최근 진단 필지 기하 (경사도 격자를 그 안으로 자르기 위해 보관)
   private lastParcelGeometry: GeoJSONPolygon | null = null;
   private focusEntity: any = null;
@@ -804,8 +856,11 @@ export class MapBridge {
             this.clearMass();
             this.clearParcel();
             this.clearZonePieces();
+            this.clearRestrictionPieces();
             this.clearSiteNotes();
             this.clearDimensions();
+            this.clearSlopeGrid();
+            this.slopeData = null;
             break;
           case "fly_to":
             // 지형 상대 Entity가 생성된 다음 중심을 잡아야 실제 매스 위치와
@@ -821,8 +876,21 @@ export class MapBridge {
           case "set_earthwork_mode":
             this.setEarthworkMode(cmd.mode);
             break;
+          case "set_slope_data":
+            this.slopeData = cmd;
+            this.clearSlopeGrid();
+            break;
           case "show_lod1":
             this.showLod1Only();
+            break;
+          case "show_building_footprint":
+            this.showBuildingFootprintOnly();
+            break;
+          case "show_building_shape":
+            this.restoreBuildingShape();
+            break;
+          case "hide_building_shape":
+            this.hideBuildingShape();
             break;
           case "show_housing_model":
             this.showRequestedHousingModel(
@@ -834,6 +902,9 @@ export class MapBridge {
             break;
           case "show_zone_pieces":
             this.showZonePieces(cmd);
+            break;
+          case "show_restriction_pieces":
+            this.showRestrictionPieces(cmd);
             break;
           case "show_dimensions":
             this.showDimensions(cmd);
@@ -1068,6 +1139,38 @@ export class MapBridge {
 
   private clearZonePieces(): void {
     this.removeAll(this.zonePieceIds);
+  }
+
+  private showRestrictionPieces(
+    cmd: Extract<MapCommand, { type: "show_restriction_pieces" }>,
+  ): void {
+    const ws3d = window.ws3d;
+    this.clearRestrictionPieces();
+    for (const piece of cmd.pieces) {
+      const pieceColor = ws3d.common.Color.fromCssColorString(piece.color);
+      for (const ring of outerRings(piece.geometry)) {
+        if (ring.length < 3) continue;
+        const id = `map-restriction-piece-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        this.viewer.entities.add({
+          id,
+          polygon: {
+            hierarchy: ws3d.common.Cartesian3.fromDegreesArray(
+              ring.flatMap(([lon, lat]) => [lon, lat]),
+            ),
+            material: pieceColor.withAlpha(0.42),
+            height: 0.8,
+            heightReference: 2,
+          },
+        });
+        this.restrictionPieceIds.push(id);
+      }
+    }
+    this.viewer.scene?.requestRender?.();
+    this.note(`✓ ${cmd.title} ${cmd.pieces.length}개 표시`);
+  }
+
+  private clearRestrictionPieces(): void {
+    this.removeAll(this.restrictionPieceIds);
   }
 
   /**
@@ -1453,11 +1556,60 @@ export class MapBridge {
     this.removeAll(this.housingModelIds);
     this.removeAll(this.massIds);
     this.focusEntity = null;
-    this.lastHousingModelType = null;
     this.lastEarthwork = null;
     this.extrudeMass(cmd);
     this.viewer.scene?.requestRender?.();
     this.note("✓ 상세 모델 숨김 · LOD1 매스만 표시");
+  }
+
+  /** 입체 모델을 지우고 같은 계산값의 건축면적 평면 윤곽만 남긴다. */
+  private showBuildingFootprintOnly(): void {
+    const cmd = this.lastMassCommand;
+    if (!cmd) {
+      throw new Error("먼저 선택한 필지의 건축 가능 규모를 진단해야 합니다.");
+    }
+    this.clearTerrainClipping();
+    this.clearEarthworkPrimitives();
+    this.removeAll(this.housingModelIds);
+    this.removeAll(this.massIds);
+    this.focusEntity = null;
+    this.lastEarthwork = null;
+    this.extrudeMass({ ...cmd, flat_only: true, height_m: 0 });
+    // 평면 표시용 복제 명령이 원래 LOD1 높이·층수 정보를 덮어쓰지 않게 한다.
+    this.lastMassCommand = cmd;
+    this.viewer.scene?.requestRender?.();
+    this.note("✓ 건축면적 윤곽만 표시");
+  }
+
+  /** 건축 매스와 모델을 모두 숨기되 재표시할 계산 명령은 보존한다. */
+  private hideBuildingShape(): void {
+    this.clearTerrainClipping();
+    this.clearEarthworkPrimitives();
+    this.removeAll(this.housingModelIds);
+    this.removeAll(this.massIds);
+    this.focusEntity = null;
+    this.lastEarthwork = null;
+    this.viewer.scene?.requestRender?.();
+    this.note("✓ 건물 윤곽 숨김");
+  }
+
+  /** 숨김·평면 전환 전에 보던 3D 형상을 복원한다. */
+  private restoreBuildingShape(): void {
+    if (!this.lastMassCommand) {
+      throw new Error("건축 가능한 필지의 규모를 먼저 진단해야 3D 모델을 표시할 수 있습니다.");
+    }
+    if (this.lastHousingModelType) {
+      this.clearTerrainClipping();
+      this.clearEarthworkPrimitives();
+      this.removeAll(this.massIds);
+      this.removeAll(this.housingModelIds);
+      this.focusEntity = null;
+      this.lastEarthwork = null;
+      this.showHousingModelExact(this.lastHousingModelType);
+      this.note("✓ 직전 3D 상세 모델 복원");
+      return;
+    }
+    this.showLod1Only();
   }
 
   private showHousingModelLegacy(type: HousingModelType): void {
@@ -2208,6 +2360,7 @@ export class MapBridge {
     if (!canvas) return () => {};
     const ws3d = window.ws3d;
     const handler = new ws3d.common.ScreenSpaceEventHandler(canvas);
+    let selectionGeneration = 0;
     const onClick = (movement: { position?: any }) => {
       try {
         const screen = movement.position;
@@ -2232,14 +2385,19 @@ export class MapBridge {
         const carto = ws3d.common.Cartographic.fromCartesian(world);
         const lon = ws3d.common.CesiumMath.toDegrees(carto.longitude);
         const lat = ws3d.common.CesiumMath.toDegrees(carto.latitude);
+        const requestGeneration = ++selectionGeneration;
         void this.selectParcelAt(lon, lat)
           .then((selected) => {
+            // 연속 클릭의 응답 순서가 뒤집혀도 과거 요청이 최신 PNU를
+            // 덮어쓰지 못하게 가장 최근 요청만 반영한다.
+            if (requestGeneration !== selectionGeneration) return;
             // 3D 깊이 버퍼의 원시 좌표를 그대로 질문에 쓰지 않는다. 서버가 실제
             // 지적 필지를 반환한 뒤 그 경계 중심을 현재 선택으로 확정해야 화면의
             // 필지와 다음 진단 좌표가 항상 일치한다.
             cb(selected.lon, selected.lat, selected.jibun, selected.pnu);
           })
           .catch((error: unknown) => {
+            if (requestGeneration !== selectionGeneration) return;
             const message = error instanceof Error ? error.message : String(error);
             onError?.(`선택한 필지 경계를 불러오지 못했습니다: ${message}`);
           });
@@ -2754,102 +2912,44 @@ export class MapBridge {
     this.removeAll(this.zoningOverlayIds);
   }
 
-  /**
-   * 경사도 격자 — 필지 위에 격자점을 찍어 VWorld 3D 지형에서 표고를 받아오고,
-   * 칸마다 경사(°)를 계산해 색으로 칠한다(초록=완경사 → 빨강=급경사).
-   * VWorld 지형(수십 m 해상도) 기반이라 정밀 측량·공부용 평균경사도는 아니다.
-   * 반환: 그린 칸 수와 최대·평균 경사(패널/범례 표시용).
-   */
+  /** 서버에서 계산한 COP30 DEM 셀을 그대로 색칠한다. */
   setSlopeGrid(
     on: boolean,
-  ): { cells: number; maxSlope: number; avgSlope: number; minElev: number; maxElev: number } {
+  ): {
+    cells: number;
+    maxSlope: number;
+    avgSlope: number;
+    minElev: number;
+    maxElev: number;
+    source: string;
+    resolutionM: number;
+  } {
     this.clearSlopeGrid();
-    if (!on) return { cells: 0, maxSlope: 0, avgSlope: 0, minElev: 0, maxElev: 0 };
-    const geom = this.lastParcelGeometry;
-    const ring = geom ? largestRing(geom) : null;
-    if (!ring) return { cells: 0, maxSlope: 0, avgSlope: 0, minElev: 0, maxElev: 0 };
-
-    const lons = ring.map((p) => p[0]);
-    const lats = ring.map((p) => p[1]);
-    const minlon = Math.min(...lons);
-    const maxlon = Math.max(...lons);
-    const minlat = Math.min(...lats);
-    const maxlat = Math.max(...lats);
-    const midlat = (minlat + maxlat) / 2;
-
-    const cellM = 6; // 격자 간격(m) — VWorld 지형 해상도 고려한 절충값
-    const dlat = cellM / 111320;
-    const dlon = cellM / (111320 * Math.cos((midlat * Math.PI) / 180));
-    const nx = Math.max(1, Math.min(64, Math.ceil((maxlon - minlon) / dlon)));
-    const ny = Math.max(1, Math.min(64, Math.ceil((maxlat - minlat) / dlat)));
-
-    // (nx+1)×(ny+1) 격자점 표고를 먼저 샘플링(인접 칸이 모서리를 공유하므로 재사용)
-    const elev: number[][] = [];
-    let validCount = 0;
-    for (let j = 0; j <= ny; j += 1) {
-      elev[j] = [];
-      for (let i = 0; i <= nx; i += 1) {
-        const h = this.terrainHeight(minlon + i * dlon, minlat + j * dlat);
-        elev[j][i] = h;
-        if (h !== 0) validCount += 1;
-      }
+    const data = this.slopeData;
+    const empty = {
+      cells: 0, maxSlope: 0, avgSlope: 0, minElev: 0, maxElev: 0,
+      source: data?.source ?? "COP30 DEM", resolutionM: data?.resolution_m ?? 30,
+    };
+    if (!on) return empty;
+    if (!data || !data.cells.length) {
+      this.note("✗ 경사도: 수집된 DEM 분석 데이터가 없습니다. 필지를 다시 진단하세요.");
+      return empty;
     }
-    // 지형 타일이 아직 안 왔으면 대부분 0이라 경사가 무의미하다.
-    if (validCount < (nx + 1) * (ny + 1) * 0.3) {
-      this.note("✗ 경사도: 지형 타일이 아직 준비되지 않았습니다. 잠시 후 다시 켜세요.");
-      return { cells: 0, maxSlope: 0, avgSlope: 0, minElev: 0, maxElev: 0 };
-    }
-
-    // 표고(해발 높이) 범위 — 유효 표본에서
-    let minElev = Infinity;
-    let maxElev = -Infinity;
-    for (let j = 0; j <= ny; j += 1) {
-      for (let i = 0; i <= nx; i += 1) {
-        const h = elev[j][i];
-        if (h !== 0) {
-          if (h < minElev) minElev = h;
-          if (h > maxElev) maxElev = h;
-        }
-      }
-    }
-    if (!Number.isFinite(minElev)) minElev = 0;
-    if (!Number.isFinite(maxElev)) maxElev = 0;
-
     const ws3d = window.ws3d;
-    let maxSlope = 0;
-    let sumSlope = 0;
     let count = 0;
-    for (let j = 0; j < ny; j += 1) {
-      for (let i = 0; i < nx; i += 1) {
-        const clon = minlon + (i + 0.5) * dlon;
-        const clat = minlat + (j + 0.5) * dlat;
-        if (!pointInRing(clon, clat, ring)) continue;
-        const z00 = elev[j][i];
-        const z10 = elev[j][i + 1];
-        const z01 = elev[j + 1][i];
-        const z11 = elev[j + 1][i + 1];
-        // 중심차분: x·y 방향 평균 기울기
-        const dzx = (z10 + z11 - z00 - z01) / 2 / cellM;
-        const dzy = (z01 + z11 - z00 - z10) / 2 / cellM;
-        const slopeDeg = (Math.atan(Math.hypot(dzx, dzy)) * 180) / Math.PI;
-        maxSlope = Math.max(maxSlope, slopeDeg);
-        sumSlope += slopeDeg;
+    for (const cell of data.cells) {
+      for (const ring of outerRings(cell.geometry)) {
+        if (ring.length < 3) continue;
+        const flat = ring.flatMap(([x, y]) => [x, y]);
         count += 1;
-
-        const cell = [
-          [minlon + i * dlon, minlat + j * dlat],
-          [minlon + (i + 1) * dlon, minlat + j * dlat],
-          [minlon + (i + 1) * dlon, minlat + (j + 1) * dlat],
-          [minlon + i * dlon, minlat + (j + 1) * dlat],
-        ];
-        const flat = cell.flatMap(([x, y]) => [x, y]);
         const id = `map-slope-${Date.now()}-${Math.random().toString(36).slice(2)}`;
         this.viewer.entities.add({
           id,
           polygon: {
             hierarchy: ws3d.common.Cartesian3.fromDegreesArray(flat),
-            material: ws3d.common.Color.fromCssColorString(slopeColor(slopeDeg)).withAlpha(0.55),
-            // 지형에 입혀 3D에서 깜빡이지 않게 (TERRAIN=0)
+            material: ws3d.common.Color.fromCssColorString(
+              slopeColor(cell.slope_deg),
+            ).withAlpha(0.55),
             classificationType: (window as any).Cesium?.ClassificationType?.TERRAIN ?? 0,
           },
         });
@@ -2857,17 +2957,19 @@ export class MapBridge {
       }
     }
     this.viewer.scene?.requestRender?.();
-    const avg = count ? sumSlope / count : 0;
     this.note(
-      `✓ 경사도 격자 ${count}칸 · 표고 ${Math.round(minElev)}–${Math.round(maxElev)}m · ` +
-        `경사 최대 ${maxSlope.toFixed(1)}° · 평균 ${avg.toFixed(1)}°`,
+      `✓ ${data.source} ${data.resolution_m}m 격자 ${count}칸 · ` +
+      `표고 ${data.min_elevation_m}–${data.max_elevation_m}m · ` +
+      `경사 최대 ${data.max_slope_deg}° · 평균 ${data.mean_slope_deg}°`,
     );
     return {
       cells: count,
-      maxSlope: Math.round(maxSlope * 10) / 10,
-      avgSlope: Math.round(avg * 10) / 10,
-      minElev: Math.round(minElev),
-      maxElev: Math.round(maxElev),
+      maxSlope: data.max_slope_deg,
+      avgSlope: data.mean_slope_deg,
+      minElev: data.min_elevation_m,
+      maxElev: data.max_elevation_m,
+      source: data.source,
+      resolutionM: data.resolution_m,
     };
   }
 
@@ -2913,6 +3015,8 @@ export class MapBridge {
     this.removeAll(this.housingModelIds);
     this.focusEntity = null;
     this.lastMassCommand = null;
+    this.lastHousingModelType = null;
+    this.lastEarthwork = null;
   }
 
   private clearParcel(): void {

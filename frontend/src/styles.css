@@ -272,8 +272,9 @@ body {
   top: 12px;
   right: 12px;
   width: min(430px, calc(100% - 20px));
-  /* 건물 위에 붙을 때 지도 조작을 가리지 않도록 */
-  pointer-events: none;
+  /* 팝업의 글자·여백 클릭이 뒤의 지도 캔버스로 통과하면 인접 PNU가
+     새 필지로 선택된다. 팝업 전체가 포인터를 받아 지도 선택을 차단한다. */
+  pointer-events: auto;
   z-index: 5;
   max-height: calc(100% - 24px);
   background: rgba(255, 255, 255, 0.98);
@@ -285,9 +286,7 @@ body {
   box-shadow: 0 9px 24px rgba(24, 42, 51, 0.2), 0 2px 5px rgba(24, 42, 51, 0.1);
 }
 
-/* 패널은 지도 조작을 안 가리려 pointer-events:none 이지만, 그러면 글씨도 드래그
-   선택이 안 된다. 텍스트 영역만 이벤트를 살려 복사·드래그가 되게 한다(부모 none
-   위의 자식 auto 는 정상 동작). */
+/* 팝업 텍스트는 복사·드래그할 수 있다. */
 .result-address,
 .verdict,
 .verdict-warning,
@@ -762,6 +761,19 @@ body {
   font-size: 12px;
   z-index: 5;
 }
+.restriction-legend {
+  position: absolute;
+  right: 16px;
+  bottom: 66px;
+  background: rgba(17, 20, 26, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  min-width: 210px;
+  font-size: 12px;
+  z-index: 5;
+}
+.restriction-legend.with-zone { bottom: 188px; }
 .zone-legend-title {
   font-weight: 600;
   margin-bottom: 6px;

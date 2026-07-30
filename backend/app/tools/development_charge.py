@@ -13,22 +13,17 @@
 
 from __future__ import annotations
 
-# 2025년 시도별 (부과건수, 부과금액[백만원]) — 통계누리 실적에서 파싱.
-_2025_BY_SIDO: dict[str, tuple[int, int]] = {
-    "서울": (15, 11249), "부산": (47, 2953), "대구": (42, 2148),
-    "인천": (142, 7300), "광주": (29, 4429), "대전": (29, 681),
-    "울산": (41, 2085), "세종": (41, 1261), "경기": (2589, 253170),
-    "강원": (186, 25675), "충북": (214, 5015), "충남": (248, 15613),
-    "전북": (43, 1768), "전남": (46, 2436), "경북": (206, 8024),
-    "경남": (152, 8232), "제주": (428, 20940),
-}
-_2025_NATIONAL = (4498, 372979)  # 전국 계
+import json
+from functools import lru_cache
+from pathlib import Path
 
-# 특별시·광역시(도시지역 면적 요건 660㎡ 적용 대상).
-_METRO = {"서울", "부산", "대구", "인천", "광주", "대전", "울산"}
+_RULES_PATH = Path(__file__).resolve().parent.parent / "data" / "charge_rules.json"
 
-# 비도시(도시지역 외) 용도지역 — 면적 요건 1,650㎡.
-_NON_URBAN_ZONE = ("관리지역", "농림지역", "자연환경보전지역")
+
+@lru_cache(maxsize=1)
+def _rules() -> dict:
+    with _RULES_PATH.open(encoding="utf-8") as file:
+        return json.load(file)
 
 
 def _per_case_won(counts_amount: tuple[int, int]) -> int:
@@ -57,12 +52,13 @@ def _sido_of(jurisdiction: str, address: str) -> str:
 
 def _area_requirement_m2(sido: str, zone: str) -> int:
     """개발이익환수법 시행령 제4조 면적 요건(지목변경 수반 개발 기준)."""
-    is_non_urban = any(z in (zone or "") for z in _NON_URBAN_ZONE)
+    rule = _rules()["development_charge"]
+    is_non_urban = any(z in (zone or "") for z in rule["non_urban_zone_terms"])
     if is_non_urban:
-        return 1650  # 도시지역 외
-    if sido in _METRO:
-        return 660   # 특별시·광역시 도시지역
-    return 990       # 그 밖의 도시지역
+        return int(rule["non_urban_threshold_m2"])
+    if sido in set(rule["metro_regions"]):
+        return int(rule["urban_metro_threshold_m2"])
+    return int(rule["urban_other_threshold_m2"])
 
 
 def assess(
@@ -84,26 +80,38 @@ def assess(
     req = _area_requirement_m2(sido, zone)
     meets_area = area_m2 >= req
 
-    region_avg = _per_case_won(_2025_BY_SIDO.get(sido, _2025_NATIONAL))
-    national_avg = _per_case_won(_2025_NATIONAL)
+    rules = _rules()
+    charge_rule = rules["development_charge"]
+    stats = rules["development_charge_statistics"]
+    national = tuple(stats["national"])
+    region_avg = _per_case_won(tuple(stats["regions"].get(sido, national)))
+    national_avg = _per_case_won(national)
 
     return {
         "label": "개발부담금",
         "applicable": meets_area,
         "reason": (
-            f"지목변경(전용)이 수반되고 개발면적이 요건({req:,}㎡) 이상이라 "
-            f"개발부담금 대상 가능성이 있습니다."
+            f"지목변경(전용)이 수반되고 사업 대상 토지면적({area_m2:,.0f}㎡)이 "
+            f"부과대상 토지면적({req:,}㎡ 이상)을 충족해 개발부담금 대상 가능성이 있습니다."
             if meets_area
-            else f"지목변경(전용)은 수반되나 개발면적이 요건({req:,}㎡)에 미치지 못해 "
-                 f"현재 규모로는 개발부담금 대상이 아닐 수 있습니다."
+            else f"지목변경(전용)은 수반되나 사업 대상 토지면적({area_m2:,.0f}㎡)이 "
+                 f"부과대상 토지면적({req:,}㎡ 이상)에 미치지 않아 면적 요건을 충족하지 않습니다."
         ),
-        "rate_note": "부과율은 개발이익의 25%(개별입지)이며, 택지·산업단지 등 계획입지는 20%입니다.",
+        "rate_note": (
+            f"부과율은 개발이익의 {float(charge_rule['individual_site_rate']) * 100:g}%"
+            f"(개별입지)이며, 택지·산업단지 등 계획입지는 "
+            f"{float(charge_rule['planned_site_rate']) * 100:g}%입니다."
+        ),
         "calculation_formula": (
             "개발이익 = 종료시점지가 - 개시시점지가 - 정상지가상승분 - 인정 개발비용; "
             "개발부담금 = 개발이익 × 부과율"
         ),
         "area_requirement_m2": req,
+        "assessed_area_m2": round(float(area_m2), 1),
         "region": sido or "전국",
+        "statistics_year": stats["year"],
+        "statistics_source": stats["source"],
+        "statistics_status": stats["status"],
         "region_avg_per_case_won": region_avg,
         "national_avg_per_case_won": national_avg,
         "legal_basis": "개발이익환수에 관한 법률 제5조·제13조, 같은 법 시행령 제4조",

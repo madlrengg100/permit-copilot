@@ -90,6 +90,15 @@ export async function fetchSetbackForUse(
 export async function* streamChat(
   sessionId: string,
   message: string,
+  context?: {
+    selectedParcel?: {
+      lon: number;
+      lat: number;
+      address?: string;
+      pnu?: string;
+    };
+    continuation?: boolean;
+  },
 ): AsyncGenerator<SSEEvent> {
   const res = await fetch(`${BASE}/api/chat`, {
     method: "POST",
@@ -97,7 +106,12 @@ export async function* streamChat(
       "Content-Type": "application/json",
       ...(APP_TOKEN ? { "X-App-Token": APP_TOKEN } : {}),
     },
-    body: JSON.stringify({ session_id: sessionId, message }),
+    body: JSON.stringify({
+      session_id: sessionId,
+      message,
+      selected_parcel: context?.selectedParcel,
+      continuation: context?.continuation ?? false,
+    }),
   });
 
   if (res.status === 401) {

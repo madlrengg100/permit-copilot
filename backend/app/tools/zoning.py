@@ -10,86 +10,23 @@
 
 from __future__ import annotations
 
+import json
+from functools import lru_cache
+from pathlib import Path
+
 from . import ordinance
 
-# 건축물 용도 대분류 -> 허용되는 용도지역 (간이 판정표)
-#   allowed  : 조례 없이 원칙적으로 허용
-#   permitted: 도시계획조례가 정하는 바에 따라 허용 (조건부)
-USE_MATRIX: dict[str, dict[str, list[str]]] = {
-    "단독주택": {
-        "allowed": [
-            "제1종전용주거지역", "제2종전용주거지역", "제1종일반주거지역",
-            "제2종일반주거지역", "제3종일반주거지역", "준주거지역",
-        ],
-        "permitted": [
-            "근린상업지역", "일반상업지역", "자연녹지지역", "계획관리지역",
-            "생산관리지역", "보전관리지역",
-        ],
-    },
-    "공동주택": {
-        "allowed": [
-            "제2종전용주거지역", "제2종일반주거지역", "제3종일반주거지역", "준주거지역",
-        ],
-        "permitted": ["제1종일반주거지역", "근린상업지역", "일반상업지역", "준공업지역"],
-    },
-    "제1종근린생활시설": {
-        "allowed": [
-            "제1종전용주거지역", "제2종전용주거지역", "제1종일반주거지역",
-            "제2종일반주거지역", "제3종일반주거지역", "준주거지역",
-            "중심상업지역", "일반상업지역", "근린상업지역", "유통상업지역",
-            "전용공업지역", "일반공업지역", "준공업지역",
-        ],
-        "permitted": ["자연녹지지역", "생산녹지지역", "계획관리지역"],
-    },
-    "제2종근린생활시설": {
-        "allowed": [
-            "준주거지역", "중심상업지역", "일반상업지역", "근린상업지역",
-            "유통상업지역", "일반공업지역", "준공업지역",
-        ],
-        "permitted": [
-            "제1종일반주거지역", "제2종일반주거지역", "제3종일반주거지역",
-            "자연녹지지역", "계획관리지역",
-        ],
-    },
-    "업무시설": {
-        "allowed": ["준주거지역", "중심상업지역", "일반상업지역", "근린상업지역", "준공업지역"],
-        "permitted": [
-            "제2종일반주거지역", "제3종일반주거지역",
-            "유통상업지역", "일반공업지역",
-        ],
-    },
-    "판매시설": {
-        "allowed": ["중심상업지역", "일반상업지역", "유통상업지역", "근린상업지역"],
-        "permitted": ["준주거지역", "준공업지역"],
-    },
-    "숙박시설": {
-        "allowed": ["중심상업지역", "일반상업지역", "유통상업지역"],
-        "permitted": ["근린상업지역", "계획관리지역", "자연녹지지역"],
-    },
-    "공장": {
-        "allowed": ["전용공업지역", "일반공업지역", "준공업지역"],
-        "permitted": ["계획관리지역", "생산녹지지역", "자연녹지지역"],
-    },
-    "창고시설": {
-        "allowed": ["유통상업지역", "전용공업지역", "일반공업지역", "준공업지역"],
-        "permitted": ["계획관리지역", "생산녹지지역", "자연녹지지역", "농림지역"],
-    },
-    "교육연구시설": {
-        # 국토계획법 시행령 별표(용도지역 안에서 건축할 수 있는 건축물) 기준.
-        # 학교(초·중·고 등)를 대표로 한 단순화이며, 세부 유형(학원·연구소·직업
-        # 훈련소)에 따라 달라질 수 있어 상세는 관할 조례·별표로 확인해야 한다.
-        "allowed": [
-            "제1종일반주거지역", "제2종일반주거지역", "제3종일반주거지역",
-            "준주거지역", "중심상업지역", "일반상업지역", "근린상업지역",
-        ],
-        "permitted": [
-            "제1종전용주거지역", "제2종전용주거지역", "준공업지역", "일반공업지역",
-            "자연녹지지역", "생산녹지지역", "보전녹지지역", "계획관리지역",
-            "생산관리지역", "보전관리지역", "농림지역",
-        ],
-        # 전용공업지역·유통상업지역·자연환경보전지역 등은 목록에 없으므로 불가.
-    },
-}
+_RULES_PATH = Path(__file__).resolve().parent.parent / "data" / "building_use_rules.json"
+
+
+@lru_cache(maxsize=1)
+def _building_rules() -> dict:
+    with _RULES_PATH.open(encoding="utf-8") as file:
+        return json.load(file)
+
+
+def _use_matrix() -> dict[str, dict[str, list[str]]]:
+    return _building_rules().get("uses", {})
 
 # 용도지구/구역 중 별도 심의·제한이 걸리는 것.
 # 토지이용계획(getLandUseAttr)의 실제 명칭은 조례·연도에 따라 변형이 많다
@@ -133,10 +70,10 @@ def uses_for_zone(zone: str) -> dict:
     되는지 안 되는지를 모델이 알 길이 없다.
     """
     out: dict[str, list[str]] = {"allowed": [], "conditional": [], "not_allowed": []}
-    for use, matrix in USE_MATRIX.items():
+    for use, matrix in _use_matrix().items():
         if zone in matrix["allowed"]:
             out["allowed"].append(use)
-        elif zone in matrix["permitted"]:
+        elif zone in matrix["conditional"]:
             out["conditional"].append(use)
         else:
             out["not_allowed"].append(use)
@@ -175,19 +112,38 @@ def lookup_zoning_rules(
     far_max = limits["far_max_pct"]
     basis = limits["source_label"]
 
-    matrix = USE_MATRIX.get(building_use)
-    if matrix is None:
+    matrix = _use_matrix().get(building_use)
+    if building_use == "시설물":
+        overview = uses_for_zone(zone)
+        possible_count = len(overview["allowed"]) + len(overview["conditional"])
+        total_count = sum(len(items) for items in overview.values())
+        verdict = "conditional"
+        reason = (
+            f"시설물은 지원하는 전체 건축물 용도를 포괄해 검토합니다. {zone}에서는 "
+            f"{total_count}개 용도 대분류 중 {possible_count}개가 가능 또는 조건부 범위이며, "
+            "용도별 상세 결과는 전체 용도 판정표를 따릅니다."
+        )
+    elif matrix is None:
         verdict = "unknown"
         reason = f"'{building_use}'은(는) 판정표에 없는 용도입니다. 건축법 시행령 별표1 확인 필요."
     elif zone in matrix["allowed"]:
         verdict = "allowed"
-        reason = f"{zone}에서 {building_use}은(는) 원칙적으로 건축 가능합니다."
-    elif zone in matrix["permitted"]:
+        reason = f"{zone}에서 {building_use}은(는) 건축 가능한 용도입니다."
+    elif zone in matrix["conditional"]:
         verdict = "conditional"
         # 근거를 뭉뚱그리지 않는다 — 해당 지자체 도시계획조례가 확인되면 그 조례명·
         # 조문·시행일을 인용하고, 조례를 못 찾았을 때만 일반 '도시계획조례'로 둔다.
         _basis_cite = basis if "조례" in basis else "도시계획조례"
-        reason = f"{zone}에서 {building_use}은(는) {_basis_cite}가 정하는 범위에서 조건부 허용됩니다."
+        if zone == "생산관리지역" and building_use == "창고시설":
+            reason = (
+                "생산관리지역의 창고시설은 농업·임업·축산업·수산업용에 한해 "
+                "허용될 수 있으므로 창고의 실제 용도와 세부 기준을 확인해야 합니다."
+            )
+        else:
+            reason = (
+                f"{zone}에서 {building_use}은(는) {_basis_cite}가 정하는 "
+                "범위에서 조건부 허용됩니다."
+            )
     else:
         verdict = "not_allowed"
         reason = f"{zone}에서 {building_use}은(는) 건축할 수 없는 용도입니다."
@@ -225,3 +181,60 @@ def lookup_zoning_rules(
         "statutory_limits": limits["statutory"],   # 비교용 법정 상한
         "ordinance_note": limits.get("ordinance_note"),
     }
+
+
+def apply_straddling_limits(
+    regulation: dict,
+    zone_shares: list[dict],
+    jurisdiction: str | None,
+) -> dict:
+    """국토계획법 제84조에 따른 걸침 대지의 건폐율·용적률 가중평균."""
+    usable = [
+        share for share in (zone_shares or [])
+        if share.get("zone") and float(share.get("area_m2") or 0) > 0
+    ]
+    if len(usable) < 2 or min(float(s["area_m2"]) for s in usable) > 330:
+        return regulation
+
+    total_area = sum(float(s["area_m2"]) for s in usable)
+    if total_area <= 0:
+        return regulation
+
+    components = []
+    for share in usable:
+        limits = ordinance.resolve_limits(share["zone"], jurisdiction)
+        if not limits.get("found"):
+            regulation["weighted_limits_note"] = (
+                f"{share['zone']}의 건폐율·용적률을 확인하지 못해 "
+                "걸침 필지 가중평균을 계산하지 못했습니다."
+            )
+            return regulation
+        components.append({
+            "zone": share["zone"],
+            "area_m2": float(share["area_m2"]),
+            "bcr_max_pct": float(limits["bcr_max_pct"]),
+            "far_max_pct": float(limits["far_max_pct"]),
+        })
+
+    weighted_bcr = sum(
+        row["area_m2"] * row["bcr_max_pct"] for row in components
+    ) / total_area
+    weighted_far = sum(
+        row["area_m2"] * row["far_max_pct"] for row in components
+    ) / total_area
+
+    regulation["bcr_max_pct"] = round(weighted_bcr, 1)
+    regulation["far_max_pct"] = round(weighted_far, 1)
+    regulation["weighted_limits"] = {
+        "applied": True,
+        "total_area_m2": round(total_area, 1),
+        "bcr_max_pct": round(weighted_bcr, 1),
+        "far_max_pct": round(weighted_far, 1),
+        "components": components,
+        "legal_basis": "국토의 계획 및 이용에 관한 법률 제84조",
+    }
+    regulation["legal_basis"] = (
+        f"{regulation.get('legal_basis', '').strip()} · "
+        "국토계획법 제84조 면적 가중평균"
+    ).strip(" ·")
+    return regulation

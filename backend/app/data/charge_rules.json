@@ -1,0 +1,43 @@
+{
+  "farmland_conservation": {
+    "source": "농지법 제38조, 농지법 시행령 제53조, 농지법 시행규칙 제47조의2",
+    "effective_date": "2026-03-24",
+    "promotion_rate": 0.3,
+    "outside_promotion_rate": 0.2,
+    "unit_cap_won_m2": 50000
+  },
+  "forest_replacement": {
+    "source": "산지관리법 제19조, 같은 법 시행령 제24조 및 연도별 산림청 고시",
+    "reference_year": 2026,
+    "conservation_base_won_m2": 10840,
+    "quasi_conservation_base_won_m2": 8340,
+    "land_price_rate": 0.001,
+    "conservation_codes": ["UFM100", "UFM110", "UFM120"],
+    "status": "annual_rate_requires_source_refresh"
+  },
+  "development_charge": {
+    "source": "개발이익환수에 관한 법률 시행령 제4조",
+    "metro_regions": ["서울", "부산", "대구", "인천", "광주", "대전", "울산"],
+    "non_urban_zone_terms": ["관리지역", "농림지역", "자연환경보전지역"],
+    "urban_metro_threshold_m2": 660,
+    "urban_other_threshold_m2": 990,
+    "non_urban_threshold_m2": 1650,
+    "individual_site_rate": 0.25,
+    "planned_site_rate": 0.2
+  },
+  "development_charge_statistics": {
+    "source": "국토교통부 통계누리 개발부담금 부과 및 징수현황",
+    "year": 2025,
+    "status": "reference_source_requires_revalidation",
+    "unit": "부과건수, 부과금액_백만원",
+    "national": [4498, 372979],
+    "regions": {
+      "서울": [15, 11249], "부산": [47, 2953], "대구": [42, 2148],
+      "인천": [142, 7300], "광주": [29, 4429], "대전": [29, 681],
+      "울산": [41, 2085], "세종": [41, 1261], "경기": [2589, 253170],
+      "강원": [186, 25675], "충북": [214, 5015], "충남": [248, 15613],
+      "전북": [43, 1768], "전남": [46, 2436], "경북": [206, 8024],
+      "경남": [152, 8232], "제주": [428, 20940]
+    }
+  }
+}

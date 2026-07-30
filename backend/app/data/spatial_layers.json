@@ -35,17 +35,71 @@
       }
     },
     {
+      "id": "forest_inventory",
+      "title": "1:5,000 임상도",
+      "provider": "산림청",
+      "enabled": true,
+      "source_type": "local_sqlite",
+      "local_path": "${FOREST_INVENTORY_SQLITE_PATH:-/home/madlrengg100/permit-copilot/backend/data/processed/forest_inventory/forest_inventory.sqlite}",
+      "wfs_url": "",
+      "wms_url": "",
+      "type_name": "forest_inventory",
+      "version": "local",
+      "crs": "EPSG:4326",
+      "source_date": "2026-07",
+      "property_names": {
+        "name": "KOFTR_NM",
+        "code": "KOFTR_GROU"
+      }
+    },
+    {
+      "id": "ecological_nature",
+      "title": "생태·자연도",
+      "provider": "국립생태원",
+      "enabled": true,
+      "source_type": "local_sqlite",
+      "local_path": "${ECOLOGICAL_NATURE_SQLITE_PATH:-/home/madlrengg100/permit-copilot/backend/data/processed/ecological_nature_map/ecological_nature.sqlite}",
+      "wfs_url": "",
+      "wms_url": "",
+      "type_name": "ecological_nature",
+      "version": "2026 정기고시",
+      "crs": "EPSG:4326",
+      "source_date": "2026-05-26",
+      "property_names": {
+        "name": "name",
+        "code": "code"
+      }
+    },
+    {
+      "id": "ecological_separate_management",
+      "title": "생태·자연도 별도관리지역",
+      "provider": "국립생태원",
+      "enabled": true,
+      "source_type": "local_sqlite",
+      "local_path": "${ECOLOGICAL_SEPARATE_SQLITE_PATH:-/home/madlrengg100/permit-copilot/backend/data/processed/ecological_nature_map/separate_management.sqlite}",
+      "wfs_url": "",
+      "wms_url": "",
+      "type_name": "ecological_separate_management",
+      "version": "2026 정기고시",
+      "crs": "EPSG:4326",
+      "source_date": "2026-05-26",
+      "property_names": {
+        "name": "name",
+        "code": "code"
+      }
+    },
+    {
       "id": "disaster_risk_zone",
       "title": "재해위험지구",
       "provider": "국토교통부 국가공간정보센터",
-      "enabled": false,
-      "source_type": "wfs",
-      "wfs_url": "",
-      "wms_url": "",
-      "type_name": "",
+      "enabled": true,
+      "source_type": "vworld_wfs",
+      "wfs_url": "https://api.vworld.kr/req/wfs",
+      "wms_url": "https://api.vworld.kr/req/wms",
+      "type_name": "lt_c_up201",
       "version": "1.1.0",
       "crs": "EPSG:4326",
-      "source_date": "",
+      "source_date": "VWorld 실시간",
       "property_names": {
         "name": "uname",
         "code": "ucode"

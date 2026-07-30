@@ -404,6 +404,10 @@ Gemini는 `extra_content.google.thought_signature` 동반을 요구하며, 누�
 
 ### 6.3 `ordinance.py` — 조례·법정 상한 조회
 
+수집·정규화·조문 청킹·TF-IDF 검색·현행 법령 검증의 상세 규격은
+[LEGAL-ORDINANCE-INDEX.md](LEGAL-ORDINANCE-INDEX.md)를 따른다. 조문 검색은
+근거 추적용이며 정형 JSON과 조건식이 실제 수치를 결정한다.
+
 **우선순위**
 
 ```mermaid
@@ -670,7 +674,7 @@ cd frontend && npm run dev -- --host 0.0.0.0 --port 5173
 
 | 항목 | 내용 |
 |---|---|
-| 세션 저장소 | 프로세스 메모리, TTL·용량 제한 없음. 재시작 시 대화 소실. 단일 인스턴스 전제 |
+| 세션 저장소 | 프로세스 메모리 + `/home/madlrengg100/.permit-copilot-sessions` 파일 스냅샷. 재시작 시 PNU별 진단·대화 상태 복원 |
 | Python 버전 | 3.9.25에서 동작하나 **3.11+ 권장**. 모든 모듈이 `from __future__ import annotations` 에 의존하며, 애노테이션 외부에서 `X | Y` 를 쓰면 즉시 실패 |
 | 진행 이벤트 | `diagnosis_step` 이 실시간이 아니라 진단 완료 후 일괄 방출 |
 | 오류 안내 | 프리셋 사용 시 `friendly_error` 가 실제 키 환경변수명(`GEMINI_API_KEY` 등) 대신 `OPENAI_API_KEY` 를 안내 |
@@ -682,7 +686,7 @@ cd frontend && npm run dev -- --host 0.0.0.0 --port 5173
 
 ---
 
-## 부록 · 현행 데이터·인프라 현황 (실측 2026-07-28)
+## 부록 · 현행 데이터·인프라 현황 (실측 2026-07-30)
 
 > 초기 문서 작성 이후 데이터·인프라가 크게 확장됐다. 아래는 운영 서버에서 직접
 > 측정한 현행 수치다.
@@ -711,10 +715,10 @@ cd frontend && npm run dev -- --host 0.0.0.0 --port 5173
 
 | 종류 | 구현 | 현행 규모 |
 |---|---|---|
-| 벡터 색인(조례 근거) | numpy **TF-IDF 코사인**(외부 임베딩·벡터DB 없음) | 조문 **7,585 청크** · `.npz` 7.5MB + chunks 11MB + vocab 0.5MB |
-| 공간 RDB(산지구분) | **SQLite + RTree** read-only(`local_spatial.py`) | 폴리곤 **1,066,806개** · **1.77 GB** |
+| 벡터 색인(조례 근거) | numpy **TF-IDF 코사인**(외부 임베딩·벡터DB 없음) | **7,585청크·193관할·어휘 24,382개** |
+| 공간 RDB(산지·임상·생태) | **SQLite + RTree** read-only(`local_spatial.py`) | 산지 1,066,806 · 임상 3,382,312 · 생태 1,599,058 · 별도관리 24,944 |
 | 정형 데이터 | JSON | 건폐율/용적률 조례 **약 200개 관할**, 이격 조례 **119개 지자체** |
-| 실시간 API | 외부 조회 | VWorld, 국토부 건축HUB, 국가법령정보센터 |
+| 실시간 API | 외부 조회 + TTL 캐시 | VWorld(재해위험지구 포함), 국토부 건축HUB, 국가법령정보센터 |
 
 ### D. 조례 커버리지 (실측)
 
@@ -722,7 +726,7 @@ cd frontend && npm run dev -- --host 0.0.0.0 --port 5173
 |---|---|---|---|
 | 건폐율/용적률 도시계획조례 | `ordinances.json` + `ordinances_auto.json` | 검증 11 + 자동수집 196 = **약 200** | 미수집은 법정 상한 폴백, 자동수집분 검수 필요 |
 | 대지 안의 공지(이격) 건축조례 별표 | `setbacks.json` | **119** | 아산 검증, 나머지 `auto_parsed` |
-| 조례 조문 벡터색인 | `ordinance_index.*` | **7,585 청크** | TF-IDF 근거 검색 |
+| 조례 조문 벡터색인 | `ordinance_index.*` | **7,585청크·193관할** | TF-IDF 근거 검색, 수치 판정에는 미사용 |
 
 ### E. 공간 규제 연계 (현행)
 
@@ -732,5 +736,7 @@ cd frontend && npm run dev -- --host 0.0.0.0 --port 5173
 | 농업진흥지역 | VWorld WFS 실시간 | ✅ enabled |
 | 건축물대장 표제부 | 국토부 건축HUB API(전국 실시간) | ✅ |
 | 도로 접도 | 연속지적도 지목 '도로' 인접 판정 | ✅ |
-| 재해위험지구 | 전용 WFS 미확보 | ⛔ disabled |
-| 생태·자연도 | 서비스 활용신청 전 | ⛔ 미연계 |
+| 재해위험지구 | VWorld WFS `lt_c_up201`, 전국 실시간 교차 계산 | ✅ enabled |
+| 생태·자연도 | 국립생태원 2026 정기고시 GDB → 로컬 SQLite RTree | ✅ enabled |
+| 생태·자연도 별도관리지역 | 같은 정기고시 GDB → 로컬 SQLite RTree | ✅ enabled |
+| 1:5,000 임상도 | 전국 SHP → 로컬 SQLite RTree, 갱신연도 속성 보존 | ✅ enabled |

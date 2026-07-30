@@ -7,6 +7,7 @@ from typing import Any
 import httpx
 
 from ..config import DATA_GO_KR_SERVICE_KEY
+from ..cache import async_ttl_cache
 
 BASE_URL = "http://apis.data.go.kr/1613000/BldRgstHubService"
 
@@ -33,6 +34,7 @@ def _items(data: dict) -> list[dict[str, Any]]:
     return raw if isinstance(raw, list) else []
 
 
+@async_ttl_cache(ttl_seconds=300, maxsize=2048)
 async def lookup(pnu: str, timeout: float = 15.0) -> dict:
     if not DATA_GO_KR_SERVICE_KEY:
         return {

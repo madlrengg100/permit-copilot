@@ -71,12 +71,44 @@ function jimokLabel(code?: string | null): string {
   return JIMOK_LABEL[code] ?? code;
 }
 
+function resolveRelativeParcelAddress(text: string, currentAddress?: string): string {
+  if (!currentAddress) return text;
+  if (/(?:[가-힣0-9]+(?:읍|면|동|리)\s+)(?:산\s*)?\d+(?:-\d+)?/.test(text)) {
+    return text;
+  }
+  const relative = text.match(
+    /(^|\s)((?:산\s*)\d+(?:-\d+)?|\d+(?:-\d+)?\s*(?:번지|필지))(?=\s|$)/,
+  );
+  if (!relative) return text;
+  const locality = currentAddress.replace(
+    /\s+(?:산\s*)?\d+(?:-\d+)?\s*$/,
+    "",
+  ).trim();
+  if (!locality || locality === currentAddress.trim()) return text;
+  const lot = relative[2].replace(/\s*(?:번지|필지)\s*$/, "").trim();
+  return text.replace(relative[2], `${locality} ${lot}`);
+}
+
+const USE_MODEL_STYLE: Record<string, HousingModelType> = {
+  "단독주택": "detached",
+  "공동주택": "lowrise",
+  "제1종근린생활시설": "commercial",
+  "제2종근린생활시설": "commercial",
+  "판매시설": "commercial",
+  "공장": "factory",
+  "창고시설": "warehouse",
+};
+
 export default function App() {
   const [vworldKey, setVworldKey] = useState<string | null>(null);
   const [mockMode, setMockMode] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [commands, setCommands] = useState<MapCommand[]>([]);
   const [panel, setPanel] = useState<any>(null);
+  // 스트리밍 한 턴 안에서 show_panel 명령이 연속 도착할 수 있다. React state는
+  // 다음 렌더 전까지 이전 값을 가리키므로, 필지 변경 판정에는 즉시 갱신되는 ref를 쓴다.
+  // 그렇지 않으면 두 번째 show_panel도 새 필지로 오인해 방금 붙인 모델 버튼을 지운다.
+  const panelRef = useRef<any>(null);
   const [busy, setBusy] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{
     lon: number;
@@ -91,6 +123,9 @@ export default function App() {
   // 지도 클릭을 백엔드 세션에 저장하기 전에 질문이 먼저 도착하면 이전 PNU의
   // 후속 질문으로 오인될 수 있다. 마지막 선택 저장이 끝난 뒤 질문을 보낸다.
   const parcelSelectionSyncRef = useRef<Promise<void>>(Promise.resolve());
+  // 모델별 이격·판정 요청은 비동기다. 모델을 끄거나 다른 필지/모델로 바꾼 뒤
+  // 늦게 도착한 과거 응답이 현재 팝업 판정을 덮어쓰지 못하게 세대를 구분한다.
+  const modelRequestGenerationRef = useRef(0);
 
   const [configError, setConfigError] = useState<string | null>(null);
 
@@ -108,6 +143,10 @@ export default function App() {
   const [zoneLegend, setZoneLegend] = useState<
     Array<{ zone: string; share_pct: number; area_m2: number; color: string }> | null
   >(null);
+  const [restrictionLegend, setRestrictionLegend] = useState<{
+    title: string;
+    pieces: Array<{ label: string; share_pct: number; area_m2: number; color: string }>;
+  } | null>(null);
 
   useEffect(() => {
     fetchConfig()
@@ -119,6 +158,10 @@ export default function App() {
       // 원인을 화면에 띄운다.
       .catch((err) => setConfigError(String(err)));
   }, []);
+
+  useEffect(() => {
+    panelRef.current = panel;
+  }, [panel]);
 
   useEffect(() => {
     if (!bridge || !panel?.anchor) {
@@ -144,20 +187,71 @@ export default function App() {
   // 공간 수치는 지도 위 치수선·면적 라벨(show_dimensions 명령, MapBridge가 처리)로
   // 표시한다. 예전의 검은 텍스트 박스(showSiteNotes)는 건물을 가려 제거했다.
 
-  async function send(text: string, requestText = text) {
+  async function showUseModel(useName: string) {
+    const type = USE_MODEL_STYLE[useName];
+    if (!type) {
+      setMessages((current) => [...current, {
+        role: "status",
+        text: `⚠ ${useName} 용도의 3D 표시 형식이 등록되지 않았습니다.`,
+      }]);
+      return;
+    }
+    try {
+      const requestGeneration = ++modelRequestGenerationRef.current;
+      bridge?.showHousingModel(type);
+      const result = await fetchSetbackForUse(SESSION_ID, useName);
+      if (requestGeneration !== modelRequestGenerationRef.current) return;
+      if (!result?.ok) {
+        throw new Error("용도별 이격 계산 결과를 받지 못했습니다.");
+      }
+      if (Array.isArray(result.map_commands) && result.map_commands.length) {
+        setCommands((current) => [...current, ...(result.map_commands as MapCommand[])]);
+      }
+      setPanel((current: any) => current ? {
+        ...current,
+        building_use: useName,
+        ...(result.verdict ? { verdict: result.verdict } : {}),
+        ...(result.verdict_label ? { verdict_label: result.verdict_label } : {}),
+        ...(result.verdict_color ? { color: result.verdict_color } : {}),
+        site_constraints: {
+          ...(current.site_constraints ?? {}),
+          front_setback_m: Number(result.front_setback_m ?? 0),
+          adjacent_setback_m: Number(result.adjacent_setback_m ?? 0),
+          north_setback_m: Number(result.north_setback_m ?? 0),
+          setback_rule: {
+            ...(current.site_constraints?.setback_rule ?? {}),
+            status: result.status,
+            source: result.source,
+            note: result.note,
+          },
+        },
+      } : current);
+    } catch (error) {
+      setMessages((current) => [...current, {
+        role: "status",
+        text: `⚠ ${useName} 모델 표시 실패: ${error instanceof Error ? error.message : String(error)}`,
+      }]);
+    }
+  }
+
+  async function send(
+    text: string,
+    requestText = text,
+    chatContext?: Parameters<typeof streamChat>[2],
+  ) {
     setMessages((m) => [...m, { role: "user", text }]);
     setBusy(true);
 
     // 자연어 안의 지번은 LLM이 지역을 추측하기 전에 VWorld로 먼저 확정한다.
     // "초평동 157-2에 집", "만송동 703으로 이동"처럼 시·군이 생략돼도
     // 정확 일치 1건이면 전체 주소로 보강하고, 여러 건이면 사용자가 고르게 한다.
-    const fullParcelMatch = text.match(
+    const fullParcelMatch = requestText.match(
       /((?:[가-힣0-9]+(?:특별시|광역시|특별자치시|특별자치도|도|시|군|구|읍|면|동|리)\s+)+(?:산\s*)?\d+(?:-\d+)?)/,
     );
-    const parcelMatch = text.match(
+    const parcelMatch = requestText.match(
       /([가-힣0-9]+(?:읍|면|동|리)\s+(?:산\s*)?\d+(?:-\d+)?)/,
     );
-    if (requestText === text && parcelMatch) {
+    if (parcelMatch) {
       const ambiguous = parcelMatch[1];
       // 시·군·읍·면까지 사용자가 명시했으면 짧은 '온수리 100' 전국 검색으로
       // 축약하지 않는다. 검색 상위 결과에 다른 지역만 남을 경우 그 한 곳을
@@ -173,18 +267,23 @@ export default function App() {
             (candidate.parcel || candidate.address)
               .match(/((?:산\s*)?\d+(?:-\d+)?)\s*$/)?.[1]
               .replace(/\s/g, "") ?? "";
-          return (!locality || address.includes(locality))
-            && (!lot || candidateLot === lot);
+          // 시·군이 생략된 "신수리 100"은 전국의 100번뿐 아니라
+          // 100-1·100-2 같은 분할 필지도 후보로 보여준다. 정확히 100인 한 건을
+          // 임의 확정하면 다른 시·도의 같은 리 또는 실제 찾던 분할 필지를 놓친다.
+          const sameLotFamily = !lot
+            || candidateLot === lot
+            || candidateLot.startsWith(`${lot}-`);
+          return (!locality || address.includes(locality)) && sameLotFamily;
         });
         // 사용자가 후보를 눌러 시·군까지 포함한 전체 지번을 보낸 경우에는
         // 같은 '현리 435-8' 전국 후보를 다시 묻지 않고 그 전체 주소를 확정한다.
         const fullAddressMatches = exact.filter((candidate) => {
           const full = candidate.parcel || candidate.address;
-          return Boolean(full && text.includes(full));
+          return Boolean(full && requestText.includes(full));
         });
         const resolvedExact =
           fullAddressMatches.length === 1 ? fullAddressMatches : exact;
-        const remainder = text.replace(addressQuery, "").trim();
+        const remainder = requestText.replace(addressQuery, "").trim();
         if (resolvedExact.length === 1) {
           const resolved = resolvedExact[0];
           requestText = `${resolved.parcel || resolved.address} ${remainder}`.trim();
@@ -223,14 +322,14 @@ export default function App() {
     // 시·군·구가 없는 짧은 도로명 주소는 모델이 임의 지역을 붙이기 전에
     // 전국 주소 후보를 먼저 보여준다. 후보 선택 후의 전체 주소는 지역명이
     // 포함되므로 이 분기로 다시 들어오지 않고 곧바로 진단된다.
-    const shortRoad = text.match(/([가-힣0-9·]+(?:대로|로|길)\s+\d+(?:-\d+)?)/);
+    const shortRoad = requestText.match(/([가-힣0-9·]+(?:대로|로|길)\s+\d+(?:-\d+)?)/);
     const roadPrefix = shortRoad ? text.slice(0, shortRoad.index ?? 0) : "";
     const hasRegion = /(특별시|광역시|특별자치시|특별자치도|[가-힣]+도|[가-힣]+시|[가-힣]+군|[가-힣]+구)/.test(roadPrefix);
-    if (requestText === text && shortRoad && !hasRegion) {
+    if (shortRoad && !hasRegion) {
       const ambiguous = shortRoad[1];
       try {
         const candidates = await searchAddresses(ambiguous);
-        const remainder = text.replace(ambiguous, "").trim();
+        const remainder = requestText.replace(ambiguous, "").trim();
         if (candidates.length === 1) {
           // 후보가 하나뿐이면 굳이 물어보지 않고 그 주소로 바로 진단한다.
           // (원문 사용자 메시지는 그대로 두고, 백엔드로는 시·군 포함 전체 주소를 보낸다.)
@@ -272,20 +371,13 @@ export default function App() {
       }
     }
 
-    // 주택 모델 버튼은 답변 문구가 다 나온 '뒤에' 붙여야 자연스럽다.
-    // 스트림 도중 모아뒀다가 루프가 끝나면 마지막에 한 번 붙인다.
-    let pendingHousing: {
-      options: NonNullable<ChatMessage["options"]>;
-      address: string;
-      spaceDescription: string;
-    } | null = null;
-
     try {
-      for await (const ev of streamChat(SESSION_ID, requestText)) {
+      for await (const ev of streamChat(SESSION_ID, requestText, chatContext)) {
         if (ev.event === "message") {
+          const responseText = String(ev.data.text ?? "");
           setMessages((m) => [
             ...m,
-            { role: "assistant", text: ev.data.text, options: ev.data.options },
+            { role: "assistant", text: responseText, options: ev.data.options },
           ]);
         } else if (ev.event === "tool_start") {
           const label = TOOL_LABEL[ev.data.tool] ?? ev.data.tool;
@@ -293,8 +385,37 @@ export default function App() {
         } else if (ev.event === "diagnosis_step") {
           const label = STEP_LABEL[ev.data.step] ?? ev.data.step;
           setMessages((m) => [...m, { role: "status", text: `   · ${label}` }]);
+        } else if (ev.event === "retry") {
+          // 첫 실행에서 쌓인 진행 문구·부분 응답을 제거하고, 같은 사용자 질문
+          // 아래에서 자동 재시작한다. 선택 필지와 지도 상태는 유지한다.
+          setMessages((current) => {
+            let lastUser = -1;
+            for (let index = current.length - 1; index >= 0; index -= 1) {
+              if (current[index].role === "user") {
+                lastUser = index;
+                break;
+              }
+            }
+            const kept = lastUser >= 0 ? current.slice(0, lastUser + 1) : current;
+            return [
+              ...kept,
+              {
+                role: "status",
+                text: "↻ 응답 시간이 초과되어 같은 질문을 자동으로 다시 실행합니다.",
+              },
+            ];
+          });
         } else if (ev.event === "map_commands") {
           const cmds: MapCommand[] = ev.data.commands;
+          if (cmds.some((command) =>
+            command.type === "clear_mass"
+            || command.type === "hide_building_shape"
+            || command.type === "show_building_footprint"
+            || command.type === "show_building_shape"
+            || command.type === "show_lod1"
+          )) {
+            modelRequestGenerationRef.current += 1;
+          }
           setCommands((c) => [...c, ...cmds]);
           // 주소 이동·새 진단이 성공하면 그 좌표를 현재 필지로 유지한다.
           // 한 번 질문했다고 선택을 지우지 않아 후속 대장·공시지가 질문도
@@ -303,13 +424,17 @@ export default function App() {
             (c): c is Extract<MapCommand, { type: "fly_to" }> => c.type === "fly_to",
           );
           const p = cmds.find((c) => c.type === "show_panel");
+          const panelContext = cmds.find(
+            (c): c is Extract<MapCommand, { type: "set_panel_context" }> =>
+              c.type === "set_panel_context",
+          );
           if (fly) {
             if (!parcelPromptPendingRef.current) {
               setSelectedLocation((current) => ({
                 lon: fly.lon,
                 lat: fly.lat,
                 address: p?.type === "show_panel" ? p.address : current?.address,
-                pnu: current?.pnu,
+                pnu: p?.type === "show_panel" ? p.pnu : current?.pnu,
                 key: Date.now(),
               }));
             }
@@ -328,119 +453,52 @@ export default function App() {
             (c): c is Extract<MapCommand, { type: "verdict_warning" }> =>
               c.type === "verdict_warning",
           );
-          if (warn) setVerdictWarning({ label: warn.label, reason: warn.reason });
+          if (warn) {
+            setVerdictWarning({ label: warn.label, reason: warn.reason });
+            // 이미 채팅에 붙은 현재 필지의 모델 버튼도 불가 판정 뒤에는 남기지 않는다.
+            setMessages((current) =>
+              current.filter((message) =>
+                !message.options?.some((option) =>
+                  option.action?.startsWith("housing:")
+                  || option.action?.startsWith("use-model:")
+                )
+              )
+            );
+          }
 
           if (p) {
+            const previousPanel = panelRef.current;
+            const changedParcel = Boolean(
+              previousPanel?.address
+              && p.address
+              && previousPanel.address !== p.address
+            );
+            if (changedParcel) {
+              // 채팅 기록은 남기되, 이전 필지의 모델 버튼은 현재 지도에 모델을
+              // 올릴 수 있어 위험하다. 새 필지로 바뀌는 순간 오래된 모델 카드만 제거한다.
+              setMessages((current) =>
+                current.filter((message) =>
+                  !message.options?.some((option) =>
+                    option.action?.startsWith("housing:")
+                    || option.action?.startsWith("use-model:")
+                  )
+                )
+              );
+            }
+            // 같은 스트림의 다음 명령도 최신 필지를 보도록 state보다 먼저 갱신한다.
+            panelRef.current = p;
             setPanel(p);
             setPanelCollapsed(false); // 새 진단은 펼친 상태로 시작
             setVerdictWarning(null); // 새 진단은 경고 초기화
-            const parcelCommand = cmds.find((c) => c.type === "highlight_parcel");
-            if (bridge && parcelCommand?.type === "highlight_parcel") {
-              const updateTerrain = () => {
-                const terrain = bridge.terrainSummary(parcelCommand.geometry);
-                setPanel((current: any) =>
-                  current?.address === p.address ? { ...current, terrain } : current
-                );
-                return terrain.available;
-              };
-              // 카메라 이동 직후에는 지형 타일이 아직 없을 수 있어 두 차례 확인한다.
-              window.setTimeout(() => {
-                if (!updateTerrain()) window.setTimeout(updateTerrain, 3500);
-              }, 2200);
-            }
-            const overview = p.zone_use_overview ?? {};
-            const housingUses = [
-              ...(overview.allowed ?? []),
-              ...(overview.conditional ?? []),
-            ];
-            // 모델 버튼은 (1) 그 용도가 이 필지에 가능하고 (2) 사용자가 이번에
-            // 물은 의도와 맞을 때만 보여준다. 예를 들어 '움막'처럼 모델이 없는
-            // 용도를 물었는데 주택·공장·상가 모델을 띄우면 엉뚱하다.
-            const q = text;
-            const asksHousing = /주택|집|주거|아파트|빌라|원룸|다세대|다가구|단독/.test(q);
-            const asksFactory = /공장|제조|가공/.test(q);
-            const asksCommercial = /상가|상점|점포|매장|판매|마트|백화점|음식점|식당|카페|근린생활|근생/.test(q);
-            const asksWarehouse = /창고|물류|저장|보관/.test(q);
-            // 3D 모델이 없는 특수 용도를 콕 집어 물으면 모델 버튼을 띄우지 않는다.
-            const asksNoModelUse = /움막|농막|비닐하우스|하우스|축사|컨테이너|주차장|태양광|캠핑|정화조|옹벽/.test(q);
-            // 3D 모델이 없는 '특정 용도'(학교·병원·업무·숙박·종교 등)를 콕 집어 물었으면,
-            // 단독주택·공장·상가·창고 같은 엉뚱한 모델을 띄우지 않는다.
-            const asksModellessUse =
-              /학교|교육|병원|의원|의료|보건소|종교|교회|성당|사찰|업무|사무실|오피스|숙박|호텔|모텔|펜션|여관|위락|유흥|장례|연구소|도서관|학원/.test(q);
-            const asksSpecific = asksHousing || asksFactory || asksCommercial || asksWarehouse;
-            const suppressModels = (asksNoModelUse || asksModellessUse) && !asksSpecific;
-            // 정의·현황 질문("건축선 후퇴가 이격거리야?", "여기 도로 접해?")과
-            // 건축 의도 질문("건물 지을 수 있어?")을 구분한다. '짓겠다는 의도'가 있을
-            // 때만 일반 모델을 띄우고, 개념·현황만 묻는 후속질문엔 모델을 붙이지 않는다.
-            const asksBuildIntent =
-              /(지을|짓|지어|세울|올릴|신축|규모|몇\s*층|모델|배치|건축\s*(?:가능|할|해|하려|되나|되니))/.test(q);
-            // 특정 용도를 물었으면 그 카테고리만, 일반 '짓기' 질문이면 되는 것 전부.
-            const showHousing = !suppressModels && (asksHousing || (!asksSpecific && asksBuildIntent));
-            const showFactory = !suppressModels && (asksFactory || (!asksSpecific && asksBuildIntent));
-            const showCommercial = !suppressModels && (asksCommercial || (!asksSpecific && asksBuildIntent));
-            const showWarehouse = !suppressModels && (asksWarehouse || (!asksSpecific && asksBuildIntent));
-            const floors = p.massing?.floors ?? "허용";
-            const options: NonNullable<ChatMessage["options"]> = [];
-            if (showHousing && housingUses.includes("단독주택")) {
-              options.push({
-                label: `${floors}층 단독주택형`,
-                detail: "법정 가능 층수 반영 · 주택 비례",
-                action: "housing:detached",
-              });
-            }
-            if (showHousing && housingUses.includes("공동주택")) {
-              options.push(
-                { label: `${floors}층 공동주택형`, detail: "건축 가능 영역 최대 활용", action: "housing:lowrise" },
-                { label: `${floors}층 슬림형`, detail: "허용 층수 전체 반영", action: "housing:slim" },
-              );
-            }
-            if (showFactory && housingUses.includes("공장")) {
-              options.push({
-                label: `${floors}층 공장 모델`,
-                detail: "산업 외피 · 롤러셔터",
-                action: "housing:factory",
-              });
-            }
-            if (
-              showCommercial && (
-                housingUses.includes("판매시설") ||
-                housingUses.includes("제1종근린생활시설") ||
-                housingUses.includes("제2종근린생활시설")
-              )
-            ) {
-              options.push({
-                label: `${floors}층 상가 모델`,
-                detail: "쇼윈도 · 유리 출입구",
-                action: "housing:commercial",
-              });
-            }
-            if (showWarehouse && housingUses.includes("창고시설")) {
-              options.push({
-                label: `${floors}층 창고 모델`,
-                detail: "산업 외피 · 롤러셔터",
-                action: "housing:warehouse",
-              });
-            }
-            if (
-              options.length > 0
-              && p.massing
-              && !p.massing.exceeds_far_limit
-              && p.massing.layout_feasible !== false
-            ) {
-              // 지금 붙이지 않고, 답변 문구가 끝난 뒤 스트림 끝에서 붙인다.
-              const verdict = String(p.verdict_label ?? "");
-              const spaceDescription =
-                verdict.includes("조건부")
-                  ? "주황색 조건부 가능 공간"
-                  : verdict.includes("가능")
-                    ? "초록색 건축 가능 공간"
-                    : "지도에 표시된 검토 공간";
-              pendingHousing = {
-                options,
-                address: p.address || "선택한 필지",
-                spaceDescription,
-              };
-            }
+          }
+          if (panelContext) {
+            setPanel((current: any) => {
+              const next = current
+                ? {...current, building_use: panelContext.building_use}
+                : current;
+              if (next) panelRef.current = next;
+              return next;
+            });
           }
           // 걸침 필지면 우측 범례를 채우고, 새 진단(clear_mass 포함)에 조각이
           // 없으면 이전 범례를 지운다 — 지도와 범례가 어긋나지 않게.
@@ -449,6 +507,17 @@ export default function App() {
             setZoneLegend(zp.pieces);
           } else if (cmds.some((c) => c.type === "clear_mass")) {
             setZoneLegend(null);
+          }
+          const rp = cmds.find((c) => c.type === "show_restriction_pieces");
+          if (rp?.type === "show_restriction_pieces") {
+            setRestrictionLegend({
+              title: rp.title,
+              pieces: rp.pieces.map(({ label, share_pct, area_m2, color }) => ({
+                label, share_pct, area_m2, color,
+              })),
+            });
+          } else if (cmds.some((c) => c.type === "clear_mass")) {
+            setRestrictionLegend(null);
           }
         } else if (ev.event === "error") {
           const errorText = String(ev.data.message ?? "");
@@ -484,20 +553,6 @@ export default function App() {
             setMessages((m) => [...m, { role: "status", text: `⚠ ${errorText}` }]);
           }
         }
-      }
-      // 답변 문구가 모두 나온 뒤에 주택 모델 버튼을 붙인다(항상 문구 다음).
-      if (pendingHousing && pendingHousing.options.length > 0) {
-        const housing = pendingHousing; // 클로저에서 null 좁힘 유지용
-        setMessages((current) => [
-          ...current,
-          {
-            role: "assistant",
-            text:
-              `${housing.address} 필지에서 검토 가능한 건축 모델입니다. ` +
-              `모델을 선택하면 지도에 표시된 ${housing.spaceDescription} 안에 배치합니다.`,
-            options: housing.options,
-          },
-        ]);
       }
     } catch (err) {
       setMessages((m) => [
@@ -536,83 +591,36 @@ export default function App() {
             setCommands((c) => [...c, { type: "run_tool", action: "my_location" }]);
             return;
           }
-          const selectedAddressPrefix = selectedLocation?.address
-            ? `${selectedLocation.address} 필지에`
-            : "";
-          const refersToSelectedParcel =
-            /(^|\s)(여기|이\s*필지|해당\s*필지|선택한?\s*필지|방금\s*선택한?\s*필지)(에서|에|는|의|\s|$)/.test(text);
+          const resolvedText = resolveRelativeParcelAddress(
+            text,
+            selectedLocation?.address,
+          );
           const hasExplicitParcelAddress =
-            /(?:[가-힣0-9]+(?:특별시|광역시|특별자치시|특별자치도|도|시|군|구|읍|면|동|리)\s+)+(?:산\s*)?\d+(?:-\d+)?/.test(text);
-          const isAddresslessParcelQuestion =
-            !hasExplicitParcelAddress
-            && /지을|짓|건축|신축|건물|가능|규모|건폐율|용적률|층수|용도|허용|제한|한정|상가|근린생활|창고|공장|업무시설|판매시설|숙박시설|원룸|다가구|다세대|주인|임대|공시지가|지목|건축물\s*대장|부담금|농지전용|산지전용/.test(text);
-          // 지도 표시·토공 상태를 바꾸는 자연어는 필지의 건축 용도 질문이 아니다.
-          // 특히 "용도지역 꺼줘"의 '용도'를 건축진단으로 포장하지 않는다.
-          const isMapControlCommand =
-            /(지적도|지적선|용도지역|경사도|치수선|치수|라벨|팝업|결과창|진단창).*(켜|꺼|끄|보여|숨|표시|열|닫|펼|접|치워|없애|안\s*보이|띄워|나타내|on|off)/i.test(text)
-            || /(켜|꺼|끄|보여|숨|표시|열|닫|펼|접|치워|없애|안\s*보이|띄워|나타내).*(지적도|지적선|용도지역|경사도|치수선|치수|라벨|팝업|결과창|진단창)/i.test(text)
-            || /(하단\s*)?(도구\s*)?메뉴.*(열|닫|펼|접|보여|숨|치워|없애|띄워)/.test(text)
-            || /(거리|길이|면적|넓이|높이).*(재|측정)|측정.*(거리|길이|면적|넓이|높이)|측정.*(지워|초기화)/.test(text)
-            || /(토공|절토|성토|평탄화|원지형|원래\s*지형).*(전|후|해줘|작업|적용|보여|실행|전환)/.test(text)
-            || /(lod\s*1|건물\s*모델\s*(세우기|올리기)\s*전|상세\s*(건물\s*)?모델\s*(숨|끄|치워)|기본\s*매스).*(보여|표시|만|모습|해줘)?/i.test(text);
-          if (
-            selectedLocation
-            && !isMapControlCommand
-            && (
-              /^선택한?\s*필지/.test(text)
-              || Boolean(selectedAddressPrefix && text.startsWith(selectedAddressPrefix))
-              || refersToSelectedParcel
-              || isAddresslessParcelQuestion
-            )
-          ) {
-            const { lon, lat } = selectedLocation;
-            const answer = selectedAddressPrefix && text.startsWith(selectedAddressPrefix)
-              ? text.slice(selectedAddressPrefix.length).trim()
-              : text
-                  .replace(/^선택한?\s*필지에\s*/, "")
-                  .replace(/^(여기|이\s*필지|해당\s*필지|방금\s*선택한\s*필지)(에서|에|는|의)?\s*/, "");
-            const startsFromClickedParcel = parcelPromptPendingRef.current;
-            const coords = `경도 ${lon.toFixed(7)}, 위도 ${lat.toFixed(7)}`;
-            // 건축 가능 여부를 묻는 게 아니라 공시지가·면적·지목 같은 '필지 사실'을
-            // 물으면 억지로 진단(카드)을 돌리지 말고, 좌표를 붙여 질문 그대로 보낸다.
-            // 이격거리·도로 접촉 같은 '사실/수치' 질문은 새 진단(카드)이 아니라
-            // 저장된 데이터를 읽어 자연어로 답해야 한다(공장/창고 단어가 있어도).
-            const asksParcelFacts =
-              /건축물\s*대장|대장\s*(확인|조회)|공시지가|토지\s*면적|대지\s*면적|지목|용도지역\s*(뭐|확인|조회)|이격|대지\s*안의?\s*공지|도로\s*접촉|접도|건축선|후퇴/.test(answer);
-            const asksConditionalRequirements =
-              /(조건부\s*가능|가능\s*조건).*(어떻게|하려면|되려면|뭐|무엇|절차|해결)|어떻게.*조건부\s*가능/.test(answer);
-            const wantsDiagnosis =
-              !asksParcelFacts
-              && !asksConditionalRequirements
-              && /지을|짓|건축|신축|가능|규모|건폐율|용적률|층수|용도(?:는|가|를|에|로)?|허용|제한|한정|상가|근린생활|창고|공장|업무시설|판매시설|숙박시설|무슨\s*건물|뭘\s*지|만들|원룸|다가구|다세대|주인.*살|임대/.test(answer);
-            if (wantsDiagnosis) {
-              void (async () => {
-                await parcelSelectionSyncRef.current;
-                parcelPromptPendingRef.current = false;
-                await send(
-                  text,
-                  `지도에서 선택한 위치(${coords})에서 ` +
-                    (startsFromClickedParcel
-                      ? "방금 클릭한 필지가 이전 진단 필지와 다르면 새 필지이므로 종합 판정부터 처음 진단한다. "
-                      : "") +
-                    `사용자가 원하는 건축물 용도는 "${answer}"이다. 건축 가능 여부를 검토해줘`,
-                );
-              })();
-            } else {
-              void (async () => {
-                await parcelSelectionSyncRef.current;
-                parcelPromptPendingRef.current = false;
-                await send(
-                  text,
-                  `지도에서 선택한 위치(${coords})의 필지에 대한 질문이다: ${answer}`,
-                );
-              })();
+            /(?:[가-힣0-9]+(?:특별시|광역시|특별자치시|특별자치도|도|시|군|구|읍|면|동|리)\s+)+(?:산\s*)?\d+(?:-\d+)?/.test(resolvedText);
+          const changesLocation = /이동|가\s*줘|찾아\s*줘/.test(text);
+          const useSelectedParcel =
+            Boolean(selectedLocation) && !hasExplicitParcelAddress && !changesLocation;
+          if (changesLocation) setSelectedLocation(null);
+
+          void (async () => {
+            if (useSelectedParcel && selectedLocation) {
+              await parcelSelectionSyncRef.current;
+              const continuation =
+                Boolean(panelRef.current) && !parcelPromptPendingRef.current;
+              parcelPromptPendingRef.current = false;
+              await send(text, text, {
+                selectedParcel: {
+                  lon: selectedLocation.lon,
+                  lat: selectedLocation.lat,
+                  address: selectedLocation.address,
+                  pnu: selectedLocation.pnu,
+                },
+                continuation,
+              });
+              return;
             }
-          } else {
-            // 명시적으로 다른 주소로 이동할 때는 기존 선택을 먼저 버린다.
-            if (/이동|가\s*줘/.test(text)) setSelectedLocation(null);
-            void send(text);
-          }
+            await send(text, resolvedText);
+          })();
         }}
         onAction={(action) => {
           // 지역 추천 리스트 클릭 — 그 지번으로 개별 진단을 실행한다.
@@ -626,9 +634,14 @@ export default function App() {
             }
             return;
           }
+          if (action.startsWith("use-model:")) {
+            void showUseModel(action.slice("use-model:".length));
+            return;
+          }
           if (!action.startsWith("housing:")) return;
           const type = action.slice("housing:".length) as HousingModelType;
           try {
+            const requestGeneration = ++modelRequestGenerationRef.current;
             const ew = bridge?.showHousingModel(type);
             // 경사지면 절토·성토(토공량) 추정을 함께 안내한다. 모델을 여러 번/여러
             // 종류로 눌러도 같은 필지면 수치가 같아 똑같은 박스가 쌓인다. 토공
@@ -658,9 +671,22 @@ export default function App() {
               detached: "단독주택", lowrise: "공동주택", slim: "공동주택",
               factory: "공장", warehouse: "창고시설", commercial: "판매시설",
             };
-            const useName = USE_OF_MODEL[type];
+            // 상가 외형은 판매시설·제1종·제2종근린생활시설이 함께 사용한다.
+            // 현재 필지에서 실제로 가능/조건부인 용도를 골라야, 허용된 근생 모델을
+            // 눌렀는데 금지된 '판매시설'로 재판정되는 일이 없다.
+            const commercialUses = [
+              ...(panel?.zone_use_overview?.allowed ?? []),
+              ...(panel?.zone_use_overview?.conditional ?? []),
+            ];
+            const useName =
+              type === "commercial"
+                ? ["판매시설", "제1종근린생활시설", "제2종근린생활시설"]
+                    .find((use) => commercialUses.includes(use))
+                  ?? "판매시설"
+                : USE_OF_MODEL[type];
             void (async () => {
               const r = await fetchSetbackForUse(SESSION_ID, useName);
+              if (requestGeneration !== modelRequestGenerationRef.current) return;
               const label = `📐 **이격거리(건축선↔인접대지경계선) — ${useName} 용도의 대지 안의 공지(이격)**`;
               let text: string;
               if (!r || !r.ok) {
@@ -739,10 +765,9 @@ export default function App() {
             commands={commands}
             onReady={setBridge}
             onMapSelect={(lon, lat, address, pnu) => {
-              // 답변 생성 중에도 지도 클릭 좌표는 반드시 새 선택으로 저장한다.
-              // 예전에는 busy일 때 좌표만 버리고 지도 경계는 바뀌어, 화면은 새
-              // 필지인데 다음 질문은 이전 진단 주소를 쓰는 불일치가 생겼다.
-              setSelectedLocation({ lon, lat, address, pnu, key: Date.now() });
+              const activePnu =
+                String(panelRef.current?.pnu ?? selectedLocation?.pnu ?? "");
+              const sameParcel = Boolean(pnu && activePnu && pnu === activePnu);
               parcelSelectionSyncRef.current = setSessionParcelSelection(
                 SESSION_ID,
                 { lon, lat, address, pnu },
@@ -759,6 +784,32 @@ export default function App() {
                     },
                   ]);
                 });
+              if (sameParcel) {
+                // 같은 PNU를 다시 눌렀다면 새 필지가 아니다. 기존 패널·모델·
+                // 후속 상태를 그대로 유지하고 좌표만 최신값으로 갱신한다.
+                parcelPromptPendingRef.current = false;
+                setSelectedLocation((current) => ({
+                  lon,
+                  lat,
+                  address: address || current?.address,
+                  pnu,
+                  key: current?.key ?? Date.now(),
+                }));
+                return;
+              }
+              // 지도에서 다른 필지를 고르는 즉시 이전 필지 모델 버튼을 비활성화한다.
+              setMessages((current) =>
+                current.filter((message) =>
+                  !message.options?.some((option) =>
+                    option.action?.startsWith("housing:")
+                    || option.action?.startsWith("use-model:")
+                  )
+                )
+              );
+              // 답변 생성 중에도 지도 클릭 좌표는 반드시 새 선택으로 저장한다.
+              // 예전에는 busy일 때 좌표만 버리고 지도 경계는 바뀌어, 화면은 새
+              // 필지인데 다음 질문은 이전 진단 주소를 쓰는 불일치가 생겼다.
+              setSelectedLocation({ lon, lat, address, pnu, key: Date.now() });
               parcelPromptPendingRef.current = true;
               // 안내는 여러 개 쌓지 않되, 다른 필지를 다시 누르면 기존 안내를
               // 제거하고 맨 아래로 옮겨 항상 입력창 바로 위에서 보이게 한다.
@@ -842,6 +893,21 @@ export default function App() {
             <div className="zone-legend-note">색 경계 = 용도지역 경계 (사전검토 참고용)</div>
           </div>
         )}
+        {restrictionLegend && restrictionLegend.pieces.length > 0 && (
+          <div className={`restriction-legend${zoneLegend?.length ? " with-zone" : ""}`}>
+            <div className="zone-legend-title">{restrictionLegend.title}</div>
+            {restrictionLegend.pieces.map((piece) => (
+              <div key={`${piece.label}-${piece.share_pct}`} className="zone-legend-row">
+                <span className="zone-legend-swatch" style={{ background: piece.color }} />
+                <span className="zone-legend-name">{piece.label}</span>
+                <span className="zone-legend-pct">
+                  {piece.share_pct}% · {Math.round(piece.area_m2).toLocaleString()}㎡
+                </span>
+              </div>
+            ))}
+            <div className="zone-legend-note">색 영역 = 선택 필지 내 산지구분 중첩</div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -882,6 +948,7 @@ function ResultPanel({
   const developmentCharge = panel.development_charge;
   const legalSources = panel.legal_sources?.sources ?? [];
   const siteConstraints = panel.site_constraints;
+  const roadAccess = panel.road_access;
   // 이격 배지: status APPLIED 는 0m도 포함하므로, 실제 그려질 이격이 있을 때만
   // '반영'이라 한다(단독주택 0m인데 '반영'으로 표기되던 오해 방지).
   const hasSetback =
@@ -902,8 +969,14 @@ function ResultPanel({
       : siteConstraints?.parking?.strategy_status === "DESIGN_REQUIRED"
         ? "주차 별도 설계"
         : "주차 미반영";
+  const roadBadge =
+    roadAccess?.status === "NO_CADASTRAL_ROAD"
+      ? "지적도상 도로 접촉 없음(맹지 가능성 있음)"
+      : roadAccess?.status === "CADASTRAL_CONTACT"
+        ? "도로폭·후퇴선 현황측량 필요"
+        : "도로 접도 별도 확인";
   const compactSiteNote = siteConstraints
-    ? [setbackBadge, parkingBadge, "도로 후퇴선 현황측량 필요"].join(" · ")
+    ? [setbackBadge, parkingBadge, roadBadge].join(" · ")
     : "";
 
   // 건물의 화면 좌표를 얻기 전에는 우측 상단에 임시로 띄우지 않는다.
@@ -1055,23 +1128,38 @@ function ResultPanel({
       <div className="result-evidence">
         {conversionCharge?.estimated_won != null && (
           <p className="result-note">
-            {conversionCharge.label}: 약 {Math.round(conversionCharge.estimated_won).toLocaleString()}원
+            {conversionCharge.label}: 약{" "}
+            {Math.round(conversionCharge.estimated_won / 10_000).toLocaleString()}만원
             {conversionCharge.area_basis === "full_parcel_reference"
               ? " (전체 필지 전용 가정 참고 상한)"
-              : " (현재 전용예상면적 기준)"}
+              : ` (건축면적 ${Math.round(conversionCharge.area_m2 ?? 0).toLocaleString()}㎡ 전용 가정)`}
           </p>
         )}
-        {developmentCharge && (
+        {developmentCharge?.applicable && (
           <p className="result-note">
-            개발부담금: {developmentCharge.applicable ? "대상 가능성 있음" : "현재 규모상 대상 아닐 수 있음"}
-            {" · "}{developmentCharge.area_requirement_m2?.toLocaleString()}㎡ 기준
+            개발부담금 참고: 약{" "}
+            {Math.round((developmentCharge.region_avg_per_case_won ?? 0) / 10_000).toLocaleString()}만원
+            {" "}({developmentCharge.statistics_year}년 {developmentCharge.region || "전국"} 평균, 부과대상 토지면적{" "}
+            {developmentCharge.area_requirement_m2?.toLocaleString()}㎡ 이상)
+          </p>
+        )}
+        {developmentCharge && !developmentCharge.applicable && (
+          <p className="result-note">
+            개발부담금: 면적 요건 미달 (사업 대상 토지면적{" "}
+            {Math.round(developmentCharge.assessed_area_m2 ?? panel.site_area_m2 ?? 0).toLocaleString()}㎡
+            {" "}/ 부과대상 토지면적 {developmentCharge.area_requirement_m2?.toLocaleString()}㎡ 이상)
           </p>
         )}
         {compactSiteNote && <p className="result-note">{compactSiteNote}</p>}
-        {panel.legal_basis && <p className="result-basis">{panel.legal_basis}</p>}
+        {panel.legal_basis && (
+          <p className="result-basis">
+            {panel.legal_basis.includes("조례") ? "적용 조례: " : ""}
+            {panel.legal_basis}
+          </p>
+        )}
         {legalSources.length > 0 && (
           <p className="result-basis">
-            국가법령정보센터 현행 법령 {legalSources.length}건 원문 검증
+            국가법령정보센터 관련 현행 법령 {legalSources.length}건 연결 확인
           </p>
         )}
       </div>

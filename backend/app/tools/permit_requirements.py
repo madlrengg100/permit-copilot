@@ -93,6 +93,8 @@ def build(state: dict) -> dict:
         })
 
     for finding in screen.get("findings", []):
+        if finding.get("severity") != "REVIEW":
+            continue
         items.append({
             "order": 50,
             "id": f"special_{finding.get('category', 'review')}",

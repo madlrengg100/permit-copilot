@@ -48,7 +48,10 @@ class AnthropicAdapter:
     def __init__(self) -> None:
         from anthropic import AsyncAnthropic
 
-        self.client = AsyncAnthropic()
+        # 외부 LLM이 연결만 유지한 채 응답하지 않으면 SSE 화면이 무기한
+        # 진행 중으로 남는다. 한 번의 상담 요청이 합리적인 시간 안에 실패해
+        # 결정식 fallback 또는 사용자 오류 안내로 끝나도록 제한한다.
+        self.client = AsyncAnthropic(timeout=20.0, max_retries=0)
 
     @staticmethod
     def tool_schema(tools: list[dict]) -> list[dict]:
@@ -127,6 +130,11 @@ class OpenAIAdapter:
             kwargs["base_url"] = OPENAI_BASE_URL
         if OPENAI_API_KEY:
             kwargs["api_key"] = OPENAI_API_KEY
+        # OpenAI SDK 기본 제한시간은 대화형 화면에서 너무 길다. 특히 Gemini
+        # 호환 엔드포인트가 연결 후 응답을 늦게 주는 경우 무한 정지처럼 보이므로
+        # 호출당 20초로 제한하고 SDK 내부 장시간 재시도는 하지 않는다.
+        kwargs["timeout"] = 20.0
+        kwargs["max_retries"] = 0
         self.client = AsyncOpenAI(**kwargs)
 
     @staticmethod

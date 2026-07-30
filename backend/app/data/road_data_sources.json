@@ -1,0 +1,58 @@
+{
+  "_meta": {
+    "collected_on": "2026-07-28",
+    "purpose": "지적도상 접도, 현황도로 가능성, 건축법상 지정도로를 단계별로 검증하기 위한 자료원",
+    "coverage": "대한민국 전국",
+    "collection_strategy": "전국 공간원본을 매 질의 필지 주변 BBOX로 실시간 조회한다. 건축법상 지정도로는 지자체별 공개자료를 보강한다.",
+    "final_legal_determination": "건축법상 도로 여부는 허가권자의 도로대장·지정공고 및 현황측량으로 확정"
+  },
+  "sources": [
+    {
+      "id": "vworld_cadastral_parcel",
+      "name": "국토교통부 연속지적도형정보 WFS",
+      "coverage": "전국",
+      "status": "connected",
+      "provides": ["필지경계", "PNU", "지목", "인접 필지 접촉"],
+      "does_not_provide": ["건축법상 지정도로 여부", "실제 통행 가능 여부", "통행권"],
+      "url": "https://www.data.go.kr/data/15058805/openapi.do"
+    },
+    {
+      "id": "vworld_road_name_map",
+      "name": "국토교통부 도로명주소도 WMS/WFS",
+      "coverage": "전국",
+      "status": "available_key_required",
+      "provides": ["도로명", "도로구간", "도로명주소 건물 위치"],
+      "does_not_provide": ["건축법 제45조 지정도로 확정", "사도 통행권"],
+      "update_cycle": "실시간",
+      "url": "https://www.data.go.kr/data/15057685/openapi.do"
+    },
+    {
+      "id": "road_register",
+      "name": "도로대장",
+      "coverage": "도로관리청별",
+      "status": "authority_data_required",
+      "provides": ["관리 도로 구간", "폭원", "도로시설", "도로구역"],
+      "does_not_provide": ["모든 건축법상 지정도로", "사법상 통행권"],
+      "reference": "국토교통부 도로대장 작성지침 2024.12",
+      "url": "https://krris.lx.or.kr/html/popup/2024_%EB%8F%84%EB%A1%9C%EB%8C%80%EC%9E%A5_%EC%9E%91%EC%84%B1_%EC%A7%80%EC%B9%A8_%EC%88%98%EC%A0%95.pdf"
+    },
+    {
+      "id": "building_act_designated_road",
+      "name": "건축법 제45조 도로 지정·공고 자료",
+      "coverage": "전국 허가권자별 분산",
+      "status": "municipality_by_municipality_connection_required",
+      "provides": ["지정 위치", "도로구간", "지정·변경·폐지 이력"],
+      "does_not_provide": ["현장 통행 가능 상태", "사법상 권리관계"],
+      "legal_basis": "건축법 제2조제1항제11호 및 제45조",
+      "acquisition": ["세움터 인허가 문서", "시·군·구 건축 담당부서 도로 지정대장", "지정공고문"]
+    },
+    {
+      "id": "field_survey_and_rights",
+      "name": "현황측량·통행권 확인",
+      "coverage": "개별 필지",
+      "status": "manual_required",
+      "provides": ["실제 도로폭", "접도길이", "중심선", "물리적 통행 가능성", "통행권 증빙"],
+      "acquisition": ["현황측량성과도", "토지등기", "지역권·주위토지통행권 자료"]
+    }
+  ]
+}

@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import asyncio
+import copy
 import json
 import logging
 import re
@@ -23,6 +24,7 @@ from .agents.prediagnosis import (
     compact,
     detect_use_restriction,
     format_diagnosis_answer,
+    _has_building_feasibility_intent,
     run_prediagnosis,
 )
 from .llm import append_tool_results
@@ -30,7 +32,52 @@ from .tools import building_register, massing, site_constraints, vworld
 
 logger = logging.getLogger("uvicorn.error")
 
-SYSTEM = """당신은 공간정보 기반 건축 인허가 상담 시스템의 오케스트레이터입니다.
+ANSWER_STYLE_RULES = """답변 표현 원칙:
+- 법령·조례·진단 데이터에 없는 분류명이나 개념을 임의로 만들지 마라.
+- '일반 건축', '원칙적으로', '가능할 수 있습니다', '건축을 검토할 수 있습니다'처럼
+  범위와 결론이 모호한 표현을 쓰지 마라.
+- 판정은 데이터의 verdict에 따라 '건축 가능합니다', '조건부 가능합니다',
+  '건축이 불가합니다', '추가 확인이 필요합니다' 중 의미가 맞는 말로 명확히 표현하라.
+- 조건·예외·제한은 실제 진단 데이터에 있을 때만 판정 다음 문장에서 설명하라.
+- 필지명·용도·규제명·수치는 제공된 데이터에서 읽고, 고정 예문을 복사하지 말고
+  사용자의 질문 의도에 맞는 자연스러운 한국어 문장으로 구성하라.
+"""
+
+
+def _answer_system(instructions: str) -> str:
+    """모든 사용자 답변용 Gemini 호출에 동일한 표현 원칙을 적용한다."""
+    return f"{ANSWER_STYLE_RULES}\n{instructions}"
+
+
+def _is_building_restore_request(query: str) -> bool:
+    """사용자가 직접 건물 표시 복원을 요청한 경우만 참이다.
+
+    프런트가 새 필지 진단용으로 덧붙이는 '이전 진단 필지와 다르면 … 건물'
+    같은 내부 문장은 복원 명령이 아니다. 반드시 복원 동작어까지 있어야 한다.
+    """
+    compact = re.sub(r"\s+", "", query)
+    return bool(
+        re.search(
+            r"(?:(?:3d|입체)(?:건물|모델)?|건물모델|상세모델|모델)"
+            r".*(?:다시켜|다시보여|복원|복구|원래대로|이전으로|켜줘|보여줘|표시해)"
+            r"|(?:다시|이전|원래).*(?:3d|입체|건물|모델)"
+            r".*(?:보여|켜|표시|복원|복구|돌려)",
+            compact,
+            re.IGNORECASE,
+        )
+        or re.search(
+            r"(?:다시)?(?:이전|원래)(?:상태|모습)?(?:으로|대로)?"
+            r"(?:돌려|돌아|보여|복원)"
+            r"|(?:다시)?원상(?:태)?(?:으로)?(?:복구|복원|돌려)"
+            r"|^(?:다시)?(?:복원|복구)(?:해|해줘|해주세요|시켜줘)?$"
+            r"|^다시(?:켜|켜줘|켜죠|보여|보여줘|표시해|표시해줘)$",
+            compact,
+            re.IGNORECASE,
+        )
+    )
+
+
+SYSTEM = _answer_system("""당신은 공간정보 기반 건축 인허가 상담 시스템의 오케스트레이터입니다.
 사용자의 자연어 질의를 해석해 필요한 에이전트를 호출하고, 결과를 종합해 답변합니다.
 
 판단 기준:
@@ -119,6 +166,7 @@ SYSTEM = """당신은 공간정보 기반 건축 인허가 상담 시스템의 �
 - 주소 없이 지역+조건으로 후보를 찾아달라는 탐색형("양평 비도시 지역에서 농막 지을 데
   찾아줘", "○○시에 공장 지을 만한 곳 추천")이면 recommend_areas 를 쓴다. 리스트는
   시스템이 클릭 가능하게 표시하므로, 그 뒤 후보를 텍스트로 다시 나열하지 마라."""
+)
 
 TOOLS: list[dict] = [
     {
@@ -276,7 +324,7 @@ TOOLS: list[dict] = [
     {
         "name": "flag_verdict_restriction",
         "description": (
-            "일반 건축은 가능/조건부여도, 사용자가 요청한 특정 시설·구조물이 개별 법령상 "
+            "종합 판정은 가능/조건부여도, 사용자가 요청한 특정 시설·구조물이 개별 법령상 "
             "불가하거나 크게 제한될 때 팝업(판정 옆)에 빨간 경고를 표시한다. "
             "예: 농지에 '움막'은 농지법상 불가(농막은 신고 후 연면적 20㎡ 이하). "
             "시스템 용도 목록에 없어 다른 용도로 판정됐지만 실제 요청 대상은 제한되는 경우에 쓴다."
@@ -362,16 +410,34 @@ TOOLS: list[dict] = [
 
 
 def _normalize_numbered_headings(text: str) -> str:
-    """LLM이 반복한 ``**1. 제목**`` 번호를 실제 순번으로 바로잡는다."""
+    """번호 제목의 순번과 Markdown 문단 간격을 바로잡는다.
+
+    모델이 ``앞 문장. **1. 제목**``처럼 한 줄에 이어 쓰더라도 각 절이 독립된
+    문단으로 렌더링되게 한다.
+    """
     index = 0
 
     def replace(match: re.Match) -> str:
         nonlocal index
         index += 1
-        spacing = match.group(1) or " "
-        return f"**{index}.{spacing}"
+        title = match.group(1).strip()
+        return f"\n\n**{index}. {title}**\n\n"
 
-    return re.sub(r"(?m)^\*\*\d+\.(\s*)", replace, text)
+    normalized = re.sub(
+        r"\s*\*\*\s*\d+\.\s*([^*\n]+?)\s*\*\*",
+        replace,
+        str(text or ""),
+    )
+    # 절 내부의 고정 항목도 앞 문장에 붙지 않게 한 줄씩 분리한다.
+    # Gemini가 ``- **담당부서:**``처럼 불릿으로 쓰더라도 하이픈만 빈 줄에
+    # 남기지 않고 동일한 일반 항목 형식으로 통일한다.
+    normalized = re.sub(
+        r"(?:[ \t]*[-*][ \t]*)?\s*\*{0,2}"
+        r"(담당부서|제출서류|근거법령|내용|설명):\*{0,2}\s*",
+        r"\n\n**\1:** ",
+        normalized,
+    )
+    return re.sub(r"\n{3,}", "\n\n", normalized).strip()
 
 
 def _strip_internal_field_names(text: str) -> str:
@@ -393,11 +459,451 @@ def _strip_internal_field_names(text: str) -> str:
     text = re.sub(r"\b[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+", "", text)
     # 본문에 그대로 노출된 snake_case 필드명 제거
     text = re.sub(r"[A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_]+", "", text)
-    # 제거하면서 생긴 이중 공백·공백 앞 문장부호·문두 부호 정리
-    text = re.sub(r"\s{2,}", " ", text)
+    # 제거하면서 생긴 이중 공백을 정리하되 Markdown 줄바꿈은 보존한다.
+    text = re.sub(r"[ \t]{2,}", " ", text)
+    text = re.sub(r" *\n *", "\n", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
     text = re.sub(r"\s+([,.·)\]）])", r"\1", text)
     text = re.sub(r"^[\s,.·)\]）]+", "", text)
     return text.strip()
+
+
+def _collected_forest_evidence(diagnosis: dict | None) -> str:
+    """임야 진단에서 실제로 수집된 지형·임상도 참고값을 사용자 문장으로 만든다."""
+    diagnosis = diagnosis or {}
+    parcel = diagnosis.get("parcel") or {}
+    if parcel.get("jimok") not in {"임", "임야"}:
+        return ""
+    conversion = diagnosis.get("land_conversion") or {}
+    terrain = conversion.get("terrain") or {}
+    inventory = conversion.get("forest_inventory") or []
+    parts: list[str] = []
+    if terrain.get("status") == "REFERENCE_AVAILABLE":
+        parts.append(
+            f"{terrain.get('source') or '30m DEM'} 자료에서 평균경사도 "
+            f"{float(terrain.get('slope_mean_deg') or 0):.1f}°, 최대경사도 "
+            f"{float(terrain.get('slope_max_deg') or 0):.1f}°, 표고 "
+            f"{float(terrain.get('elevation_min_m') or 0):.1f}~"
+            f"{float(terrain.get('elevation_max_m') or 0):.1f}m"
+            f"(평균 {float(terrain.get('elevation_mean_m') or 0):.1f}m)가 확인됩니다."
+        )
+    if inventory:
+        top = inventory[0]
+        attributes = [
+            top.get("forest_type"),
+            top.get("species"),
+            top.get("age_class"),
+            top.get("diameter_class"),
+            f"수관밀도 {top['density']}" if top.get("density") else "",
+            top.get("stand_height"),
+        ]
+        description = " · ".join(str(value) for value in attributes if value)
+        share = (
+            f"필지의 {float(top.get('share_pct') or 0):.1f}%"
+            if top.get("share_pct") is not None
+            else "필지 내"
+        )
+        year = f", {top.get('updated_year')}년 갱신" if top.get("updated_year") else ""
+        parts.append(f"1:5,000 임상도에서는 {share}가 {description}로 확인됩니다{year}.")
+    if parts:
+        parts.append(
+            "다만 이 값은 사전검토 참고자료이므로 허가 심사용 확정값은 "
+            "경사도·표고조사서와 산림조사서로 확인해야 합니다."
+        )
+    return " ".join(parts)
+
+
+def _ensure_collected_forest_evidence(
+    text: str, diagnosis: dict | None, *, relevant: bool = True
+) -> str:
+    """Gemini가 수집값을 일반론으로 뭉갠 경우 실제 근거 문장을 보충한다."""
+    if not relevant:
+        return text
+    evidence = _collected_forest_evidence(diagnosis)
+    if not evidence:
+        return text
+    conversion = (diagnosis or {}).get("land_conversion") or {}
+    terrain = conversion.get("terrain") or {}
+    inventory = conversion.get("forest_inventory") or []
+    has_terrain = not terrain or (
+        str(terrain.get("slope_mean_deg")) in text
+        and str(terrain.get("slope_max_deg")) in text
+    )
+    species = str((inventory[0] if inventory else {}).get("species") or "")
+    has_inventory = not species or species in text
+    return text if has_terrain and has_inventory else f"{text.rstrip()} {evidence}".strip()
+
+
+def _query_evidence(diagnosis: dict | None, query: str) -> str:
+    """질문 주제에 대응하는 진단의 실제 값을 짧은 근거 문장으로 변환한다."""
+    diagnosis = diagnosis or {}
+    if not diagnosis:
+        return ""
+    parcel = diagnosis.get("parcel") or {}
+    regulation = diagnosis.get("regulation") or {}
+    mass = diagnosis.get("massing") or {}
+    site = diagnosis.get("site_constraints") or {}
+    road = diagnosis.get("road_access") or {}
+    parts: list[str] = []
+
+    if re.search(r"면적|넓이|몇\s*평", query) and parcel.get("area_m2") is not None:
+        area = float(parcel["area_m2"])
+        parts.append(f"필지면적은 약 {area / 3.3058:,.0f}평({area:,.0f}㎡)입니다.")
+    if re.search(r"공시지가|땅값|지가", query) and parcel.get("jiga_won_per_m2") is not None:
+        unit = float(parcel["jiga_won_per_m2"])
+        parts.append(f"개별공시지가는 평당 약 {unit * 3.3058:,.0f}원(㎡당 {unit:,.0f}원)입니다.")
+    if re.search(r"용도지역|지역지구|용도지구|토지이용", query):
+        zone = regulation.get("zone")
+        districts = regulation.get("districts") or (diagnosis.get("land_use") or {}).get("districts") or []
+        if zone:
+            parts.append(f"용도지역은 {zone}입니다.")
+        if districts:
+            parts.append(f"확인된 용도지구·규제는 {', '.join(map(str, districts))}입니다.")
+    if re.search(r"건폐율|용적률", query):
+        bcr = regulation.get("bcr_max_pct")
+        far = regulation.get("far_max_pct")
+        if bcr is not None or far is not None:
+            parts.append(f"적용 상한은 건폐율 {bcr}%·용적률 {far}%입니다.")
+    if re.search(r"건축면적|연면적|몇\s*층|층수|규모", query) and mass:
+        values = []
+        if mass.get("building_area_m2") is not None:
+            values.append(f"건축면적 {float(mass['building_area_m2']):,.0f}㎡")
+        if mass.get("gross_floor_area_m2") is not None:
+            values.append(f"연면적 {float(mass['gross_floor_area_m2']):,.0f}㎡")
+        if mass.get("floors") is not None:
+            values.append(f"신축 추정 {mass['floors']}층")
+        if values:
+            parts.append("진단상 " + "·".join(values) + "입니다.")
+    if re.search(r"도로|접도|맹지|진입로|도로폭|접촉", query) and road:
+        summary = road.get("summary") or road.get("reason")
+        if summary:
+            parts.append(str(summary).rstrip(" .") + ".")
+        elif road.get("status"):
+            parts.append(f"지적도 도로 접촉 판정은 {road.get('status')}입니다.")
+    if re.search(r"이격|후퇴|건축선|정북|일조", query) and site:
+        values = []
+        for label, key in (
+            ("전면 건축선 이격", "front_setback_m"),
+            ("인접 대지경계 이격", "adjacent_setback_m"),
+            ("정북 일조 이격", "north_setback_m"),
+        ):
+            if site.get(key) is not None:
+                values.append(f"{label} {site[key]}m")
+        if values:
+            parts.append("계산값은 " + "·".join(values) + "입니다.")
+    if re.search(r"주차|주차대수|주차면적", query):
+        parking = site.get("parking") or {}
+        if parking.get("estimated") and parking.get("spaces") is not None:
+            parts.append(f"현재 용도 기준 주차 필요량은 {parking['spaces']}대로 산정됐습니다.")
+        else:
+            parts.append("주차 방식과 세부 용도가 확정되지 않아 주차대수는 아직 산정되지 않았습니다.")
+    if re.search(r"농지보전부담금|대체산림(?:자원)?조성비", query):
+        charge = diagnosis.get("conversion_charge") or {}
+        if charge.get("estimated_won") is not None:
+            parts.append(
+                f"현재 전용예상면적 {float(charge.get('area_m2') or 0):,.0f}㎡ 기준 "
+                f"참고액은 약 {int(charge['estimated_won']):,}원입니다."
+            )
+    if re.search(r"개발부담금", query):
+        charge = diagnosis.get("development_charge") or {}
+        if charge.get("reason"):
+            parts.append(str(charge["reason"]).rstrip(" .") + ".")
+    if re.search(r"인허가|허가\s*요건|허가\s*절차|심의|서류|접수|처리기간|어디.*문의", query):
+        permit = diagnosis.get("permit_requirements") or {}
+        items = permit.get("items") or []
+        if items:
+            names = [str(item.get("name")) for item in items if item.get("name")]
+            parts.append(f"이 필지의 예상 인허가 순서는 {' → '.join(names)}입니다.")
+
+    forest_relevant = bool(
+        re.search(r"산지|산림|임야|경사도|표고|입목|임상도", query)
+        or (
+            parcel.get("jimok") in {"임", "임야"}
+            and re.search(r"심의|인허가|허가.*(?:요건|절차|조건)", query)
+        )
+    )
+    if forest_relevant:
+        forest = _collected_forest_evidence(diagnosis)
+        if forest:
+            parts.append(forest)
+    return " ".join(dict.fromkeys(part for part in parts if part))
+
+
+def _ensure_query_evidence(text: str, diagnosis: dict | None, query: str) -> str:
+    """관련 실제 값이 하나도 없는 일반론 응답에 결정적 근거를 보충한다."""
+    evidence = _query_evidence(diagnosis, query)
+    if not evidence:
+        return text
+    diagnosis = diagnosis or {}
+    required_tokens: list[str] = re.findall(r"\d+(?:\.\d+)?", evidence)
+    if re.search(r"용도지역|용도지구|토지이용", query):
+        zone = ((diagnosis.get("regulation") or {}).get("zone") or "")
+        if zone:
+            required_tokens.append(str(zone))
+    if re.search(r"도로|접도|맹지|진입로", query):
+        road = diagnosis.get("road_access") or {}
+        if road.get("summary"):
+            required_tokens.append(str(road["summary"]).split(":")[0])
+    if re.search(r"인허가|허가\s*요건|허가\s*절차|심의|서류|접수|처리기간", query):
+        items = ((diagnosis.get("permit_requirements") or {}).get("items") or [])
+        permit_names = [str(item["name"]) for item in items if item.get("name")]
+        if permit_names and not all(name in text for name in permit_names):
+            return f"{text.rstrip()} {evidence}".strip()
+        required_tokens.extend(permit_names)
+    if any(token and token in text for token in required_tokens):
+        return text
+    return f"{text.rstrip()} {evidence}".strip()
+
+
+def _deterministic_verdict_judgment(diagnosis: dict | None) -> str:
+    """단일 용도 검토 의견의 LLM 지연·실패 시 실제 진단값으로 만드는 요약."""
+    diagnosis = diagnosis or {}
+    parcel = diagnosis.get("parcel") or {}
+    regulation = diagnosis.get("regulation") or {}
+    request = diagnosis.get("request") or {}
+    address = (
+        parcel.get("jibun")
+        or (diagnosis.get("location") or {}).get("matched_address")
+        or "선택한 필지"
+    )
+    use = request.get("building_use") or regulation.get("building_use") or "요청 용도"
+    verdict = diagnosis.get("verdict") or regulation.get("verdict") or "unknown"
+    conclusion = {
+        "allowed": "현재 건축 가능합니다",
+        "conditional": "현재 조건부 가능합니다",
+        "not_allowed": "현재 건축이 불가합니다",
+        "unknown": "현재 추가 확인이 필요합니다",
+    }.get(verdict, "현재 추가 확인이 필요합니다").rstrip(".")
+
+    evidence: list[str] = []
+    zone = regulation.get("zone")
+    if zone:
+        evidence.append(f"용도지역은 {zone}입니다.")
+    conversion = diagnosis.get("land_conversion") or {}
+    if conversion.get("summary"):
+        evidence.append(_as_sentence(
+            _natural_conversion_summary(conversion["summary"], parcel)
+        ))
+    road = diagnosis.get("road_access") or {}
+    if road.get("summary"):
+        evidence.append(_as_sentence(str(road["summary"])))
+    constraints = regulation.get("constraints") or []
+    evidence.extend(
+        _as_sentence(_human_constraint(item)) for item in constraints[:2] if item
+    )
+    evidence = list(dict.fromkeys(item for item in evidence if item))
+
+    first = f"{address} 필지의 {use}은 {conclusion}."
+
+    if verdict == "conditional":
+        permit_names = [
+            str(item.get("name"))
+            for item in ((diagnosis.get("permit_requirements") or {}).get("items") or [])
+            if item.get("name")
+        ]
+        procedures = "·".join(permit_names[:3])
+        zone_basis = (
+            f"{zone}에서 {use}이 허용되는 범위에 해당하지만"
+            if zone
+            else f"{use}의 용도 허용 범위에는 들어가지만"
+        )
+        reasons = " ".join(evidence[1:4] if zone and evidence else evidence[:3])
+        second = (
+            f"{zone_basis}, {reasons} 관련 법령에 따른 허가·협의 요건의 "
+            "충족 여부를 확인해야 하므로 현재 조건부 가능합니다."
+            if reasons
+            else f"{zone_basis}, 세부 허용기준과 개별 규제에 따른 허가·협의 "
+            "요건의 충족 여부를 확인해야 하므로 현재 조건부 가능합니다."
+        )
+        third = (
+            f"건축하려면 {procedures} 절차를 거쳐야 하며, 관계기관 협의와 필요한 "
+            "심의를 포함한 허가 과정에서 용도·전용·접도·이격 등 적용 조건을 확인합니다. "
+            "서로 다른 법령의 요건이 함께 적용되는 경우에는 각 법령의 허가·협의 조건을 "
+            "모두 충족해야 최종 허가가 가능합니다."
+            if procedures
+            else (
+                "건축하려면 관계기관 협의와 필요한 심의를 포함한 허가 절차를 거쳐야 하며, "
+                "서로 다른 법령의 요건이 함께 적용되는 경우에는 각 법령의 허가·협의 조건을 "
+                "모두 충족해야 최종 허가가 가능합니다."
+            )
+        )
+    elif verdict == "not_allowed":
+        second = (
+            "확인된 필지 자료를 보면 " + " ".join(evidence[:4])
+            if evidence
+            else "현재 연결된 용도 허용 기준에서 제한 사유가 확인됐습니다."
+        )
+        third = "현재 확인된 제한 사유가 해소되거나 법령상 예외 허용시설에 해당하지 않으면 진행하기 어렵습니다."
+    elif verdict == "unknown":
+        second = (
+            "확인된 필지 자료를 보면 " + " ".join(evidence[:4])
+            if evidence
+            else "현재 연결된 자료만으로는 판정에 필요한 조건을 모두 확인하지 못했습니다."
+        )
+        third = "미수집 규제와 관할 조례를 확인하기 전에는 허가 가능으로 확정할 수 없습니다."
+    else:
+        second = (
+            "확인된 필지 자료를 보면 " + " ".join(evidence[:4])
+            if evidence
+            else "현재 연결된 필지 자료와 용도 허용 기준을 적용한 결과입니다."
+        )
+        third = "다만 표시된 규모는 법정 상한을 이용한 개념값이므로 실제 설계·허가 과정에서 줄어들 수 있습니다."
+    return f"{first} {second} {third}"
+
+
+def _as_sentence(text: str) -> str:
+    """구조화 값에서 온 설명을 다른 문장과 안전하게 이어 붙인다."""
+    cleaned = str(text or "").strip()
+    if not cleaned:
+        return ""
+    return cleaned if cleaned.endswith((".", "!", "?")) else cleaned + "."
+
+
+def _limit_review_length(text: str, *, max_sentences: int = 4) -> str:
+    """검토 의견이 상세 보고서를 반복하지 않도록 문장 수를 제한한다."""
+    cleaned = re.sub(r"\s+", " ", str(text or "")).strip()
+    # 토큰 한도에서 잘린 미완성 꼬리 문장은 사용자에게 노출하지 않는다.
+    if cleaned and not cleaned.endswith((".", "!", "?")):
+        last_end = max(cleaned.rfind("."), cleaned.rfind("!"), cleaned.rfind("?"))
+        if last_end >= 0:
+            cleaned = cleaned[: last_end + 1]
+    sentences = [
+        sentence.strip()
+        for sentence in re.split(r"(?<=[.!?])\s+", cleaned)
+        if sentence.strip()
+    ]
+    if len(sentences) <= max_sentences:
+        return cleaned
+    # 결론·최종 허가 조건은 대개 마지막 문장에 있으므로 앞의 핵심 3문장과
+    # 마지막 문장을 보존한다.
+    return " ".join(sentences[: max_sentences - 1] + [sentences[-1]])
+
+
+def _human_constraint(item) -> str:
+    """구조화 규제 객체를 내부 필드명 없이 자연스러운 한국어로 바꾼다."""
+    if isinstance(item, dict):
+        name = str(item.get("name") or item.get("label") or "").strip()
+        note = str(item.get("note") or item.get("reason") or "").strip()
+        if name and note:
+            if "가축분뇨법상 축사 제한" in note:
+                return (
+                    f"{name}에서는 가축분뇨법에 따라 축사가 제한되므로, "
+                    "축산 관련 시설인 경우 별도 확인이 필요합니다"
+                )
+            note = note.replace(" — ", ". ")
+            note = re.sub(
+                r"(.+?)이면\s*확인\s*필요$",
+                r"\1인 경우 확인이 필요합니다",
+                note,
+            )
+            return f"{name}: {note}".rstrip(" .")
+        return (name or note).rstrip(" .")
+    return str(item or "").strip().rstrip(" .")
+
+
+def _natural_conversion_summary(summary: str, parcel: dict) -> str:
+    """전용 판정 요약의 논리관계를 사용자 문장으로 명확히 표현한다."""
+    summary = str(summary or "").strip().rstrip(" .")
+    summary = summary.replace(
+        "산지전용허가와 대체산림자원조성비 검토가 필요합니다",
+        "산지전용허가가 필요하고 대체산림자원조성비가 부과될 수 있으나, "
+        "실제 전용면적과 사업 유형에 따라 감면 또는 면제될 수 있습니다",
+    ).replace(
+        "농지전용허가·협의와 농지보전부담금 검토가 필요합니다",
+        "농지전용허가·협의가 필요하고 농지보전부담금이 부과될 수 있으나, "
+        "실제 전용면적과 사업 유형에 따라 감면 또는 면제될 수 있습니다",
+    )
+    if summary.startswith("농업진흥지역 중첩은 확인되지 않았지만"):
+        jimok = parcel.get("jimok")
+        land_label = "농지이므로" if jimok in {"전", "답", "과"} else "해당 토지의 전용을 위해"
+        remainder = summary.split("않았지만", 1)[1].strip()
+        return f"농업진흥지역과 중첩되지는 않지만, {land_label} {remainder}"
+    forest_overlap = re.match(
+        r"(.+?산지)\s+(\d+(?:\.\d+)?)%\s+중첩입니다\.\s*(.*)",
+        summary,
+    )
+    if forest_overlap:
+        forest_name, share_text, remainder = forest_overlap.groups()
+        share = float(share_text)
+        subject = (
+            f"필지 전체가 {forest_name}와 중첩되어"
+            if share >= 99.95
+            else f"필지의 {share:g}%가 {forest_name}와 중첩되어"
+        )
+        return f"{subject} {remainder}".strip()
+    return summary
+
+
+def _all_uses_verdict_judgment(diagnosis: dict | None) -> str:
+    """모든 용도 검토는 현황·조건부 사유·필요 절차만 요약한다."""
+    diagnosis = diagnosis or {}
+    parcel = diagnosis.get("parcel") or {}
+    regulation = diagnosis.get("regulation") or {}
+    address = (
+        parcel.get("jibun")
+        or (diagnosis.get("location") or {}).get("matched_address")
+        or "선택한 필지"
+    )
+    zone = regulation.get("zone")
+    overview = regulation.get("zone_use_overview") or {}
+    allowed_count = len(overview.get("allowed") or [])
+    conditional_count = len(overview.get("conditional") or [])
+    has_possible_use = allowed_count + conditional_count > 0
+    possible_uses = list(dict.fromkeys(
+        list(overview.get("allowed") or [])
+        + list(overview.get("conditional") or [])
+    ))
+    possible_examples = "·".join(possible_uses[:4])
+    if len(possible_uses) > 4:
+        possible_examples += " 등"
+    conditions: list[str] = []
+    conversion = diagnosis.get("land_conversion") or {}
+    if conversion.get("summary"):
+        conditions.append(_as_sentence(
+            _natural_conversion_summary(conversion["summary"], parcel)
+        ))
+    road = diagnosis.get("road_access") or {}
+    if (
+        road.get("summary")
+        and road.get("status") not in {"CADASTRAL_CONTACT", "CONFIRMED"}
+    ):
+        conditions.append(_as_sentence(str(road["summary"])))
+    conditions.extend(
+        _as_sentence(_human_constraint(item))
+        for item in (regulation.get("constraints") or [])[:2]
+        if item and "가축사육제한" not in str(item)
+    )
+    conditions = list(dict.fromkeys(item for item in conditions if item))
+
+    permit_names = [
+        str(item.get("name"))
+        for item in ((diagnosis.get("permit_requirements") or {}).get("items") or [])
+        if item.get("name")
+    ]
+    procedures = "·".join(permit_names[:4])
+
+    if zone and has_possible_use:
+        first = (
+            f"{address} 필지는 {zone}입니다. 건축물 용도 중 {possible_examples}은 "
+            "건축 가능하거나 조건부로 검토할 수 있습니다. "
+            f"다만 {' '.join(conditions[:2]) if conditions else '개별 규제를 확인해야 합니다.'} "
+            "따라서 현재 조건부 가능합니다."
+        )
+    else:
+        first = (
+            f"{address} 필지는 현재 확인된 토지이용과 개별 규제를 종합하면 "
+            f"{' '.join(conditions[:2]) if conditions else '추가 확인이 필요합니다.'}"
+        )
+    second = (
+        f"건축하려면 먼저 건축물 용도를 정한 뒤 {procedures} 절차를 진행해야 합니다."
+        if procedures
+        else "건축하려면 먼저 건축물 용도를 정한 뒤 해당 용도의 인허가 절차를 진행해야 합니다."
+    )
+    third = (
+        "관계기관 협의와 필요한 심의를 거쳐 서로 다른 법령의 허가·협의 조건을 "
+        "모두 충족해야 최종 허가가 가능합니다."
+    )
+    return f"{first} {second} {third}"
 
 
 def _same_parcel_address(address_in_query: str, diagnosis: dict | None) -> bool:
@@ -435,6 +941,116 @@ def _same_parcel_coordinate(
     )
 
 
+def _asks_possible_use_list(user_query: str) -> bool:
+    """가능 용도/모델의 *목록*을 명시적으로 요구한 질문만 식별한다.
+
+    규제 적용 여부, 뜻, 이유, 절차 같은 질문은 단어에 ``가능``이나 ``시설``이
+    섞여 있어도 목록 요청이 아니다. 그 의미 해석은 최신 진단 데이터를 받은
+    언어모델에 맡긴다.
+    """
+    query = re.sub(r"\s+", "", user_query or "").lower()
+    if not query:
+        return False
+    if re.search(
+        r"건축물대장|대장조회|건축선|이격거리|공시지가|건폐율|용적률|"
+        r"뜻|의미|정의|개념|왜|이유|절차|기준|근거|확인|필요|조치|서류|부서|"
+        r"제한|규제|구역|지구|지역|중첩|해당|적용",
+        query,
+    ):
+        return False
+    if re.fullmatch(r"(?:3d)?모델(?:이란|은|이)?(?:뭐야|무엇이야)\??", query):
+        return False
+    # '모델'이라는 낱말 자체는 버튼 의도가 아니다. 모델의 표시/숨김은 앞선
+    # 지도 제어 규칙이 처리하고, 여기서는 대체 모델의 조회·선택 요청만 받는다.
+    if re.search(
+        r"(?:다른|가능|허용|대체|추천).*(?:모델|3d건물|건축물|건물|용도)"
+        r"|(?:모델|3d건물|건축물|건물|용도).*(?:목록|종류|선택|추천|가능|허용)",
+        query,
+    ):
+        return True
+    return bool(
+        re.search(
+            r"(?:가능|허용(?:되는)?|지을수있는|건축할수있는)(?:한)?"
+            r"(?:건물|건축물|시설|용도).*(?:뭐|무엇|어떤|종류|목록|알려|보여|추천)",
+            query,
+        )
+        or re.search(
+            r"(?:뭐|무엇|어떤|종류|목록).*(?:건물|건축물|시설|용도).*"
+            r"(?:가능|허용|지을|건축)",
+            query,
+        )
+        or re.search(
+            r"(?:건축할수있는거|지을거|지을수있는거|뭘지을수|무엇을지을수|"
+            r"어떤용도가(?:돼|되|가능)|허용(?:되는)?건축물|건물있어|건축있어|"
+            r"건축가능(?:한)?(?:게|거|뭐|무엇)|다른건물도?가능)",
+            query,
+        )
+    )
+
+
+def _model_options_for_diagnosis(
+    diagnosis: dict | None,
+    *,
+    include_alternatives: bool = False,
+    allow_alternative_verdict: bool = False,
+) -> list[dict]:
+    """구조화 판정에서 실제로 준비된 3D 모델 버튼만 만든다.
+
+    구조화 용도 판정표에서 허용·조건부인 용도 가운데 실제로 준비된
+    3D 모델만 낸다. 주소나 PNU별 예외는 두지 않는다.
+    """
+    diagnosis = diagnosis or {}
+    regulation = diagnosis.get("regulation") or {}
+    presentation = regulation.get("map_presentation") or {}
+    verdict = presentation.get("verdict") or regulation.get("verdict") or diagnosis.get("verdict")
+    massing = diagnosis.get("massing") or {}
+    if (
+        (verdict == "not_allowed" or not massing)
+        and not allow_alternative_verdict
+    ):
+        return []
+    if massing and (
+        massing.get("exceeds_far_limit")
+        or massing.get("layout_feasible") is False
+    ):
+        return []
+
+    overview = regulation.get("zone_use_overview") or {}
+    possible = set(overview.get("allowed") or []) | set(overview.get("conditional") or [])
+    requested_use = str((diagnosis.get("request") or {}).get("building_use") or "시설물")
+    prepared = [
+        ("단독주택", "단독주택형", "detached", "법정 가능 층수 반영 · 주택 비례"),
+        ("공동주택", "공동주택형", "lowrise", "건축 가능 영역 최대 활용"),
+        ("공장", "공장 모델", "factory", "산업 외피 · 롤러셔터"),
+        ("제1종근린생활시설", "상가 모델", "commercial", "쇼윈도 · 유리 출입구"),
+        ("제2종근린생활시설", "상가 모델", "commercial", "쇼윈도 · 유리 출입구"),
+        ("판매시설", "상가 모델", "commercial", "쇼윈도 · 유리 출입구"),
+        ("창고시설", "창고 모델", "warehouse", "산업 외피 · 롤러셔터"),
+    ]
+    floors = massing.get("floors")
+    options: list[dict] = []
+    used_actions: set[str] = set()
+    for use, label, model, detail in prepared:
+        if use not in possible:
+            continue
+        if (
+            not include_alternatives
+            and requested_use != "시설물"
+            and requested_use != use
+        ):
+            continue
+        action = f"housing:{model}"
+        if action in used_actions:
+            continue
+        used_actions.add(action)
+        options.append({
+            "label": f"{floors}층 {label}" if floors else label,
+            "detail": detail,
+            "action": action,
+        })
+    return options
+
+
 class Orchestrator:
     """대화 1건(=세션)의 상태를 들고 있는 오케스트레이터."""
 
@@ -447,9 +1063,56 @@ class Orchestrator:
         self._last_query = ""                # 직전 사용자 질의(추천 농막류 감지용)
         self.selected_parcel: dict | None = None
         self._selection_changed = False
-        # 필지(PNU)별로 마지막 진단을 기억한다. 이전에 진단한 필지를 다시 클릭하면
-        # 새 카드가 아니라 그 진단을 복원해 후속질문(자연어)으로 이어가게 한다.
+        # 필지별 상태를 독립 보관한다. A→B→A로 이동하면 A의 진단·대화 맥락을
+        # 복원해 후속 질문으로 이어가고, 처음 보는 PNU만 새 상담으로 시작한다.
         self._diagnosis_by_pnu: dict[str, dict] = {}
+        self._messages_by_pnu: dict[str, list[dict]] = {}
+        self._diag_shown_by_pnu: dict[str, bool] = {}
+        # 자연어 후속 질문이 짧아도 제미나이가 무엇을 이어 묻는지 알 수 있도록
+        # 필지별 UI·대화 상태를 구조화해 보관한다.
+        self._context_by_pnu: dict[str, dict] = {}
+
+    def snapshot_state(self) -> dict:
+        """타임아웃 재시도 전의 필지별 상담 상태를 복제한다."""
+        return copy.deepcopy({
+            "messages": self.messages,
+            "diagnosis": self.diagnosis,
+            "recommendations": self.recommendations,
+            "_diag_shown": self._diag_shown,
+            "_last_query": self._last_query,
+            "selected_parcel": self.selected_parcel,
+            "_selection_changed": self._selection_changed,
+            "_diagnosis_by_pnu": self._diagnosis_by_pnu,
+            "_messages_by_pnu": self._messages_by_pnu,
+            "_diag_shown_by_pnu": self._diag_shown_by_pnu,
+            "_context_by_pnu": self._context_by_pnu,
+        })
+
+    def restore_state(self, snapshot: dict) -> None:
+        """실패한 실행에서 변경된 상태를 버리고 질문 직전 상태로 되돌린다."""
+        restored = copy.deepcopy(snapshot)
+        for key, value in restored.items():
+            setattr(self, key, value)
+        # 이전 버전 세션 파일도 안전하게 복원한다.
+        if not hasattr(self, "_context_by_pnu"):
+            self._context_by_pnu = {}
+
+    def _active_pnu(self) -> str:
+        return (
+            ((self.diagnosis or {}).get("parcel") or {}).get("pnu")
+            or (self.selected_parcel or {}).get("pnu")
+            or ""
+        )
+
+    def conversation_context(self) -> dict:
+        pnu = self._active_pnu()
+        return self._context_by_pnu.setdefault(pnu, {}) if pnu else {}
+
+    def update_conversation_context(self, **values) -> None:
+        context = self.conversation_context()
+        for key, value in values.items():
+            if value is not None:
+                context[key] = value
 
     def set_selected_parcel(
         self,
@@ -461,25 +1124,33 @@ class Orchestrator:
         from_mouse: bool = False,
     ) -> None:
         diagnosed_pnu = ((self.diagnosis or {}).get("parcel") or {}).get("pnu") or ""
+        selected_pnu = (self.selected_parcel or {}).get("pnu") or ""
         if from_mouse:
             parcel_changed = bool(
-                pnu and (not diagnosed_pnu or pnu != diagnosed_pnu)
+                pnu and pnu != (diagnosed_pnu or selected_pnu)
             )
-            if parcel_changed and pnu in self._diagnosis_by_pnu:
-                # 이전에 진단한 필지를 다시 클릭 → 그 진단을 복원하고, 다음 질문은
-                # 새 카드가 아니라 후속질문(자연어)으로 이어간다.
-                self.diagnosis = self._diagnosis_by_pnu[pnu]
+            if parcel_changed:
+                # 떠나는 필지의 대화 상태를 먼저 저장한다.
+                if diagnosed_pnu:
+                    self._diagnosis_by_pnu[diagnosed_pnu] = self.diagnosis
+                    self._messages_by_pnu[diagnosed_pnu] = list(self.messages)
+                    self._diag_shown_by_pnu[diagnosed_pnu] = self._diag_shown
+
+                cached = self._diagnosis_by_pnu.get(pnu)
+                if cached is not None:
+                    # 이미 진단했던 필지로 돌아온 경우: 해당 필지 상태를 복원해
+                    # 다음 질문을 후속 질문으로 처리한다.
+                    self.diagnosis = cached
+                    self.messages = list(self._messages_by_pnu.get(pnu, []))
+                    self._diag_shown = self._diag_shown_by_pnu.get(pnu, True)
+                    self._selection_changed = False
+                else:
+                    # 처음 보는 필지만 새 진단으로 시작한다.
+                    self._selection_changed = True
+                    self.diagnosis = None
+                    self.messages = []
+                    self._diag_shown = False
                 self.recommendations = None
-                self.messages = []
-                self._diag_shown = False
-                self._selection_changed = False
-            elif parcel_changed:
-                # 처음 보는 새 필지 → 새 상담의 시작. 다음 질문에서 종합 카드.
-                self._selection_changed = True
-                self.diagnosis = None
-                self.recommendations = None
-                self.messages = []
-                self._diag_shown = False
             else:
                 self._selection_changed = False
         elif pnu and diagnosed_pnu == pnu:
@@ -491,14 +1162,22 @@ class Orchestrator:
             "pnu": pnu,
         }
         logger.info(
-            "parcel_state from_mouse=%s diagnosed_pnu=%s selected_pnu=%s changed=%s",
+            "parcel_state from_mouse=%s diagnosed_pnu=%s selected_pnu=%s "
+            "changed=%s restored=%s",
             from_mouse,
             diagnosed_pnu,
             pnu,
             self._selection_changed,
+            bool(pnu and pnu in self._diagnosis_by_pnu and self.diagnosis is not None),
         )
 
-    async def ask(self, user_query: str, max_turns: int = 8) -> AsyncIterator[dict]:
+    async def ask(
+        self,
+        user_query: str,
+        max_turns: int = 8,
+        *,
+        continuation: bool = False,
+    ) -> AsyncIterator[dict]:
         original_query = user_query
         has_explicit_address = bool(
             re.search(
@@ -525,7 +1204,7 @@ class Orchestrator:
         )
         if (
             self.selected_parcel
-            and (parcel_question or self._selection_changed)
+            and (parcel_question or self._selection_changed or continuation)
             and not has_explicit_address
             and not has_coordinates
         ):
@@ -542,6 +1221,13 @@ class Orchestrator:
             )
 
         self.messages.append({"role": "user", "content": original_query})
+        self.update_conversation_context(
+            last_user_query=original_query,
+            active_address=(
+                ((self.diagnosis or {}).get("parcel") or {}).get("jibun")
+                or (self.selected_parcel or {}).get("address")
+            ),
+        )
         self._last_query = user_query
         # _diag_shown은 세션 동안 유지한다. 매 질문마다 초기화하면 같은 필지의
         # 후속 질문도 다시 '최초 진단'으로 오인해 종합 보고서를 반복하게 된다.
@@ -549,15 +1235,118 @@ class Orchestrator:
         # 화면 상태 전환은 자연어 표현이 조금 달라도 반드시 실행돼야 하므로 LLM 판단
         # 전에 결정적으로 처리한다. 인허가 진단이나 건물 유형은 바꾸지 않는다.
         compact_query = re.sub(r"\s+", "", user_query)
+        display_verdict = (
+            ((((self.diagnosis or {}).get("regulation") or {}).get("map_presentation") or {})
+             .get("verdict"))
+            or ((self.diagnosis or {}).get("regulation") or {}).get("verdict")
+            or (self.diagnosis or {}).get("verdict")
+        )
+        building_display_blocked = display_verdict == "not_allowed"
+
+        # 2D 필지 선택 화면과 3D 규모 화면을 버튼과 동일하게 전환한다.
+        view_mode: str | None = None
+        if re.search(
+            r"(?:2d|이차원|평면지도|지적도화면).*(?:전환|바꿔|변경|보여|켜|가줘|모드)"
+            r"|(?:전환|바꿔|변경|보여|켜).*(?:2d|이차원|평면지도)",
+            compact_query,
+            re.IGNORECASE,
+        ):
+            view_mode = "2d"
+        elif re.search(
+            r"(?:3d|삼차원|입체지도).*(?:전환|바꿔|변경|보여|켜|가줘|모드)"
+            r"|(?:전환|바꿔|변경|보여|켜).*(?:3d|삼차원|입체지도)",
+            compact_query,
+            re.IGNORECASE,
+        ) and not re.search(r"(?:건물|모델|매스|윤곽|형상)", compact_query):
+            view_mode = "3d"
+        if view_mode:
+            yield {
+                "event": "map_commands",
+                "data": {"commands": [{"type": "set_view_mode", "mode": view_mode}]},
+            }
+            yield {
+                "event": "message",
+                "data": {"text": f"{view_mode.upper()} 지도 화면으로 전환했습니다."},
+            }
+            return
+
+        # LOD1·건물 윤곽을 끄는 표현은 아래의 'LOD1 보여줘' 분기보다 먼저 처리한다.
+        # "꺼죠" 같은 구어·오타도 받아서 입체 매스와 평면 윤곽을 모두 숨긴다.
+        if re.search(
+            r"(?:lod1|3d(?:건물|모델)?|모델|건물(?:매스|윤곽|형상|모델)?|"
+            r"건축(?:매스|윤곽|형상)|입체(?:건물|매스|모델)?)."
+            r"*(?:꺼|끄|숨|치워|지워|없애|안보이|안보여)",
+            compact_query,
+            re.IGNORECASE,
+        ):
+            yield {
+                "event": "map_commands",
+                "data": {"commands": [{"type": "hide_building_shape"}]},
+            }
+            yield {
+                "event": "message",
+                "data": {"text": "LOD1과 건물 윤곽을 숨겼습니다."},
+            }
+            return
+
+        # 숨김 또는 건축면적 평면으로 전환하기 전의 상세 3D 모델을 복원한다.
+        # 상세 모델을 선택한 적이 없으면 같은 진단의 LOD1 매스를 복원한다.
+        if _is_building_restore_request(original_query):
+            if building_display_blocked:
+                yield {
+                    "event": "message",
+                    "data": {"text": "현재 건축 불가 판정이므로 3D 건축 모델을 표시하지 않습니다."},
+                }
+                return
+            yield {
+                "event": "map_commands",
+                "data": {"commands": [{"type": "show_building_shape"}]},
+            }
+            yield {
+                "event": "message",
+                "data": {"text": "3D 건축 모델을 다시 표시했습니다."},
+            }
+            return
+
+        # 바닥면적·평면·윤곽 등 일상적인 표현을 정확한 '건축면적 윤곽' 표시로
+        # 통일한다. 단독으로 말한 "면적만 보여줘"도 지도 표시 명령으로 인식한다.
+        if re.search(
+            r"(?:건축면적|건물(?:바닥|면적|평면)|바닥면적|바닥윤곽|"
+            r"평면윤곽|평면만|^면적만).*(?:켜|보여|표시|남겨|만|해줘|해죠)",
+            compact_query,
+            re.IGNORECASE,
+        ):
+            if building_display_blocked:
+                yield {
+                    "event": "message",
+                    "data": {"text": "현재 건축 불가 판정이므로 건축면적 윤곽을 표시하지 않습니다."},
+                }
+                return
+            yield {
+                "event": "map_commands",
+                "data": {"commands": [{"type": "show_building_footprint"}]},
+            }
+            yield {
+                "event": "message",
+                "data": {"text": "입체 건물을 숨기고 건축면적 윤곽만 표시했습니다."},
+            }
+            return
 
         # 상세 창문·외벽 모델을 세우기 전의 단순 형상은 진단 시 계산한 LOD1
         # 매스를 그대로 복원한다. 후속 자연어 질문을 종합 진단으로 오인하지 않는다.
         if re.search(
-            r"(?:lod1(?:단계)?(?:만)?|건물모델(?:세우기|올리기)전(?:모습)?|"
+            r"(?:lod1(?:단계)?(?:만)?|건물(?:매스|윤곽|형상).*(?:켜|보여|표시)|"
+            r"건물모델(?:세우기|올리기)전(?:모습)?|"
             r"상세(?:건물)?모델(?:숨기|끄|치우)|기본매스(?:만)?)",
             compact_query,
             re.IGNORECASE,
         ):
+            if building_display_blocked:
+                yield {
+                    "event": "message",
+                    "data": {"text": "현재 건축 불가 판정이므로 건축 매스를 표시하지 않습니다."},
+                }
+                return
             yield {
                 "event": "map_commands",
                 "data": {
@@ -602,7 +1391,13 @@ class Orchestrator:
         # 하단 메뉴의 각 버튼도 자연어로 즉시 실행한다. LLM 도구 선택에 맡기면
         # "넓이 재줘" 같은 표현을 일반 질의로 답하고 끝낼 수 있다.
         map_tool_action: str | None = None
-        if re.search(r"(거리|길이).*(재|측정)|측정.*(거리|길이)", user_query):
+        if re.search(
+            r"(?:내|현재|현)\s*위치.*(?:가|이동|보여|찾아|맞춰)"
+            r"|(?:내|현재|현)\s*위치(?:로|에)?$",
+            user_query,
+        ):
+            map_tool_action = "my_location"
+        elif re.search(r"(거리|길이).*(재|측정)|측정.*(거리|길이)", user_query):
             map_tool_action = "measure_line"
         elif re.search(r"(면적|넓이).*(재|측정)|측정.*(면적|넓이)", user_query):
             map_tool_action = "measure_area"
@@ -616,6 +1411,7 @@ class Orchestrator:
                 "measure_area": "면적 측정",
                 "measure_height": "높이 측정",
                 "erase": "측정 초기화",
+                "my_location": "현재 위치 이동",
             }
             yield {
                 "event": "map_commands",
@@ -626,6 +1422,8 @@ class Orchestrator:
             message = (
                 "측정 결과를 초기화했습니다."
                 if map_tool_action == "erase"
+                else "현재 위치로 지도를 이동합니다."
+                if map_tool_action == "my_location"
                 else f"{labels[map_tool_action]}을 시작했습니다. "
                 "지도에서 점을 찍어 측정해 주세요."
             )
@@ -638,13 +1436,34 @@ class Orchestrator:
         # 지도 표시 제어는 필지 진단보다 먼저 처리한다. "용도지역 꺼줘"의
         # '용도'를 건축물 용도 질문으로 오인해 사전진단을 실행하면 안 된다.
         layer_terms = {
-            "cadastre": r"(지적도|지적선)",
-            "zoning": r"용도지역",
-            "slope": r"경사도",
-            "dimensions": r"(치수선|치수|라벨)",
-            "panel": r"(팝업|결과창|진단창)",
+            "cadastre": r"(지적도|연속지적도|지적선|필지경계)",
+            "zoning": r"(용도지역|용도지역색|용도지역주제도)",
+            "slope": r"(경사도|경사격자|지형격자|표고경사)",
+            "dimensions": r"(치수선|치수값|면적라벨|거리라벨)",
+            "panel": r"(팝업|결과창|진단창|판정창)",
         }
         layer_command: dict[str, bool] = {}
+        all_layer_request = re.search(
+            r"(?:지도표시|지도레이어|레이어|주제도)(?:를|는|도)?"
+            r"(?:전부|전체|모두|다).*(?:꺼|끄|숨|없애|켜|보여|표시)"
+            r"|(?:전부|전체|모두|다).*(?:지도표시|지도레이어|레이어|주제도)"
+            r".*(?:꺼|끄|숨|없애|켜|보여|표시)",
+            compact_query,
+            re.IGNORECASE,
+        )
+        if all_layer_request:
+            turn_all_off = bool(
+                re.search(r"(꺼|끄|숨|없애|off)", compact_query, re.IGNORECASE)
+            )
+            enabled = not turn_all_off
+            # 결과 팝업과 건축 모델은 별도 기능이므로 '지도 레이어 전부'에
+            # 포함하지 않는다.
+            layer_command.update({
+                "cadastre": enabled,
+                "zoning": enabled,
+                "slope": enabled,
+                "dimensions": enabled,
+            })
         for key, term in layer_terms.items():
             if not re.search(term, user_query, re.I):
                 continue
@@ -926,10 +1745,7 @@ class Orchestrator:
         explicit_build_question = bool(
             explicit_build_address
             and not coordinate_match
-            and re.search(
-                r"(지을|짓|건축|신축|건물).*(가능|되나|돼|할\s*수|수\s*있)",
-                user_query,
-            )
+            and _has_building_feasibility_intent(user_query)
             and not re.search(
                 r"(농지전용|산지전용|건축물\s*대장|개발부담금|농지보전부담금|"
                 r"대체산림(?:자원)?조성비)",
@@ -1127,7 +1943,7 @@ class Orchestrator:
                             ),
                         }
                         natural = await self.client.complete(
-                            system=(
+                            system=_answer_system(
                                 "사용자의 말투와 질문 의도에 맞춰 한국어로 자연스럽게 답하라. "
                                 "제공된 사실만 사용하고, 기존 건축물대장의 실제 층수와 신축 "
                                 "규모 추정 층수를 반드시 구분하라. 사용자가 차이를 물으면 이유를 "
@@ -1185,6 +2001,12 @@ class Orchestrator:
                     user_query,
                 )
                 or re.search(r"어떻게.*조건부\s*가능", user_query)
+                or re.search(
+                    r"(?:개별\s*)?(?:심의|인허가|허가).*(?:요건|절차|단계|서류|"
+                    r"거쳐|필요|어떻게|어디|기간)|"
+                    r"(?:요건|절차|단계|서류).*(?:심의|인허가|허가)",
+                    user_query,
+                )
             )
         )
         if asks_conditional_requirements:
@@ -1206,6 +2028,7 @@ class Orchestrator:
                 )
 
             diagnosis = self.diagnosis or {}
+            model_diagnosis = json.loads(compact(diagnosis))
             facts = {
                 "address": (
                     (diagnosis.get("parcel") or {}).get("jibun")
@@ -1213,25 +2036,33 @@ class Orchestrator:
                 ),
                 "verdict": diagnosis.get("verdict"),
                 "jimok": (diagnosis.get("parcel") or {}).get("jimok"),
-                "land_conversion": diagnosis.get("land_conversion"),
-                "road_access": diagnosis.get("road_access"),
-                "regulatory_screen": diagnosis.get("regulatory_screen"),
+                "land_conversion": model_diagnosis.get("land_conversion"),
+                "road_access": model_diagnosis.get("road_access"),
+                "regulatory_screen": model_diagnosis.get("regulatory_screen"),
                 "regulation_constraints": (
                     diagnosis.get("regulation") or {}
                 ).get("constraints"),
-                "site_constraints": diagnosis.get("site_constraints"),
-                "permit_requirements": diagnosis.get("permit_requirements"),
+                "site_constraints": model_diagnosis.get("site_constraints"),
+                "permit_requirements": model_diagnosis.get("permit_requirements"),
             }
             try:
                 natural = await self.client.complete(
-                    system=(
-                        "사용자가 선택 필지의 '조건부 가능' 조건을 어떻게 해소하는지 묻는다. "
+                    system=_answer_system(
+                        "사용자가 선택 필지의 조건부 사항 또는 개별 심의·인허가 요건을 묻는다. "
                         "제공된 진단 사실만 근거로 한국어 자연어 답변을 작성하라. 주소를 먼저 "
                         "명시하고, 실제로 필요한 조치를 우선순위대로 설명하라. 지목이 전이면 "
                         "농지전용 협의·허가와 개발행위허가 후 준공 단계의 지목변경(전→대)을 "
                         "구분해 설명하라. 접도, 주차, 일조·이격거리, 지구단위계획 등 데이터에 "
                         "있는 조건을 빠뜨리지 마라. '건축 가능하다'만 반복하거나 건축 모델을 "
                         "추천하지 말고, 확인되지 않은 사항은 확정적으로 말하지 마라. 고정된 "
+                        "permit_requirements에 단계가 있으면 이름·담당부서·서류·처리기간·"
+                        "근거법령을 실제 데이터대로 설명하고 일부 단계만 임의로 생략하지 마라. "
+                        "지형·임상도 참고값이 있으면 실제 수치를 읽고 현장조사 확정값과 구분하라. "
+                        "regulatory_screen에 생태·자연도 1·2등급 또는 별도관리지역 "
+                        "중첩이 있으면 실제 등급·중첩률·면적과 별도관리 유형을 읽고, "
+                        "왜 환경성 검토나 관계기관 협의가 필요한지 해당 permit_requirements "
+                        "단계와 연결해 설명하라. 3등급은 참고정보를 허가 제한이나 불가로 "
+                        "확대하지 마라. 생태·자연도 등급만으로 건축 불가를 단정하지 마라. "
                         "문구를 반복하지 마라. 독립적인 조치가 3개 이상이면 짧은 도입문 뒤에 "
                         "각 제목을 **1. 조치명**, **2. 조치명**, **3. 조치명**처럼 서로 다른 "
                         "번호로 명시해 정리하고 같은 번호를 반복하지 마라. "
@@ -1260,6 +2091,7 @@ class Orchestrator:
                     "농지전용 절차와 개발행위허가를 먼저 진행하고, 공사 준공 후 실제 이용 "
                     "현황에 맞춰 전에서 대로 지목변경하는 절차를 검토해야 합니다."
                 )
+            text = _ensure_query_evidence(text, diagnosis, user_query)
             text = _normalize_numbered_headings(text)
             yield {"event": "message", "data": {"text": text}}
             return
@@ -1494,9 +2326,69 @@ class Orchestrator:
             self._selection_changed = False
             return
 
+        # 새 프로토콜의 같은 필지 후속은 질문 문장에 좌표·판정 지시문을 섞지 않는다.
+        # 진단이 살아 있으면 최신 구조화 데이터로 바로 답하고, 서버 재시작 등으로
+        # 진단이 사라진 경우에만 아래 좌표 진단으로 조용히 복구한다.
+        if continuation and self.diagnosis:
+            interpreted = await self._interpret_followup(original_query)
+            intent = interpreted.get("intent") or "followup_explanation"
+            # 특정 건축물의 신규 가능 여부 검토만 아래 결정식 진단 경로로 보낸다.
+            # 그 밖의 같은-PNU 질문은 제미나이가 현재 상태를 읽고 해석한 답으로
+            # 끝내므로 종합진단이나 모델 카드가 임의로 다시 붙지 않는다.
+            if intent != "specific_use_feasibility":
+                answer = str(interpreted.get("answer") or "").strip()
+                if not answer:
+                    answer = await self._natural_followup_answer(original_query)
+                data: dict = {"text": answer}
+                if intent == "possible_models":
+                    self.update_conversation_context(
+                        last_intent=intent,
+                        last_subject="현재 필지에서 허용되는 다른 건축물·모델",
+                        active_building_use="가능한 건축물 전체",
+                    )
+                    # 판매시설 등 직전 단일용도 판정은 진단 원본에 보존하되,
+                    # 팝업의 현재 검토 범위는 후속 질문의 의미에 맞게 전환한다.
+                    yield {
+                        "event": "map_commands",
+                        "data": {
+                            "commands": [{
+                                "type": "set_panel_context",
+                                "building_use": "가능한 건축물 전체",
+                            }],
+                        },
+                    }
+                    data["text"] = (
+                        f"{answer}\n\n"
+                        "**가능 모델**\n"
+                        "허용되는 용도 중 준비된 모델만 보여드립니다."
+                    )
+                    data["options"] = _model_options_for_diagnosis(
+                        self.diagnosis,
+                        include_alternatives=True,
+                        # 원래 요청 용도가 불가여도 사용자가 명시적으로 다른
+                        # 가능 모델을 물으면 허용·조건부 용도 모델은 제시한다.
+                        allow_alternative_verdict=True,
+                    )
+                else:
+                    self.update_conversation_context(
+                        last_intent=intent,
+                        last_subject=interpreted.get("subject") or original_query,
+                    )
+                # 필지별 상태에는 질문뿐 아니라 실제로 사용자에게 보낸 답도 남긴다.
+                # A→B→A로 돌아왔을 때 제미나이가 앞선 답변을 이어 해석할 수 있다.
+                self.messages.append({
+                    "role": "assistant",
+                    "content": data["text"],
+                })
+                yield {"event": "message", "data": data}
+                self._selection_changed = False
+                return
+
         coordinate_diagnosis = bool(
             coordinate_match
             and (
+                continuation
+                or
                 self._selection_changed
                 or re.search(
                 r"(지을|짓|건축|신축|가능|규모|건폐율|용적률|층수|건축물\s*용도|"
@@ -1539,7 +2431,11 @@ class Orchestrator:
                     )
                 _out, events = await self._diagnose_and_emit(
                     user_query,
-                    emit_card=not asks_land_conversion and not same_parcel,
+                    emit_card=(
+                        not asks_land_conversion
+                        and not same_parcel
+                        and not continuation
+                    ),
                 )
                 logger.info(
                     "coordinate_diagnosis current_pnu=%s selected_pnu=%s "
@@ -1568,7 +2464,7 @@ class Orchestrator:
                             "text": await self._natural_followup_answer(user_query)
                         },
                     }
-                elif same_parcel:
+                elif same_parcel or continuation:
                     yield {
                         "event": "message",
                         "data": {
@@ -1599,16 +2495,24 @@ class Orchestrator:
             }
             return
 
+        # 일반 도구 경로에서 최초 진단 카드와 검토 의견까지 표시한 뒤에는
+        # 다음 LLM 턴이 같은 결론을 다시 한 문장으로 말하지 못하게 한다.
+        answer_card_complete = False
         for _ in range(max_turns):
             response = await self.client.complete(
                 system=SYSTEM, messages=self.messages, tools=TOOLS, max_tokens=8000
             )
             self.messages.append(response.raw_assistant)
 
-            for text in response.texts:
+            for text in ([] if answer_card_complete else response.texts):
+                cleaned = _strip_internal_field_names(text)
+                if not response.tool_calls and self.diagnosis:
+                    cleaned = _ensure_query_evidence(
+                        cleaned, self.diagnosis, original_query
+                    )
                 yield {
                     "event": "message",
-                    "data": {"text": _strip_internal_field_names(text)},
+                    "data": {"text": cleaned},
                 }
 
             if not response.tool_calls:
@@ -1619,6 +2523,11 @@ class Orchestrator:
                 yield {"event": "tool_start", "data": {"tool": call.name}}
                 try:
                     out, extra_events = await self._run_tool(call.name, call.input)
+                    if (
+                        isinstance(out, dict)
+                        and out.get("answer_card_already_shown")
+                    ):
+                        answer_card_complete = True
                     for ev in extra_events:
                         yield ev
                     content = json.dumps(out, ensure_ascii=False)
@@ -1631,6 +2540,10 @@ class Orchestrator:
                 results.append({"id": call.id, "content": content, "is_error": is_error})
 
             append_tool_results(self.messages, self.client, results)
+            if answer_card_complete:
+                # 카드 안의 검토 의견이 이 질문의 최종 자연어 답변이다.
+                # 같은 진단을 다시 요약하는 추가 LLM 턴은 중복이자 지연이다.
+                return
 
     # ------------------------------------------------------------------
 
@@ -1644,6 +2557,7 @@ class Orchestrator:
             or location.get("matched_address")
             or "선택한 필지"
         )
+        model_diagnosis = json.loads(compact(diagnosis))
         facts = {
             "address": address,
             "verdict": diagnosis.get("verdict"),
@@ -1651,16 +2565,16 @@ class Orchestrator:
             "zone": (diagnosis.get("regulation") or {}).get("zone"),
             "districts": (diagnosis.get("regulation") or {}).get("districts"),
             "constraints": (diagnosis.get("regulation") or {}).get("constraints"),
-            "land_conversion": diagnosis.get("land_conversion"),
-            "conversion_charge": diagnosis.get("conversion_charge"),
-            "development_charge": diagnosis.get("development_charge"),
-            "regulatory_screen": diagnosis.get("regulatory_screen"),
-            "road_access": diagnosis.get("road_access"),
+            "land_conversion": model_diagnosis.get("land_conversion"),
+            "conversion_charge": model_diagnosis.get("conversion_charge"),
+            "development_charge": model_diagnosis.get("development_charge"),
+            "regulatory_screen": model_diagnosis.get("regulatory_screen"),
+            "road_access": model_diagnosis.get("road_access"),
             "summary": diagnosis.get("summary"),
         }
         try:
             natural = await self.client.complete(
-                system=(
+                system=_answer_system(
                     "사용자의 농지전용·산지전용 허가 가능 여부 질문에 한국어 대화체로 직접 답하라. "
                     "제공된 해당 필지 진단 사실만 사용하고 주소와 결론을 첫 문장에 분명히 "
                     "밝혀라. 지목과 질문이 어긋나면(예: 임야에 농지전용을 질문) 그 필지는 "
@@ -1671,13 +2585,16 @@ class Orchestrator:
                     "산지전용허가는 산지를 다른 용도로 쓰기 위한 선행 절차일 뿐 "
                     "건축허가를 자동으로 보장하지 않는다는 점을 설명하라. 준보전산지는 "
                     "조건부 검토가 가능할 수 있지만, 보전산지·공익용산지·자연환경보전지역·"
-                    "공원구역 등은 허용행위에 해당하지 않는 일반 건축이 제한되거나 불가할 "
+                    "공원구역 등은 요청 시설이 법령상 허용행위에 해당하는지에 따라 건축이 제한되거나 불가할 "
                     "수 있으므로 실제 진단의 판정을 우선하라. 대체산림자원조성비는 진단 "
                     "자료상 관련성이 있을 때만 언급하고, conversion_charge에 계산값이 있으면 "
                     "전용예상면적·단가·예상액을 자연스럽게 포함하라. development_charge가 "
                     "있으면 대상 가능성과 부과율을 설명하되 정확액 산정에 종료시점 지가와 "
                     "개발비용이 필요하다는 점을 구분하라. 납부하면 허가된다는 식으로 말하지 "
-                    "마라. 건축 모델을 추천하거나 종합 진단 카드를 반복하지 말고, 질문의 "
+                    "마라. 지형·임상도 참고값이 있으면 평균·최대 경사도, 표고 범위와 대표 "
+                    "수종·영급·중첩률을 실제 숫자와 속성으로 설명하고, 참고자료와 허가 심사용 "
+                    "현장조사 확정값을 구분하라. 수집값이 있는데도 자료가 없다고 말하거나 "
+                    "일반적인 조사 필요 문구로만 대체하지 마라. 건축 모델을 추천하거나 종합 진단 카드를 반복하지 말고, 질문의 "
                     "표현에 맞춘 자연스러운 2~5문장으로 이유와 필요한 확인만 설명하라."
                 ),
                 messages=[
@@ -1694,7 +2611,8 @@ class Orchestrator:
             )
             text = _strip_internal_field_names(" ".join(natural.texts).strip())
             if text:
-                return text
+                text = _ensure_query_evidence(text, diagnosis, user_query)
+                return _ensure_collected_forest_evidence(text, diagnosis)
         except Exception:
             pass
 
@@ -1711,18 +2629,18 @@ class Orchestrator:
                 and charge.get("estimated_won")
                 else ""
             )
-            return (
+            return _ensure_collected_forest_evidence((
                 f"{address}은 지목이 임야이므로 농지전용 대상이 아니라 산지전용허가 "
                 f"대상입니다. {conversion_summary or '산지 구분과 경사도·표고·입목축적을 확인해야 합니다.'}"
                 f"{charge_text}"
-            )
+            ), diagnosis)
         if conversion_status == "PERMIT_REQUIRED":
-            return (
+            return _ensure_collected_forest_evidence((
                 f"{address}은 산지전용허가를 받아 전용을 검토할 수 있습니다. "
                 f"{conversion_summary or '다만 경사도·표고·입목축적과 복구계획 등을 심사받아야 합니다.'} "
                 "허가 여부는 이 심사 결과로 결정되며 대체산림자원조성비 납부만으로 "
                 "허가되는 것은 아닙니다."
-            )
+            ), diagnosis)
         if conversion_status == "RESTRICTED_REVIEW":
             return (
                 f"{address}은 보전산지·공익용산지 등 제한 여부 때문에 산지전용허가가 "
@@ -1740,13 +2658,13 @@ class Orchestrator:
             return (
                 f"{address}은 산지전용 절차만 밟는다고 건축할 수 있는 필지가 아닙니다. "
                 "산지전용은 건축허가를 자동으로 보장하지 않으며, 이 필지는 현재 확인된 "
-                "용도지역·보전 규제로 일반 건축이 불가한 판정입니다. 해당 시설이 법령상 "
+                "용도지역·보전 규제로 건축이 불가합니다. 해당 시설이 법령상 "
                 "예외적인 허용행위에 해당하는지는 관할 행정청에서 별도로 확인해야 합니다."
             )
         if verdict == "conditional":
             return (
-                f"{address}은 산지전용허가 가능 여부를 먼저 심사받아야 건축을 검토할 수 "
-                "있습니다. 산지전용은 선행 절차이지 건축허가 자체가 아니므로 개발행위, "
+                f"{address}은 산지전용허가 심사를 먼저 통과해야 하는 조건부 사항이 있습니다. "
+                "산지전용은 선행 절차이지 건축허가 자체가 아니므로 개발행위, "
                 "접도, 용도지역과 개별 보전 규제도 함께 충족해야 합니다."
             )
         return (
@@ -1754,6 +2672,116 @@ class Orchestrator:
             "보전 규제상 허용행위 해당 여부를 먼저 확인한 뒤 개발행위·건축허가 요건을 "
             "별도로 검토해야 합니다."
         )
+
+    async def _interpret_followup(self, user_query: str) -> dict:
+        """제미나이가 필지별 상태를 읽고 후속 의도와 답변을 한 번에 결정한다."""
+        diagnosis = self.diagnosis or {}
+        address = (
+            (diagnosis.get("parcel") or {}).get("jibun")
+            or (self.selected_parcel or {}).get("address")
+            or "선택한 필지"
+        )
+        previous_questions = [
+            str(message.get("content") or "")
+            for message in self.messages
+            if message.get("role") == "user" and message.get("content")
+        ]
+        if previous_questions and previous_questions[-1] == user_query:
+            previous_questions = previous_questions[:-1]
+        recent_turns: list[dict] = []
+        skipped_current = False
+        for message in reversed(self.messages):
+            role = str(message.get("role") or "")
+            content = message.get("content")
+            if (
+                not skipped_current
+                and role == "user"
+                and str(content or "") == user_query
+            ):
+                skipped_current = True
+                continue
+            if role in {"user", "assistant"} and isinstance(content, str):
+                recent_turns.append({"role": role, "content": content})
+            if len(recent_turns) >= 8:
+                break
+        recent_turns.reverse()
+        tool = {
+            "name": "return_followup_interpretation",
+            "description": "현재 필지 상태를 바탕으로 후속 질문의 의도와 답변을 반환한다.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "intent": {
+                        "type": "string",
+                        "enum": [
+                            "possible_models",
+                            "specific_use_feasibility",
+                            "term_definition",
+                            "parcel_fact",
+                            "permit_procedure",
+                            "followup_explanation",
+                        ],
+                    },
+                    "subject": {"type": "string"},
+                    "answer": {"type": "string"},
+                },
+                "required": ["intent", "subject", "answer"],
+            },
+        }
+        try:
+            response = await self.client.complete(
+                system=_answer_system(
+                    "너는 같은 PNU의 후속 질문을 해석한다. 반드시 "
+                    "return_followup_interpretation 도구를 한 번 호출하라. 단어 하나로 "
+                    "판정하지 말고 현재 필지별 대화 상태와 이전 질문을 함께 읽어라. "
+                    "다른 건축물·다른 용도·대체 모델의 조회나 선택을 원하면 possible_models, "
+                    "새로운 특정 건축물 용도의 건축 가능 여부를 다시 계산해야 하면 "
+                    "specific_use_feasibility, 용어의 뜻·개념을 묻는다면 term_definition, "
+                    "현재 필지의 수치·규제·중첩 사실을 묻는다면 parcel_fact, 인허가 절차를 "
+                    "묻는다면 permit_procedure, 나머지는 followup_explanation으로 분류하라. "
+                    "표시·숨김 같은 지도 제어는 이 단계 전에 이미 처리된다. "
+                    "answer에는 최신 진단 데이터에 근거해 질문에 직접 답하라. 사전적 의미 "
+                    "질문은 뜻을 먼저 설명한 뒤 이 필지에서의 의미를 연결하라. possible_models는 "
+                    "허용·조건부 용도를 간결히 검토하되 모델 버튼 문구를 직접 만들지 마라. "
+                    "확인되지 않은 법적 사실이나 수치를 만들지 마라."
+                ),
+                messages=[{
+                    "role": "user",
+                    "content": (
+                        f"현재 질문: {user_query}\n"
+                        f"현재 PNU/주소: {self._active_pnu()} / {address}\n"
+                        f"필지별 대화 상태: {compact(self.conversation_context())}\n"
+                        f"이전 질문·답변: "
+                        f"{json.dumps(recent_turns, ensure_ascii=False)}\n"
+                        f"최신 구조화 진단: {compact(diagnosis)}"
+                    ),
+                }],
+                tools=[tool],
+                max_tokens=500,
+            )
+            for call in response.tool_calls:
+                if call.name == "return_followup_interpretation":
+                    interpreted = dict(call.input or {})
+                    logger.info(
+                        "followup_llm pnu=%s intent=%s subject=%s",
+                        self._active_pnu(),
+                        interpreted.get("intent"),
+                        interpreted.get("subject"),
+                    )
+                    return interpreted
+        except Exception:
+            logger.exception("followup intent interpretation failed")
+
+        # LLM 장애 시에도 같은 필지 상태를 잃거나 종합진단을 다시 띄우지 않는다.
+        # 기존 판별기는 가용성 fallback으로만 사용한다.
+        intent = (
+            "possible_models"
+            if _asks_possible_use_list(user_query)
+            else "specific_use_feasibility"
+            if _has_building_feasibility_intent(user_query)
+            else "followup_explanation"
+        )
+        return {"intent": intent, "subject": user_query, "answer": ""}
 
     async def _natural_followup_answer(self, user_query: str) -> str:
         """같은 필지 후속 질문에는 전체 보고서 없이 질문한 내용만 답한다."""
@@ -1763,9 +2791,52 @@ class Orchestrator:
             or (diagnosis.get("location") or {}).get("matched_address")
             or "선택한 필지"
         )
+        recent_user_questions = [
+            str(message.get("content") or "")
+            for message in self.messages
+            if message.get("role") == "user" and message.get("content")
+        ]
+        # ask()가 현재 질문을 먼저 이력에 넣으므로, 제미나이에 전달하는 '이전'
+        # 질문에서는 현재 질문 한 건을 제외한다.
+        if recent_user_questions and recent_user_questions[-1] == user_query:
+            recent_user_questions = recent_user_questions[:-1]
+        recent_user_questions = recent_user_questions[-4:]
+        recent_context = "\n".join(
+            f"- {question}" for question in recent_user_questions
+        )
+        # "가능한 건물 뭐야?"는 LLM이 직전 용도를 임의로 단독주택으로 정해
+        # "단독주택 외에"라고 답하지 않도록 판정표 목록에서 결정적으로 조립한다.
+        # 특정 제외 용도를 사용자가 직접 말한 경우에만 그 용도를 제외한다.
+        asks_possible_uses = _asks_possible_use_list(user_query)
+        if asks_possible_uses:
+            regulation = diagnosis.get("regulation") or {}
+            overview = regulation.get("zone_use_overview") or {}
+            allowed = list(overview.get("allowed") or [])
+            conditional = list(overview.get("conditional") or [])
+            explicit_exclusion = re.search(
+                r"([가-힣0-9·]+(?:주택|시설))\s*(?:말고|외에|제외)",
+                user_query,
+            )
+            if explicit_exclusion:
+                excluded = explicit_exclusion.group(1)
+                allowed = [use for use in allowed if use != excluded]
+                conditional = [use for use in conditional if use != excluded]
+
+            parts: list[str] = []
+            if allowed:
+                parts.append(f"가능한 용도는 {', '.join(allowed)}입니다.")
+            if conditional:
+                parts.append(
+                    f"세부 규모와 관할 조례 확인이 필요한 조건부 용도는 "
+                    f"{', '.join(conditional)}입니다."
+                )
+            if not parts:
+                parts.append("현재 수집된 용도 판정표에는 가능 또는 조건부 용도가 없습니다.")
+            return f"{address} 필지에서 " + " ".join(parts)
+
         try:
             response = await self.client.complete(
-                system=(
+                system=_answer_system(
                     "같은 필지에 대한 후속 질문이다. 제공된 최신 진단 데이터만 근거로 "
                     "사용자가 방금 물은 내용에만 한국어 자연어로 직접 답하라. 종합 판정 "
                     "보고서, 섹션 제목, 번호 목록, 건축 모델 추천을 다시 출력하지 마라. "
@@ -1780,6 +2851,15 @@ class Orchestrator:
                     "단 '1.무엇 2.왜' 같은 번호·라벨은 붙이지 말고 자연스러운 문단으로 이어 써라. "
                     "질문하지 않은 수치를 무작정 전부 나열하지는 말고, 확인되지 않은 내용은 "
                     "확정하지 마라. "
+                    "다만 질문이 산지·산지전용·경사도·표고·입목축적·임상도·개별 심의·"
+                    "허가 요건에 관한 것이면, 최신 진단에 있는 실제 지형 통계와 임상도 "
+                    "대표 속성을 반드시 읽어 조건 판단에 연결하라. 이미 수집된 참고값과 "
+                    "현장조사로 확정해야 할 값을 분명히 구분하라. "
+                    "질문이 생태·자연도·환경성 검토·별도관리지역 또는 조건부 판정 "
+                    "사유에 관한 것이면 regulatory_screen의 실제 등급·중첩률·면적·"
+                    "보전유형과 permit_requirements를 읽어 답하라. 1·2등급은 환경성 "
+                    "검토와 관계기관 협의 필요성에 연결하고, 3등급은 참고정보로만 "
+                    "설명하며 등급 하나만으로 건축 불가를 단정하지 마라. "
                     # 이격거리는 반드시 진단 데이터의 계산값을 그대로 읽어 답한다.
                     "이격거리를 물으면 진단 데이터의 전면 건축선 이격, 인접 대지경계 이격, "
                     "정북 일조 이격 계산값을 그대로 근거로 제시하라. 값이 0이면 '0m로 "
@@ -1798,13 +2878,34 @@ class Orchestrator:
                     "띄우는 것이라 필지 분할과는 다르며, 도로 폭이 부족하면 도로 중심선 후퇴선 안쪽이 "
                     "대지면적에서 제외될 수 있다.) 단, 확인되지 않은 구체 수치·절차·요건은 지어내지 "
                     "말고 방향과 문의처를 정성적으로 안내하라. "
-                    # '다른 용도/건물'을 물으면 방금 물은 용도가 아니라 다른 대안을 제시.
+                    # '다른 용도/건물'을 물으면 전체 용도 판정표를 기준으로 답한다.
                     "사용자가 '다른 건물/다른 용도/이 밖에 무엇을 지을 수 있나'를 명시적으로 물을 "
-                    "때만, 방금 물은 용도(예: 단독주택)를 반복하지 말고 진단 데이터 "
+                    "때만 진단 데이터 "
                     "regulation.zone_use_overview 의 allowed(건축 가능)와 conditional(조건부 가능) "
-                    "목록을 읽어, 이 용도지역에서 지을 수 있는 '다른' 건축물 종류를 알려줘라. "
+                    "목록 전체를 읽어 건축물 종류를 알려줘라. 사용자가 특정 용도를 직접 "
+                    "'말고·외에·제외'라고 하지 않았다면 단독주택 등 임의의 기준 용도를 만들거나 "
+                    "'단독주택 외에'라고 표현하지 마라. "
                     "목록이 비어 있으면 그 사유를 설명하라. 용어 정의·이격·현황 등 '무엇을 지을 수 "
                     "있나'가 아닌 질문에는 이 '다른 건축물 목록'을 절대 덧붙이지 마라. "
+                    # 특정 규제의 적용 여부는 자연어 의미를 해석하되 구조화 지정정보로 답한다.
+                    "사용자가 특정 지역·지구·구역·규제가 이 필지에 적용되는지 묻는다면, 표현이 "
+                    "정확한 법정 명칭이 아니어도 질문의 의미를 해석한 뒤 land_use.districts와 "
+                    "land_use.designation_lookup의 포함·저촉 기록에서 대응하는 규제를 찾아라. "
+                    "대응 규제가 있으면 포함 여부와 그 규제의 실질적 의미를 설명하고, 없으면서 "
+                    "지정정보 조회가 완료된 경우에는 현재 지정정보상 확인되지 않았다고 답하라. "
+                    "조회가 실패했으면 없다고 단정하지 마라. 이 질문에는 allowed·conditional "
+                    "건축용도 목록이나 건축 모델을 덧붙이지 마라. 규제 명칭을 단순 반복하지 말고 "
+                    "사용자가 물은 말의 사전적 의미와 이 필지에서의 적용 결과를 함께 설명하라. "
+                    "진단 데이터가 '제한' 또는 '별도 확인 필요'라고만 하면 전면 금지로 확대해 "
+                    "해석하지 마라. 제한 방식·축종·거리·예외가 수집되지 않았다면 '제한이 적용되며 "
+                    "세부 기준은 해당 조례 확인이 필요하다'고 답하고, '설치할 수 없다'처럼 절대적으로 "
+                    "단정하지 마라. "
+                    # '또/그럼/그것'은 필지별 최근 사용자 질문을 이어받는다.
+                    "'또', '그럼', '그것', '더 확인할 것'처럼 주어가 생략된 후속 질문은 아래의 "
+                    "최근 사용자 질문에서 직전 주제를 복원해 답하라. 이를 새 종합진단 질문으로 "
+                    "확대하지 말고 직전 주제와 직접 관련된 추가 사항만 설명하라. 사용자가 명시적으로 "
+                    "가능 건축물의 종류·목록·모델을 묻지 않았다면 가능·조건부·불가 용도 목록을 "
+                    "절대 나열하지 마라. "
                     # 말투: 딱딱한 수치 나열이 아니라 상담하듯 친절하게.
                     "말투는 고객 상담하듯 친절하게: 가능해 보이면 '수치적(사전검토)으로 볼 때 "
                     "…가 가능할 것으로 보입니다'처럼 안내하라. "
@@ -1834,6 +2935,9 @@ class Orchestrator:
                         "role": "user",
                         "content": (
                             f"후속 질문: {user_query}\n"
+                            f"같은 필지의 최근 사용자 질문:\n{recent_context or '- 없음'}\n"
+                            f"현재 필지별 대화 상태: "
+                            f"{compact(self.conversation_context())}\n"
                             f"현재 필지: {address}\n"
                             f"최신 진단: {compact(diagnosis)}"
                         ),
@@ -1844,12 +2948,24 @@ class Orchestrator:
             )
             text = _strip_internal_field_names(" ".join(response.texts).strip())
             if text:
-                return text
+                forest_relevant = bool(
+                    re.search(
+                        r"산지|산림|임야|경사도|표고|입목|임상도|"
+                        r"개별.*(?:심의|허가)|(?:심의|허가).*요건|"
+                        r"거쳐야.*(?:심의|허가)|조건부.*(?:조건|이유|절차)",
+                        user_query,
+                    )
+                )
+                return _ensure_collected_forest_evidence(
+                    _ensure_query_evidence(text, diagnosis, user_query),
+                    diagnosis,
+                    relevant=forest_relevant,
+                )
         except Exception:
             pass
         verdict = {
             "allowed": "건축 가능한 판정입니다",
-            "conditional": "선행 조건을 충족해야 건축을 검토할 수 있습니다",
+            "conditional": "현재 조건부 가능합니다",
             "not_allowed": "현재 진단 기준으로는 건축할 수 없습니다",
             "unknown": "추가 규제 확인 전에는 가능 여부를 확정할 수 없습니다",
         }.get(diagnosis.get("verdict"), "추가 확인이 필요합니다")
@@ -1876,20 +2992,34 @@ class Orchestrator:
         )
         try:
             response = await self.client.complete(
-                system=(
+                system=_answer_system(
                     "너는 건축 인허가 사전검토 상담원이다. 아래 진단 데이터만 근거로, "
                     "사용자가 물은 용도(단일 용도 또는 층별 복합 용도)를 이 필지에 지을 수 "
-                    "있는지 판단해 한 문단(2~4문장)으로 답하라. 반드시 첫 문장을 "
-                    "'○○(전체 지번 주소) 필지에 △△은(는) …' 형태로 시작하라. "
-                    "마지막 문장은 진단 verdict 에 맞춰 '건축 가능합니다 / 조건부 "
-                    "가능합니다 / 건축이 어렵습니다 / 추가 확인이 필요합니다' 중 하나로 "
-                    "끝맺어라(allowed=가능, conditional=조건부 가능이며 선행조건을 명시, "
-                    "not_allowed=건축이 어렵습니다이며 사유 명시, unknown=추가 확인 필요). "
+                    "있는지 판단해 한 문단(2~4문장, 약 450자 이내)으로 답하라. 화면에서 "
+                    "최대 8줄을 넘기지 말라. 첫 문장에 전체 지번 주소와 "
+                    "검토 용도를 자연스럽게 포함하라. 결론은 진단 verdict의 의미를 바꾸지 "
+                    "말고 명확하게 표현하라(allowed=건축 가능, conditional=조건부 가능이며 "
+                    "선행조건 명시, not_allowed=건축 불가이며 사유 명시, "
+                    "unknown=추가 확인 필요). "
                     "판단 근거는 데이터의 용도지역, regulation.zone_use_overview 의 "
                     "allowed(건축 가능)·conditional(조건부 가능), use_restriction(개별 제한), "
-                    "건폐율·용적률, 도로 접함, site_constraints 이격에서만 가져오고 "
+                    "건폐율·용적률, 도로 접함, site_constraints 이격과 "
+                    "land_conversion의 산지구분·지형 통계·임상도에서 가져오고 "
                     "수치나 근거를 지어내지 마라. 층별 복합 용도를 물었으면 각 층 용도가 "
                     "이 용도지역에서 허용되는지 함께 짚어라. 표·목록·섹션 제목 없이 "
+                    "임야이고 지형·임상도 참고값이 있으면 평균·최대 경사도와 표고 범위, "
+                    "대표 수종·영급·중첩률을 실제 값으로 해석하고, 허가 심사용 현장조사 "
+                    "확정값과 구분하라. 데이터가 있는데 조사자료가 없다는 일반론만 쓰지 마라. "
+                    "regulatory_screen의 생태·자연도 1·2등급 또는 별도관리지역이 "
+                    "조건부 판정에 포함되면 실제 등급·중첩률·면적·보전유형을 읽어 "
+                    "사업계획의 환경성 검토와 관계기관 협의에 어떤 영향을 주는지 설명하라. "
+                    "3등급은 참고자료로만 해석하고, 등급만으로 건축 불가라고 확대하지 마라. "
+                    "상세자료를 다시 나열하는 데 그치지 말고 육하원칙에 따라 왜 이 판정인지, "
+                    "동시에 적용되는 법적 요건은 무엇인지, 사업자가 언제 무엇을 보완해야 하는지, "
+                    "관할 부서와 관계기관이 어떤 협의·심의·허가로 확인하는지, 각 법령의 조건을 "
+                    "어떻게 모두 충족해야 최종 허가가 가능한지를 인과관계로 설명하라. 한 법의 "
+                    "허가가 다른 법의 허가를 대신한다고 쓰지 마라. 데이터가 법적 충돌을 명시하지 "
+                    "않으면 충돌한다고 지어내지 말고 여러 법령의 요건이 함께 적용된다고 표현하라. "
                     "상담하듯 자연스러운 한국어 문단 하나로만 답하라. "
                     "front_setback_m, adjacent_setback_m, north_setback_m, zone_use_overview "
                     "같은 영어 필드명·변수명을 답변에 절대 쓰지 말고(괄호 병기도 금지), "
@@ -1907,9 +3037,69 @@ class Orchestrator:
                     }
                 ],
                 tools=[],
-                max_tokens=350,
+                max_tokens=280,
             )
-            return _strip_internal_field_names(" ".join(response.texts).strip())
+            text = _strip_internal_field_names(" ".join(response.texts).strip())
+            text = _ensure_query_evidence(text, diagnosis, user_query)
+            text = _ensure_collected_forest_evidence(text, diagnosis)
+            return _limit_review_length(text)
+        except Exception:
+            return ""
+
+    async def _all_uses_verdict_judgment_with_llm(self, user_query: str) -> str:
+        """모든 용도 검토 의견은 Gemini가 구조화 진단을 읽어 작성한다."""
+        diagnosis = self.diagnosis or {}
+        try:
+            response = await self.client.complete(
+                system=_answer_system(
+                    "너는 건축 인허가 사전검토 상담원이다. 제공된 구조화 진단 데이터만 "
+                    "읽고 모든 건축물 용도에 대한 '검토 의견'을 자연스러운 한국어 한 문단 "
+                    "정확히 3문장, 약 350자 이내로 작성하라. 화면에서 최대 8줄을 넘기지 않는 "
+                    "분량이어야 한다. 이 문단은 위 상세자료를 다시 나열하는 요약이 아니라 "
+                    "자료 사이의 인과관계와 해결 경로를 설명하는 종합 의견이다. 계산·판정·법적 "
+                    "조건을 새로 만들지 말고 데이터의 verdict와 실제 필지 값을 해석만 하라. "
+                    "육하원칙의 핵심만 자연스럽게 압축하라: ①어느 필지에서 무엇이 가능한지, "
+                    "②왜 조건부·불가·추가확인인지, ③어떤 법령상 요건들이 동시에 적용되는지, "
+                    "④그 요건을 누가(관할 부서·관계기관) 어떤 협의·심의·허가로 확인하는지, "
+                    "⑤사업계획 확정 전후 어느 단계에서 무엇을 보완해야 하는지, ⑥어떻게 모든 "
+                    "조건을 충족해야 최종 허가가 가능한지를 짧게 이어서 설명하라. 첫 문장은 반드시 "
+                    "'[전체 지번]은 [용도지역]의 [지목]로, [대표 용도 3개] 등은 건축 가능 또는 "
+                    "조건부 허용 대상입니다.' 정도의 짧은 구조로 써라. 가능한 용도와 조건부 용도에서 "
+                    "대표 건축물만 합계 3개 제시하라. 둘째 문장에는 조건부 판정에 직접 영향을 준 "
+                    "핵심 규제와 서로 다른 "
+                    "법률의 요건은 하나가 다른 하나를 대신하지 않고 각각 충족해야 한다는 점과 "
+                    "permit_requirements에 있는 관계기관 협의·필요한 심의·허가를 통해 조정·확인하는 "
+                    "경로만 설명하라. 셋째 문장에는 최종 허가를 위해 모두 충족할 조건만 요약하라. "
+                    "부서명·제출서류·조사서 목록은 쓰지 마라. 실제 데이터가 법적 충돌을 명시하지 않으면 '충돌한다'고 "
+                    "지어내지 말고 '요건이 함께 적용된다'고 표현하라. 상세 보고서에 이미 있는 "
+                    "경사도·표고·임상도·접도·부담금 수치를 전부 반복하지 말고 결론을 좌우하는 "
+                    "값만 인과관계에 사용하라. 부담금이 있으면 부과 가능성과 감면·면제 가능성을 "
+                    "한 문장 안에서 함께 설명하라. 조사서·제출서류·부서별 세부 업무는 사용자가 "
+                    "후속 질문할 때 답할 내용이므로 여기서는 나열하지 마라. '확인된 현황상', '등처럼', "
+                    "regulatory_screen에 생태·자연도 1·2등급 또는 별도관리지역 "
+                    "중첩이 있으면 조건부 판정의 원인으로 실제 등급과 중첩률을 읽고 "
+                    "환경성 검토·관계기관 협의와 연결하라. 3등급은 참고정보로만 다루고 "
+                    "생태·자연도 등급만으로 건축 불가를 만들지 마라. "
+                    "'판정에는 ~이(가) 반영', '검토할 수 있는 용도가 있습니다' 같은 기계적인 "
+                    "표현을 쓰지 마라. '다만'을 연달아 반복하지 말고 문장 사이의 원인과 결과가 "
+                    "자연스럽게 이어지게 하라. 모든 용도의 결과가 같다고 말하지 말고 용도를 "
+                    "확정하면 개별 판정이 필요하다는 점을 짧게 밝혀라. 영어 필드명, JSON 표현, "
+                    "표, 목록, 제목은 출력하지 마라."
+                ),
+                messages=[
+                    {
+                        "role": "user",
+                        "content": (
+                            f"사용자 질문: {user_query}\n"
+                            f"구조화 진단 데이터: {compact(diagnosis)}"
+                        ),
+                    }
+                ],
+                tools=[],
+                max_tokens=450,
+            )
+            text = _strip_internal_field_names(" ".join(response.texts).strip())
+            return _limit_review_length(text, max_sentences=3)
         except Exception:
             return ""
 
@@ -1932,6 +3122,14 @@ class Orchestrator:
         """
         events: list[dict] = []
         steps: list[dict] = []
+        previous_diagnosis = self.diagnosis
+        previous_pnu = (
+            ((previous_diagnosis or {}).get("parcel") or {}).get("pnu") or ""
+        )
+        if previous_pnu:
+            self._diagnosis_by_pnu[previous_pnu] = previous_diagnosis
+            self._messages_by_pnu[previous_pnu] = list(self.messages)
+            self._diag_shown_by_pnu[previous_pnu] = self._diag_shown
         self.diagnosis = await run_prediagnosis(
             self.client,
             query,
@@ -1939,22 +3137,59 @@ class Orchestrator:
                 {"event": "diagnosis_step", "data": {"step": step, "input": payload}}
             ),
         )
+
+        # 요청한 단일 용도가 용도지역상 확정적으로 불가한지는 지도 명령을 만들기
+        # 전에 반영한다. 예전에는 패널·매스 렌더링 뒤에 경고만 추가해, 빨간
+        # '건축 불가' 팝업 아래에 건물 모델과 치수선이 남는 모순이 생겼다.
+        restriction = detect_use_restriction(
+            getattr(self, "_last_query", ""), self.diagnosis
+        )
+        if restriction and restriction.get("kind") != "verification_required":
+            self.diagnosis["use_restriction"] = restriction
+            regulation = self.diagnosis.setdefault("regulation", {})
+            regulation["map_presentation"] = {
+                "verdict": "not_allowed",
+                "label": "건축 불가",
+                "color": "#C62828",
+                "show_building_mass": False,
+                "show_building_dimensions": False,
+                "reason": restriction.get("reason", ""),
+            }
+
         location = self.diagnosis.get("location") or {}
         parcel = self.diagnosis.get("parcel") or {}
         if location.get("lon") is not None and location.get("lat") is not None:
             diagnosed_pnu = parcel.get("pnu") or ""
             active_pnu = (self.selected_parcel or {}).get("pnu") or ""
-            if not active_pnu or not diagnosed_pnu or active_pnu == diagnosed_pnu:
+            explicit_new_location = bool(
+                getattr(self, "_turn_has_explicit_address", False)
+                or getattr(self, "_turn_requests_location_change", False)
+            )
+            if (
+                explicit_new_location
+                or not active_pnu
+                or not diagnosed_pnu
+                or active_pnu == diagnosed_pnu
+            ):
                 self.set_selected_parcel(
                     lon=location["lon"],
                     lat=location["lat"],
                     address=parcel.get("jibun") or location.get("matched_address") or "",
                     pnu=diagnosed_pnu,
                 )
+                self._selection_changed = False
         # 필지별 진단 기억 — 이전 필지 재클릭 시 복원해 후속질문으로 잇기 위함.
         _pnu = (self.diagnosis.get("parcel") or {}).get("pnu")
         if _pnu:
             self._diagnosis_by_pnu[_pnu] = self.diagnosis
+            self.update_conversation_context(
+                active_address=parcel.get("jibun")
+                or location.get("matched_address"),
+                active_pnu=_pnu,
+                active_building_use=(
+                    (self.diagnosis.get("request") or {}).get("building_use")
+                ),
+            )
         events.extend(steps)
         events.append({"event": "diagnosis", "data": self.diagnosis})
 
@@ -1978,7 +3213,13 @@ class Orchestrator:
             None,
         )
         wants_model = requested_model and re.search(r"(모델|건물|보여|올려|배치)", request_text)
-        if wants_model and self.diagnosis.get("verdict") != "not_allowed":
+        display_verdict = (
+            ((self.diagnosis.get("regulation") or {}).get("map_presentation") or {})
+            .get("verdict")
+            or (self.diagnosis.get("regulation") or {}).get("verdict")
+            or self.diagnosis.get("verdict")
+        )
+        if wants_model and display_verdict != "not_allowed":
             floor_match = re.search(r"(\d+)\s*층", request_text)
             floors = int(floor_match.group(1)) if floor_match else None
             before = bool(
@@ -2002,30 +3243,12 @@ class Orchestrator:
                 }
             )
 
-        # 사용자가 말한 용도가 이 용도지역에서 불가면(예: 제1종전용주거의 일반
-        # 상가) 판정 옆에 빨간 경고를 띄운다.
-        restriction = detect_use_restriction(
-            getattr(self, "_last_query", ""), self.diagnosis
-        )
-        # 다가구·원룸 같은 '확인 필요'(verification_required)는 답변이 자연어로
-        # 설명하므로 팝업 경고 박스를 띄우지 않는다. 진짜 '건축불가'만 박스로 띄운다.
+        # 사용자가 말한 용도의 제한은 진단 상태에는 보존한다. 다만 최초 진단은
+        # show_panel의 종합 판정 배지와 본문에 이미 같은 불가 사유를 표시하므로
+        # verdict_warning을 또 보내지 않는다. 이중 경고는 모든 지역에서 같은
+        # 판정을 두 번 보여 주고 팝업 높이만 늘리는 전역 UI 오류였다.
         if restriction and restriction.get("kind") != "verification_required":
             self.diagnosis["use_restriction"] = restriction
-            events.append(
-                {
-                    "event": "map_commands",
-                    "data": {
-                        "commands": [
-                            {
-                                "type": "verdict_warning",
-                                "label": restriction["label"],
-                                "reason": restriction["reason"],
-                                "kind": restriction.get("kind", "restriction"),
-                            }
-                        ]
-                    },
-                }
-            )
 
         if emit_card:
             # 최초 진단만 확정 형식 카드를 한 번 표시한다.
@@ -2033,18 +3256,63 @@ class Orchestrator:
             # 사용자가 특정 용도(단일)나 층별 복합 용도를 물었으면(inferred=False)
             # 유의사항 아래에 제미나이가 데이터를 읽어 해석한 판단 문단을 붙인다.
             # 용도 미지정 일반 질문(inferred=True)은 종합 판정 카드만 그대로 둔다.
-            names_specific_use = not (self.diagnosis.get("request") or {}).get(
-                "inferred", True
+            diagnosed_request = self.diagnosis.get("request") or {}
+            names_specific_use = bool(
+                not diagnosed_request.get("inferred", True)
+                and diagnosed_request.get("building_use") != "시설물"
+            )
+            reviews_all_uses = bool(
+                diagnosed_request.get("inferred", True)
+                or diagnosed_request.get("building_use") == "시설물"
             )
             judgment = ""
+            if reviews_all_uses:
+                try:
+                    judgment = await asyncio.wait_for(
+                        self._all_uses_verdict_judgment_with_llm(query),
+                        timeout=8.0,
+                    )
+                except asyncio.TimeoutError:
+                    logger.warning(
+                        "all-uses verdict judgment timeout; using deterministic fallback"
+                    )
+                if not judgment:
+                    judgment = _all_uses_verdict_judgment(self.diagnosis)
             if names_specific_use:
-                judgment = await self._verdict_judgment(query)
+                try:
+                    judgment = await asyncio.wait_for(
+                        self._verdict_judgment(query), timeout=8.0
+                    )
+                except asyncio.TimeoutError:
+                    logger.warning(
+                        "single-use verdict judgment timeout; using deterministic fallback"
+                    )
+                if not judgment:
+                    judgment = _deterministic_verdict_judgment(self.diagnosis)
+            # 단일 용도와 모든 용도 모두 읽기 쉬운 검토 의견을 제공한다.
+            # 단, 모든 용도는 용도 목록을 반복하지 않고 핵심 제약만 요약한다.
             if judgment:
                 card_text = f"{card_text}\n\n## 검토 의견\n{judgment}"
             events.append(
                 {"event": "message", "data": {"text": card_text}}
             )
+            # 요청 용도의 전용 모델이 아직 없어도, 같은 필지에서 허용되는
+            # 용도 가운데 준비된 모델은 최초 진단 하단에 함께 제시한다.
+            model_options = _model_options_for_diagnosis(
+                self.diagnosis,
+                include_alternatives=True,
+            )
+            if model_options:
+                events.append({
+                    "event": "message",
+                    "data": {
+                        "text": "**가능 모델**\n허용되는 용도 중 준비된 모델만 보여드립니다.",
+                        "options": model_options,
+                    },
+                })
             self._diag_shown = True
+            if _pnu:
+                self._diag_shown_by_pnu[_pnu] = True
             if judgment:
                 # 판단 문단까지 카드에 이미 실었으므로 모델이 결론을 되풀이하지 않게 한다.
                 note = (

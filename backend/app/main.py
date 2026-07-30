@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import logging
 import os
+from pathlib import Path
 from typing import AsyncIterator, List, Optional
 
 from fastapi import FastAPI, Header, HTTPException, Query
@@ -58,11 +60,48 @@ client = make_client()
 
 # 세션 ID -> Orchestrator. 프로세스 메모리 보관(단일 인스턴스 전제).
 _sessions: dict[str, Orchestrator] = {}
+_SESSION_STATE_DIR = Path(
+    os.getenv("SESSION_STATE_DIR", "/home/madlrengg100/.permit-copilot-sessions")
+)
 
 
-class ChatRequest(BaseModel):
-    session_id: str
-    message: str
+def _session_state_path(session_id: str) -> Path:
+    key = hashlib.sha256(session_id.encode("utf-8")).hexdigest()
+    return _SESSION_STATE_DIR / f"{key}.json"
+
+
+def _get_session(session_id: str) -> Orchestrator:
+    existing = _sessions.get(session_id)
+    if existing is not None:
+        return existing
+    orchestrator = Orchestrator(client)
+    path = _session_state_path(session_id)
+    try:
+        if path.exists():
+            orchestrator.restore_state(json.loads(path.read_text(encoding="utf-8")))
+            logger.info(
+                "session_state restored session=%s selected_pnu=%s",
+                session_id,
+                (orchestrator.selected_parcel or {}).get("pnu", ""),
+            )
+    except Exception:
+        logger.exception("session_state restore failed session=%s", session_id)
+    _sessions[session_id] = orchestrator
+    return orchestrator
+
+
+def _save_session(session_id: str, orchestrator: Orchestrator) -> None:
+    try:
+        _SESSION_STATE_DIR.mkdir(parents=True, exist_ok=True)
+        path = _session_state_path(session_id)
+        temporary = path.with_suffix(".tmp")
+        temporary.write_text(
+            json.dumps(orchestrator.snapshot_state(), ensure_ascii=False),
+            encoding="utf-8",
+        )
+        temporary.replace(path)
+    except Exception:
+        logger.exception("session_state save failed session=%s", session_id)
 
 
 class ParcelSelectionRequest(BaseModel):
@@ -70,6 +109,13 @@ class ParcelSelectionRequest(BaseModel):
     lat: float
     address: str = ""
     pnu: str = ""
+
+
+class ChatRequest(BaseModel):
+    session_id: str
+    message: str
+    selected_parcel: Optional[ParcelSelectionRequest] = None
+    continuation: bool = False
 
 
 class SetbackForUseRequest(BaseModel):
@@ -156,6 +202,11 @@ def friendly_error(exc: Exception) -> str:
             "VWORLD_KEY 와 인증 도메인 등록(localhost)을 확인하세요."
         )
     return text
+
+
+def _is_timeout_message(message: str) -> bool:
+    normalized = str(message or "").lower()
+    return any(term in normalized for term in ("timed out", "timeout", "시간 초과"))
 
 
 @app.get("/api/config")
@@ -254,7 +305,42 @@ async def chat(
     if APP_TOKEN and x_app_token != APP_TOKEN:
         raise HTTPException(status_code=401, detail="유효하지 않은 앱 토큰입니다.")
 
-    orch = _sessions.setdefault(req.session_id, Orchestrator(client))
+    orch = _get_session(req.session_id)
+    if req.selected_parcel is not None:
+        selected = req.selected_parcel
+        current_pnu = ((orch.diagnosis or {}).get("parcel") or {}).get("pnu") or ""
+        selected_pnu = (orch.selected_parcel or {}).get("pnu") or ""
+        orch.set_selected_parcel(
+            lon=selected.lon,
+            lat=selected.lat,
+            address=selected.address,
+            pnu=selected.pnu,
+            from_mouse=bool(
+                selected.pnu
+                and selected.pnu != (current_pnu or selected_pnu)
+            ),
+        )
+    diagnosed_pnu = ((orch.diagnosis or {}).get("parcel") or {}).get("pnu") or ""
+    selected_pnu = (orch.selected_parcel or {}).get("pnu") or ""
+    effective_continuation = bool(
+        req.continuation
+        or (
+            diagnosed_pnu
+            and selected_pnu
+            and diagnosed_pnu == selected_pnu
+            and not orch._selection_changed
+        )
+    )
+    logger.info(
+        "chat_route session=%s diagnosed_pnu=%s selected_pnu=%s "
+        "client_continuation=%s effective_continuation=%s changed=%s",
+        req.session_id,
+        diagnosed_pnu,
+        selected_pnu,
+        req.continuation,
+        effective_continuation,
+        orch._selection_changed,
+    )
 
     async def stream() -> AsyncIterator[str]:
         # 진단 도구가 tool_start 직후 수 초간 이벤트를 몰아서 내보내는 구간이 있다.
@@ -264,12 +350,59 @@ async def chat(
         queue: asyncio.Queue = asyncio.Queue()
 
         async def produce() -> None:
+            # 첫 타임아웃은 사용자에게 실패로 떠넘기지 않는다. 질문 직전의
+            # PNU별 진단·대화 상태로 되돌린 뒤 같은 질문을 자동으로 한 번 더
+            # 실행한다. 두 번째도 실패할 때만 최종 오류를 보낸다.
+            initial_state = orch.snapshot_state()
             try:
-                async for event in orch.ask(req.message):
-                    await queue.put(("event", event))
-            except Exception as exc:  # noqa: BLE001
-                await queue.put(("error", exc))
+                for attempt in range(2):
+                    timed_out: Exception | None = None
+                    try:
+                        async for event in orch.ask(
+                            req.message,
+                            continuation=effective_continuation,
+                        ):
+                            if (
+                                event.get("event") == "error"
+                                and _is_timeout_message(
+                                    str((event.get("data") or {}).get("message", ""))
+                                )
+                            ):
+                                timed_out = TimeoutError(
+                                    str((event.get("data") or {}).get("message", ""))
+                                )
+                                break
+                            await queue.put(("event", event))
+                    except Exception as exc:  # noqa: BLE001
+                        if _is_timeout_message(str(exc)):
+                            timed_out = exc
+                        else:
+                            await queue.put(("error", exc))
+                            break
+
+                    if timed_out is None:
+                        break
+                    if attempt == 0:
+                        orch.restore_state(initial_state)
+                        await queue.put((
+                            "event",
+                            {
+                                "event": "retry",
+                                "data": {
+                                    "reason": "timeout",
+                                    "message": "응답 시간이 초과되어 같은 질문을 다시 실행합니다.",
+                                },
+                            },
+                        ))
+                        logger.warning(
+                            "chat timeout; retrying session=%s selected_pnu=%s",
+                            req.session_id,
+                            (orch.selected_parcel or {}).get("pnu", ""),
+                        )
+                        continue
+                    await queue.put(("error", timed_out))
             finally:
+                _save_session(req.session_id, orch)
                 await queue.put(("done", None))
 
         task = asyncio.create_task(produce())
@@ -311,7 +444,7 @@ async def set_session_selection(
     """마우스로 클릭한 필지를 대화 세션의 최우선 활성 필지로 저장한다."""
     if APP_TOKEN and x_app_token != APP_TOKEN:
         raise HTTPException(status_code=401, detail="유효하지 않은 앱 토큰입니다.")
-    orch = _sessions.setdefault(session_id, Orchestrator(client))
+    orch = _get_session(session_id)
     orch.set_selected_parcel(
         lon=req.lon,
         lat=req.lat,
@@ -325,6 +458,7 @@ async def set_session_selection(
         req.pnu,
         req.address,
     )
+    _save_session(session_id, orch)
     return {"ok": True, "address": req.address, "pnu": req.pnu}
 
 
@@ -377,6 +511,16 @@ async def setback_for_use(
     districts = (diag.get("land_use") or {}).get("districts") or []
     zr = zoning_tool.lookup_zoning_rules(zone or "", req.use, districts, jurisdiction)
     use_verdict = zr.get("verdict", "unknown")
+    # 모델 버튼 선택은 프런트 화면 변화로 끝내지 않고 현재 PNU의 후속 대화
+    # 상태로 저장한다. 이후 "다른 것도?", "다시 보여줘" 같은 질문에서
+    # 제미나이가 직전에 보던 용도와 기능을 복원할 수 있다.
+    orch.update_conversation_context(
+        active_building_use=req.use,
+        active_model_display="3d",
+        last_intent="model_selected",
+        last_subject=f"{req.use} 3D 모델",
+    )
+    _save_session(session_id, orch)
 
     return {
         "ok": True,

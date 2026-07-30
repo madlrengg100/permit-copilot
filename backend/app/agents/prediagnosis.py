@@ -23,8 +23,10 @@ from __future__ import annotations
 import json
 import asyncio
 import re
+import time
 from typing import Callable
 
+from ..config import FLOOR_HEIGHT_M
 from ..tools import (
     building_register,
     conversion_charges,
@@ -44,6 +46,7 @@ from ..tools import (
 )
 
 BUILDING_USES = [
+    "시설물",
     "단독주택",
     "공동주택",
     "제1종근린생활시설",
@@ -53,6 +56,7 @@ BUILDING_USES = [
     "숙박시설",
     "공장",
     "창고시설",
+    "교육연구시설",
 ]
 
 EXTRACT_SYSTEM = f"""사용자의 건축 인허가 질의에서 주소·용도·주차계획을 뽑아 도구로 제출한다.
@@ -64,7 +68,9 @@ EXTRACT_SYSTEM = f"""사용자의 건축 인허가 질의에서 주소·용도·
 3. parking_strategy — 지상주차는 surface, 지하주차는 underground,
    기계식주차는 mechanical, 혼합은 mixed. 언급이 없으면 unspecified.
 
-용도가 명시되지 않았으면 문맥에서 가장 그럴듯한 것을 고르고 inferred=true 로 표시한다.
+용도가 명시되지 않았으면 다른 단일 용도를 추측하지 말고 building_use="시설물",
+inferred=true 로 표시한다. 여기서 시설물은 용도 미정이 아니라 시스템이 지원하는
+모든 건축물 용도를 포괄해서 검토한다는 뜻이다.
 ("상가" -> 제1종근린생활시설, "빌딩"/"사무실" -> 업무시설, "물류창고" -> 창고시설,
  "아파트" -> 공동주택, "펜션"/"호텔" -> 숙박시설)
 
@@ -264,6 +270,8 @@ def format_diagnosis_answer(d: dict) -> str:
     mass = d.get("massing") or {}
     # 최종 판정은 regulation.verdict 에 있다(지오코딩 실패 경로만 최상위 verdict).
     verdict = reg.get("verdict") or d.get("verdict", "unknown")
+    presentation = reg.get("map_presentation") or {}
+    display_verdict = presentation.get("verdict") or verdict
     zone = reg.get("zone") or (lu.get("zones") or [""])[0]
     districts = lu.get("districts") or []
 
@@ -275,7 +283,10 @@ def format_diagnosis_answer(d: dict) -> str:
     n = 1
 
     # 1. 종합 판정
-    out.append(f"## {n}. 종합 판정 — {_VERDICT_TEXT.get(verdict, verdict)}")
+    out.append(
+        f"## {n}. 종합 판정 — "
+        f"{presentation.get('label') or _VERDICT_TEXT.get(display_verdict, display_verdict)}"
+    )
     n += 1
     out.append(f"- **용도지역:** {zone or '—'}")
     # 걸침 필지 — 둘 이상 용도지역에 걸쳐 있으면 비율·주의를 함께 보인다.
@@ -285,14 +296,18 @@ def format_diagnosis_answer(d: dict) -> str:
             f"{s['zone']}({s['share_pct']}%·{s['area_m2']:,.0f}㎡)" for s in shares
         )
         smallest = min((s["area_m2"] for s in shares), default=0)
-        note = (
-            "가장 작은 부분이 330㎡ 이하여서 국토계획법 제84조에 따라 건폐율·용적률에 "
-            "면적 가중평균이 적용될 수 있습니다."
-            if smallest <= 330
-            else "국토계획법 제84조에 따라 부분별로 규제가 달리 적용될 수 있습니다."
-        )
+        if reg.get("weighted_limits", {}).get("applied"):
+            note = (
+                "국토계획법 제84조에 따라 "
+                f"건폐율 {reg['bcr_max_pct']}%·용적률 {reg['far_max_pct']}%로 "
+                "면적 가중평균했습니다."
+            )
+        elif smallest <= 330:
+            note = "건폐율·용적률의 면적 가중평균 확인이 필요합니다."
+        else:
+            note = "국토계획법 제84조에 따라 부분별 규제가 적용될 수 있습니다."
         out.append(f"  - ⚠ **걸침 필지:** {parts} — 위 판정은 최대 면적 부분({zone}) 기준. {note}")
-    out.append(f"- **용도지구:** {', '.join(districts) if districts else '지정 없음'}")
+    out.append(f"- **토지이용 규제:** {', '.join(districts) if districts else '지정 없음'}")
     out.append(f"- **지목:** {jimok_label(parcel.get('jimok'))}")
     if parcel.get("area_m2"):
         out.append(f"- **대지면적:** {_area(parcel['area_m2'])}")
@@ -302,7 +317,7 @@ def format_diagnosis_answer(d: dict) -> str:
             f"- **개별공시지가:** 평당 약 {_per_pyeong(jiga)}원 (㎡당 {_won(jiga)}원)"
         )
     use = reg.get("building_use") or (d.get("request") or {}).get("building_use", "")
-    # 용도를 특정하지 않은 일반 건축 질문(inferred)은 기본값 단독주택을 그대로
+    # 용도를 특정하지 않은 포괄 질문(inferred)은 기본값 단독주택을 그대로
     # 노출하면 오해를 준다 — '시설물'로 일반화해 표기한다.
     if (d.get("request") or {}).get("inferred"):
         use = "시설물"
@@ -316,7 +331,9 @@ def format_diagnosis_answer(d: dict) -> str:
             f"- **건폐율 / 용적률:** {reg['bcr_max_pct']}% / {reg['far_max_pct']}%"
             f"  ({reg.get('legal_basis', '')})"
         )
-    if mass:
+    # 불가 판정에 법정 상한으로 계산한 가상 건축 규모를 함께 쓰면 실제로
+    # 지을 수 있는 규모처럼 읽힌다. 계산값은 내부에 유지하되 답변에서는 숨긴다.
+    if mass and display_verdict != "not_allowed":
         if mass.get("exceeds_far_limit"):
             out.append(
                 f"- **건축 가능 규모:** 요청 용적률 {mass.get('requested_far_pct')}%는 "
@@ -331,8 +348,8 @@ def format_diagnosis_answer(d: dict) -> str:
             )
         else:
             out.append(
-                f"- **건축 가능 규모:** 건축면적 약 {_area(mass['building_area_m2'])} · "
-                f"연면적 약 {_area(mass['gross_floor_area_m2'])} · 지상 {mass['floors']}층 "
+                f"- **개념 배치 규모:** 건축면적 약 {_area(mass['building_area_m2'])} · "
+                f"연면적 약 {_area(mass['gross_floor_area_m2'])} · 약 {mass['floors']}개 층 규모 "
                 f"(높이 약 {mass['mass_height_m']}m, 층고 3.3m 가정)"
             )
     # 이격거리 안내 — 값이 있으면 값을, 없으면 왜 0인지 사유를 항상 남긴다.
@@ -433,7 +450,12 @@ def format_diagnosis_answer(d: dict) -> str:
         out.append("- **기존 건축물대장:** 표제부 조회 없음")
     if verdict == "unknown" and reg.get("reason"):
         out.append("")
-        out.append(reg["reason"])
+        reason_label = (
+            "건축 불가 사유"
+            if display_verdict == "not_allowed"
+            else "판정 보류 사유"
+        )
+        out.append(f"- **{reason_label}:** {reg['reason']}")
 
     # 농지·산지 전용
     lc = d.get("land_conversion") or {}
@@ -443,13 +465,55 @@ def format_diagnosis_answer(d: dict) -> str:
         out.append(f"## {n}. 농지·산지 전용")
         n += 1
         out.append(f"- {lc.get('summary') or ji.get('note') or '전용 절차 확인이 필요합니다.'}")
+        terrain = lc.get("terrain") or {}
+        if terrain.get("status") == "REFERENCE_AVAILABLE":
+            out.append(
+                "- **지형 참고:** "
+                f"평균경사도 {terrain.get('slope_mean_deg')}°"
+                f" · 최대경사도 {terrain.get('slope_max_deg')}°"
+                f" · 표고 {terrain.get('elevation_min_m')}~"
+                f"{terrain.get('elevation_max_m')}m"
+                f" (평균 {terrain.get('elevation_mean_m')}m)"
+                " — COP30 30m DEM 기반"
+            )
+        inventory = lc.get("forest_inventory") or []
+        if inventory:
+            top = inventory[0]
+            attributes = [
+                top.get("forest_type"),
+                top.get("species"),
+                top.get("age_class"),
+                top.get("diameter_class"),
+                f"수관밀도 {top.get('density')}" if top.get("density") else "",
+                top.get("stand_height"),
+            ]
+            details = " · ".join(str(value) for value in attributes if value)
+            share = top.get("share_pct")
+            share_text = f" ({share:.1f}% 중첩)" if isinstance(share, (int, float)) else ""
+            year = top.get("updated_year")
+            year_text = f" · 갱신 {year}년" if year else ""
+            out.append(
+                f"- **임상도 참고:** {details or '속성 확인'}{share_text}{year_text}"
+            )
         for u in (lc.get("unknowns") or [])[:4]:
             out.append(f"- 확인 필요: {u}")
+        for gap in (lc.get("data_gaps") or [])[:4]:
+            source = gap.get("required_source")
+            source_text = f" — 필요 자료: {source}" if source else ""
+            gap_label = (
+                "현장조사 필요"
+                if gap.get("status") == "FIELD_SURVEY_REQUIRED"
+                else "미수집 데이터"
+            )
+            out.append(
+                f"- **{gap_label}:** {gap.get('item', '항목')}"
+                f" ({gap.get('reason', '현재 데이터 없음')}){source_text}"
+            )
 
     # 부담금
     cc = d.get("conversion_charge")
     dc = d.get("development_charge")
-    if cc or dc:
+    if display_verdict != "not_allowed" and (cc or dc):
         out.append("")
         out.append(f"## {n}. 부담금 (참고)")
         n += 1
@@ -491,14 +555,16 @@ def format_diagnosis_answer(d: dict) -> str:
     # 재해·환경·국가유산
     rs = d.get("regulatory_screen") or {}
     findings = rs.get("findings") or []
-    if findings or rs.get("unknowns"):
+    # 조회 결과가 CLEAR여도 항목을 숨기지 않는다. 중첩 없음 역시 사용자가
+    # 확인해야 할 진단 결과이며, 인허가 단계 번호도 결과에 따라 흔들리면 안 된다.
+    if d.get("regulatory_screen") is not None:
         out.append("")
         out.append(f"## {n}. 재해·환경·국가유산")
         n += 1
         for f in findings[:6]:
             share = f" {f['share_pct']}% 중첩" if f.get("share_pct") is not None else ""
             out.append(f"- {f.get('category', '')} · {f.get('label', '')}{share}")
-        if not findings and rs.get("summary"):
+        if rs.get("summary"):
             out.append(f"- {rs['summary']}")
         for u in (rs.get("unknowns") or [])[:4]:
             out.append(f"- 추가 확인: {u}")
@@ -604,7 +670,47 @@ def _guess_use(query: str) -> str:
     for kw, name in _USE_KEYWORDS:      # 아니면 일상어 키워드로
         if kw in query:
             return name
-    return "업무시설"
+    return "시설물"
+
+
+def _normalize_intent_text(query: str) -> str:
+    """띄어쓰기·문장부호·영문 대소문자 차이를 제거한 의도 판별용 문자열."""
+    return re.sub(r"[^0-9a-z가-힣%]", "", query.lower())
+
+
+def _has_building_feasibility_intent(query: str) -> bool:
+    """표현 하나가 아니라 '건축 대상 + 가능/허가/신축 행위' 의미를 판별한다.
+
+    명확한 필지·좌표가 함께 있는 경우 이 결과로 결정 파이프라인에 바로 진입하고,
+    애매한 문장만 LLM 주소·용도 추출로 넘긴다.
+    """
+    text = _normalize_intent_text(query)
+    has_subject = any(
+        term in text
+        for term in (
+            "건물", "건축", "신축", "시설", "주택", "집", "개발",
+            "건축허가", "허가",
+        )
+    )
+    has_construction_action = bool(
+        re.search(r"지을|짓|지어|세울|세워|올릴|올려|들어갈|신축", text)
+    )
+    if not has_subject and not has_construction_action:
+        return False
+
+    # 활용형을 어간 중심으로 묶는다. '건축 날 수 있어' 같은 구어·오타성
+    # 표현도 '날수있' 의미로 받아들이되, 단순 조회·설명 요청은 포함하지 않는다.
+    has_feasibility = bool(
+        re.search(
+            r"가능|지을|짓|지어|지어도|세울|세워|올릴|올려도|"
+            r"들어갈|들어오|입지|신축|개발할|개발해도|"
+            r"할수있|될수있|날수있|허가나|허가날|"
+            r"해도돼|해도되|돼|되나|되니|될까|되는지|"
+            r"허용|가능여부|검토",
+            text,
+        )
+    )
+    return has_feasibility
 
 
 def _deterministic_request(query: str) -> dict | None:
@@ -627,9 +733,7 @@ def _deterministic_request(query: str) -> dict | None:
             (name for keyword, name in _USE_KEYWORDS if keyword in query),
             None,
         )
-    generic_building = bool(
-        re.search(r"(건물|건축).*(가능|되나|돼|할\s*수)", query)
-    )
+    generic_building = _has_building_feasibility_intent(query)
     if not explicit_use and not generic_building:
         return None
 
@@ -648,7 +752,7 @@ def _deterministic_request(query: str) -> dict | None:
             if address_match
             else ""
         ),
-        "building_use": explicit_use or "단독주택",
+        "building_use": explicit_use or "시설물",
         "inferred": explicit_use is None,
         "parking_strategy": parking,
     }
@@ -690,15 +794,12 @@ async def extract_request(client, query: str) -> dict:
                 req["inferred"] = True
             req.setdefault("inferred", True)
             req.setdefault("parking_strategy", "unspecified")
-            # "건물 가능해"는 특정 용도를 말한 것이 아니다. 모델이 이를 업무시설로
-            # 임의 확정하면 생산관리지역 같은 곳에서 전체 건축이 불가한 것처럼
-            # 판정된다. 용도 미지정 일반 질문은 단독주택을 보수적인 기준 용도로
-            # 삼아 가능성을 검토하고, 상세 답변에서는 실제 용도를 다시 확인한다.
+            # 용도 미지정 일반 질문은 특정 건축물 용도로 바꾸지 않는다.
             has_explicit_use = any(
                 name in query for name in BUILDING_USES
             ) or any(keyword in query for keyword, _name in _USE_KEYWORDS)
-            if not has_explicit_use and re.search(r"(건물|건축).*(가능|되나|돼|할\s*수)", query):
-                req["building_use"] = "단독주택"
+            if not has_explicit_use and _has_building_feasibility_intent(query):
+                req["building_use"] = "시설물"
                 req["inferred"] = True
             return req
 
@@ -762,10 +863,15 @@ def _summarize(state: dict) -> str:
             f"연면적 {mass['gross_floor_area_m2']:,.0f}㎡, 약 {mass['floors']}층."
         )
         if site:
+            parking_text = (
+                f"주차 필요량 {site['parking']['spaces']}대"
+                if site["parking"].get("estimated")
+                else "주차대수는 용도 확정 후 산정"
+            )
             lines.append(
                 f"배치 제약 검토: 밀도상 건축면적 {site['density_building_area_m2']:,.0f}㎡에서 "
                 f"확인된 공지·정북 일조·선택된 주차방식을 반영해 {site['adjusted_building_area_m2']:,.0f}㎡로 "
-                f"약 {site['reduction_pct']}% 조정했습니다. 주차 필요량 {site['parking']['spaces']}대, "
+                f"약 {site['reduction_pct']}% 조정했습니다. {parking_text}, "
                 f"정북 이격 {site['north_setback_m']}m입니다. {site['caveat']}"
             )
 
@@ -819,8 +925,12 @@ def _summarize(state: dict) -> str:
             f"주의: 이 필지는 둘 이상의 용도지역에 걸쳐 있습니다 — {parts}. "
             f"위 판정은 최대 면적 부분({reg['zone']}) 기준입니다. "
             + (
-                "가장 작은 부분이 330㎡ 이하이므로 국토계획법 제84조에 따라 "
-                "건폐율·용적률은 면적 가중평균이 적용될 수 있습니다."
+                "국토계획법 제84조에 따라 건폐율 "
+                f"{reg['bcr_max_pct']}%·용적률 {reg['far_max_pct']}%로 "
+                "면적 가중평균했습니다."
+                if reg.get("weighted_limits", {}).get("applied")
+                else "가장 작은 부분이 330㎡ 이하이므로 건폐율·용적률의 "
+                "면적 가중평균 확인이 필요합니다."
                 if smallest <= 330
                 else "국토계획법 제84조에 따라 각 부분별로 규제가 적용될 수 있습니다."
             )
@@ -844,8 +954,16 @@ async def run_prediagnosis(
     on_progress(step_name, payload) 로 진행 상황을 실시간 통보한다.
     """
     state: dict = {}
+    started_at = time.perf_counter()
+    phase_started_at = started_at
+    timings: dict[str, float] = {}
 
     def step(name: str, payload: dict) -> None:
+        nonlocal phase_started_at
+        now = time.perf_counter()
+        if timings or phase_started_at != started_at:
+            timings[f"before_{name}_ms"] = round((now - phase_started_at) * 1000, 1)
+        phase_started_at = now
         if on_progress:
             on_progress(name, payload)
 
@@ -891,7 +1009,15 @@ async def run_prediagnosis(
     # (LANDUSE_KEY 가 없으면 [] 를 돌려주므로 지금은 영향 없음)
     from ..tools import landuse as landuse_tool
 
-    extra_districts = await landuse_tool.get_landuse_districts(state["parcel"].get("pnu", ""))
+    landuse_designations = await landuse_tool.get_landuse_designations(
+        state["parcel"].get("pnu", "")
+    )
+    state["land_use"]["designation_lookup"] = landuse_designations
+    extra_districts = list(dict.fromkeys(
+        record["name"]
+        for record in landuse_designations.get("active_records", [])
+        if not record.get("is_zoning")
+    ))
     if extra_districts:
         merged = list(dict.fromkeys(state["land_use"].get("districts", []) + extra_districts))
         state["land_use"]["districts"] = merged
@@ -924,7 +1050,9 @@ async def run_prediagnosis(
             state["parcel"]["geometry"], state["parcel"].get("pnu", "")
         ),
         regulatory_screen.assess(
-            state["parcel"]["geometry"], state["land_use"].get("districts", [])
+            state["parcel"]["geometry"],
+            state["land_use"].get("districts", []),
+            designation_lookup=state["land_use"].get("designation_lookup"),
         ),
     )
 
@@ -951,11 +1079,12 @@ async def run_prediagnosis(
         districts=state["land_use"]["districts"],
         jurisdiction=jurisdiction,
     )
+    reg = zoning.apply_straddling_limits(reg, zone_shares, jurisdiction)
     state["regulation"] = reg
 
     # 보전산지·공익용산지 또는 공원구역은 용도지역의 건폐율·용적률만으로
     # '조건부 가능'이라 할 수 없다. 법정 예외 허용시설인지 확인하기 전에는
-    # 일반 건축 가능 매스를 제시하지 않고 판단을 보류한다.
+    # 건축 가능 규모를 제시하지 않고 판단을 보류한다.
     protected_districts = [
         name
         for name in state["land_use"].get("districts", [])
@@ -970,17 +1099,56 @@ async def run_prediagnosis(
     ):
         reg["verdict"] = "unknown"
         restrictions = []
+        restricted_forest_label = ""
         if restricted_conversion:
-            restrictions.append("보전산지·공익용산지의 산지전용 허용행위 해당 여부")
+            forest_overlaps = (
+                (state["land_conversion"].get("forest") or {}).get("overlaps") or []
+            )
+            # 보전산지는 임업용·공익용산지의 상위 분류이므로 세부 분류가 함께
+            # 확인되면 상위 명칭을 중복 표기하지 않는다.
+            detailed_names = list(dict.fromkeys(
+                overlap.get("name") or overlap.get("code")
+                for overlap in forest_overlaps
+                if (overlap.get("name") or overlap.get("code"))
+                in {"임업용산지", "공익용산지", "UFM110", "UFM120"}
+            ))
+            forest_names = detailed_names or list(dict.fromkeys(
+                overlap.get("name") or overlap.get("code")
+                for overlap in forest_overlaps
+                if overlap.get("name") or overlap.get("code")
+            ))
+            restricted_forest_label = "·".join(forest_names) or "보전산지"
+            restrictions.append(
+                f"산림청 산지구분 데이터에서 {restricted_forest_label} 중첩이 "
+                f"확인되었습니다. 해당 계획이 {restricted_forest_label} 안의 "
+                "허용행위에 해당하는지"
+            )
         if protected_districts:
             restrictions.append(
                 f"{'·'.join(protected_districts)} 안의 행위허가·허용시설 해당 여부"
             )
-        reg["reason"] = (
-            " / ".join(restrictions)
-            + "를 확인하기 전에는 일반 건축 가능으로 판정할 수 없습니다."
-        )
+        if restricted_forest_label and not protected_districts:
+            reg["reason"] = (
+                restrictions[0]
+                + " 확인하기 전에는 건축이 불가합니다."
+            )
+        else:
+            reg["reason"] = (
+                " / ".join(restrictions)
+                + "를 확인하기 전에는 건축 가능 여부를 확정할 수 없습니다."
+            )
         reg.setdefault("constraints", []).append(reg["reason"])
+        # 법적 판정은 예외 허용시설 확인 전이라 unknown을 유지하되, 지도 표현은
+        # 건축 가능한 것처럼 보이지 않게 구조화해 전달한다. 지도 제어
+        # 코드가 전용 상태 조합을 다시 해석하거나 문구를 하드코딩하지 않는다.
+        reg["map_presentation"] = {
+            "verdict": "not_allowed",
+            "label": "건축 불가",
+            "color": "#C62828",
+            "show_building_mass": False,
+            "show_building_dimensions": False,
+            "reason": reg["reason"],
+        }
 
     # 용도지역상 가능한 용도라도 농지·산지 전용 제한 검토가 남으면
     # 화면의 종합 표시는 최소 '조건부'여야 한다.
@@ -1005,12 +1173,8 @@ async def run_prediagnosis(
             far_max_pct=reg["far_max_pct"],
             far_target_pct=req.get("far_target_pct"),
         )
-        # 주차 방식을 명시하지 않으면 지상주차를 기본 가정으로 반영한다.
-        # (창고·근생 등은 통상 지상주차가 기본이고, 면적을 차감해 두는 편이
-        #  건축면적을 과다 산정하지 않아 더 현실적이다)
-        _parking = req.get("parking_strategy") or "surface"
-        if _parking == "unspecified":
-            _parking = "surface"
+        # 사용자가 주차 방식을 지정하지 않았으면 임의로 지상주차를 가정하지 않는다.
+        _parking = req.get("parking_strategy") or "unspecified"
         state["site_constraints"] = site_constraints.apply(
             parcel_geometry=state["parcel"]["geometry"],
             massing=state["massing"],
@@ -1050,37 +1214,26 @@ async def run_prediagnosis(
             official_land_price_won_m2=state["parcel"].get("jiga_won_per_m2"),
         )
 
-    # 불가·판단보류 판정에는 건축 규모가 없어 전용예상면적도 생기지 않는다.
-    # 그렇더라도 필지면적·공시지가·산지/농지 구분이 있으면 부담금 데이터가
-    # 통째로 사라지지 않게 '전체 필지를 전용하는 가정'의 참고 상한액을 제공한다.
-    # 이는 허가 가능 판정이나 실제 부과액이 아니다.
-    if (
-        not state.get("conversion_charge")
-        and state["jimok_info"].get("requires_conversion")
-    ):
-        reference_charge = conversion_charges.estimate(
-            jimok_category=state["jimok_info"].get("category", ""),
-            conversion=state["land_conversion"],
-            conversion_area_m2=state["parcel"].get("area_m2"),
-            official_land_price_won_m2=state["parcel"].get("jiga_won_per_m2"),
-        )
-        if reference_charge:
-            reference_charge["area_basis"] = "full_parcel_reference"
-            reference_charge["caveat"] = (
-                "전용계획 면적이 정해지지 않아 전체 필지면적을 전용한다고 가정한 "
-                "참고 상한액입니다. 허가 가능하다는 뜻이 아니며, "
-                + reference_charge.get("caveat", "")
-            )
-            state["conversion_charge"] = reference_charge
+    display_verdict = (reg.get("map_presentation") or {}).get("verdict") or reg.get(
+        "verdict"
+    )
+    charge_estimation_allowed = bool(
+        display_verdict in {"allowed", "conditional"}
+        and state.get("massing")
+    )
 
     # 개발부담금 — 지목변경(전용) 수반 대규모 개발이면 대상 가능성·부과율·지역
     # 참고치를 안내한다(정확 금액은 산정 불가). 단순 건축(전용 불요)이면 None.
-    state["development_charge"] = development_charge.assess(
-        requires_conversion=bool(state["jimok_info"].get("requires_conversion")),
-        area_m2=state["parcel"].get("area_m2"),
-        zone=zone,
-        jurisdiction=jurisdiction or "",
-        address=state["location"]["matched_address"],
+    state["development_charge"] = (
+        development_charge.assess(
+            requires_conversion=bool(state["jimok_info"].get("requires_conversion")),
+            area_m2=state["parcel"].get("area_m2"),
+            zone=zone,
+            jurisdiction=jurisdiction or "",
+            address=state["location"]["matched_address"],
+        )
+        if charge_estimation_allowed
+        else None
     )
 
     state["permit_requirements"] = permit_requirements.build(state)
@@ -1104,6 +1257,28 @@ async def run_prediagnosis(
     warning = ordinance.separate_ordinance_warning(
         state["location"]["matched_address"], jurisdiction
     )
+    state["decision_context"] = {
+        "evaluation_mode": (
+            "all_supported_uses" if req.get("building_use") == "시설물" else "specified_use"
+        ),
+        "evaluated_building_use": req.get("building_use"),
+        "building_use_inferred": bool(req.get("inferred")),
+        "parking_strategy": req.get("parking_strategy", "unspecified"),
+        "confidence": "screening_only",
+        "assumptions": [
+            "시설물은 시스템이 지원하는 모든 건축물 용도를 포괄해 검토"
+            if req.get("building_use") == "시설물"
+            else f"{req.get('building_use')} 용도 기준으로 검토",
+            f"층고 {FLOOR_HEIGHT_M:g}m 개념 가정",
+            "지적도 경계 기반 면적으로서 토지대장 공부면적과 차이 가능",
+        ],
+    }
+    timings["total_ms"] = round((time.perf_counter() - started_at) * 1000, 1)
+    state["performance"] = {
+        "total_ms": timings["total_ms"],
+        "phases_ms": timings,
+        "llm_request_extraction_used": not bool(_deterministic_request(query)),
+    }
 
     return {
         **state,
@@ -1140,4 +1315,16 @@ def compact(diagnosis: dict) -> str:
             k: v for k, v in d["road_access"].items()
             if k != "road_contact_geometry"
         }
+    if isinstance(d.get("land_conversion"), dict):
+        d["land_conversion"] = {
+            k: v for k, v in d["land_conversion"].items()
+            if k != "forest_map_overlaps"
+        }
+        terrain = d["land_conversion"].get("terrain")
+        if isinstance(terrain, dict):
+            # 지도 렌더링용 DEM 셀 좌표는 최대 2,000개라 LLM 컨텍스트를
+            # 잠식한다. 모델에는 통계값만 주고 셀 도형은 map_commands에만 둔다.
+            d["land_conversion"]["terrain"] = {
+                k: v for k, v in terrain.items() if k != "grid_cells"
+            }
     return json.dumps(d, ensure_ascii=False)

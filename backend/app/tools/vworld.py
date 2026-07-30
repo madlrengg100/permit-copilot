@@ -24,6 +24,7 @@ from ..config import (
     VWORLD_DOMAIN,
     VWORLD_KEY,
 )
+from ..cache import async_ttl_cache
 
 
 class VWorldError(RuntimeError):
@@ -88,6 +89,7 @@ async def _get(path: str, params: dict) -> dict:
     return data
 
 
+@async_ttl_cache(ttl_seconds=1800, maxsize=2048)
 async def get_individual_land_price(pnu: str) -> dict | None:
     """PNU로 최신 개별공시지가(원/㎡)를 조회한다.
 
@@ -141,6 +143,7 @@ async def get_individual_land_price(pnu: str) -> dict | None:
 # ---------------------------------------------------------------- 지오코딩
 
 
+@async_ttl_cache(ttl_seconds=900, maxsize=1024)
 async def geocode(address: str) -> dict:
     """주소 문자열 -> {lon, lat, matched_address}.
 
@@ -327,6 +330,7 @@ async def search_places(query: str, size: int = 8) -> list[dict]:
 # ------------------------------------------------------------------- 필지
 
 
+@async_ttl_cache(ttl_seconds=900, maxsize=2048)
 async def get_parcel(lon: float, lat: float) -> dict:
     """좌표가 포함된 필지의 PNU / 지번 / 지목 / 면적(m²) / 경계 폴리곤."""
     if USE_MOCK:
@@ -481,6 +485,7 @@ def _to_int(v) -> int | None:
 # --------------------------------------------------------------- 용도지역
 
 
+@async_ttl_cache(ttl_seconds=900, maxsize=2048)
 async def get_land_use(lon: float, lat: float) -> dict:
     """좌표 지점에 지정된 용도지역·지구 목록.
 
@@ -591,6 +596,7 @@ async def get_zoning_polygons_bbox(
     return out
 
 
+@async_ttl_cache(ttl_seconds=900, maxsize=1024)
 async def get_zone_shares(geometry: dict | None) -> list[dict]:
     """필지 폴리곤과 용도지역 폴리곤의 교차 면적 비율.
 
@@ -623,7 +629,6 @@ async def get_zone_shares(geometry: dict | None) -> list[dict]:
     if parcel_area <= 0:
         return []
 
-    area_by_zone: dict[str, float] = {}
     # 지도에 조각을 색으로 깔기 위한 교차 기하 (지역별로 합집합)
     geoms_by_zone: dict[str, list] = {}
 
@@ -662,21 +667,22 @@ async def get_zone_shares(geometry: dict | None) -> list[dict]:
                 continue
             if inter.is_empty or inter.area == 0:
                 continue
-            area_by_zone[name] = area_by_zone.get(name, 0.0) + geodesic_area_m2(
-                mapping(inter)
-            )
             geoms_by_zone.setdefault(name, []).append(inter)
 
-    shares = [
-        {
+    shares = []
+    for zone, pieces in geoms_by_zone.items():
+        # 같은 용도지역 도형이 여러 WFS 레이어·피처에서 중복 반환될 수 있다.
+        # 면적을 먼저 더하면 동일 영역이 이중 계산되어 100%를 넘으므로, 반드시
+        # 공간 합집합을 만든 뒤 한 번만 측지면적을 계산한다.
+        merged = unary_union(pieces).intersection(parcel)
+        area = min(geodesic_area_m2(mapping(merged)), parcel_area)
+        shares.append({
             "zone": zone,
             "area_m2": round(area, 1),
-            "share_pct": round(area / parcel_area * 100, 1),
+            "share_pct": round(min(area / parcel_area * 100, 100.0), 1),
             # 필지 위에 색으로 깔 교차 조각 (GeoJSON)
-            "geometry": mapping(unary_union(geoms_by_zone[zone])),
-        }
-        for zone, area in area_by_zone.items()
-    ]
+            "geometry": mapping(merged),
+        })
     # 경계선 스침(1% 미만)은 데이터 오차일 가능성이 높아 버린다
     shares = [s for s in shares if s["share_pct"] >= 1.0]
     shares.sort(key=lambda s: -s["area_m2"])

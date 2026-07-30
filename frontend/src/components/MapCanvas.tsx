@@ -352,6 +352,8 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
     avgSlope: number;
     minElev: number;
     maxElev: number;
+    source: string;
+    resolutionM: number;
   } | null>(null);
   // 나침반·해 방향 위젯에 넘길 준비된 bridge
   const [readyBridge, setReadyBridge] = useState<MapBridge | null>(null);
@@ -546,18 +548,8 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
       if (typeof cmd.slope === "boolean") {
         setSlopeOn(cmd.slope);
         if (cmd.slope) {
-          // 지형이 아직이면 한 번 재시도
-          const run = () => {
-            const r = bridgeRef.current?.setSlopeGrid(true);
-            if (r && r.cells > 0)
-              setSlopeInfo({ maxSlope: r.maxSlope, avgSlope: r.avgSlope, minElev: r.minElev, maxElev: r.maxElev });
-            else window.setTimeout(() => {
-              const r2 = bridgeRef.current?.setSlopeGrid(true);
-              if (r2 && r2.cells > 0)
-                setSlopeInfo({ maxSlope: r2.maxSlope, avgSlope: r2.avgSlope, minElev: r2.minElev, maxElev: r2.maxElev });
-            }, 2500);
-          };
-          run();
+          const r = bridgeRef.current?.setSlopeGrid(true);
+          if (r && r.cells > 0) setSlopeInfo(r);
         } else {
           bridgeRef.current?.setSlopeGrid(false);
           setSlopeInfo(null);
@@ -570,6 +562,19 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
 
     // 자연어로 실행한 지도 도구(측정·내 위치)
     for (const cmd of pending) {
+      if (cmd.type === "set_view_mode") {
+        stopCameraAnimations();
+        setViewMode(cmd.mode);
+        void bridgeRef.current?.setViewMode(cmd.mode).catch((error: unknown) => {
+          const detail = error instanceof Error ? error.message : String(error);
+          setLocMsg(
+            cmd.mode === "2d"
+              ? `2D 화면 전환 중 지적도 경계를 불러오지 못했습니다: ${detail}`
+              : `3D 화면 복원에 실패했습니다: ${detail}`,
+          );
+        });
+        continue;
+      }
       if (cmd.type === "set_tool_menu") {
         setToolsOpen(cmd.open);
         continue;
@@ -598,16 +603,10 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
         if (zoningOn) void bridgeRef.current?.setZoningOverlay(true, lon, lat).catch(() => {});
         if (cadastreOn) void bridgeRef.current?.setCadastreOverlay(true, lon, lat).catch(() => {});
       }, 1500);
-      // 경사도는 지형 표고가 실제로 와야 계산되므로, 여러 번 재시도한다.
+      // 경사도는 같은 진단에 포함된 서버 DEM 셀을 즉시 다시 그린다.
       if (slopeOn) {
-        let tries = 0;
-        const trySlope = () => {
-          tries += 1;
-          const r = bridgeRef.current?.setSlopeGrid(true);
-          if (r && r.cells > 0) setSlopeInfo({ maxSlope: r.maxSlope, avgSlope: r.avgSlope, minElev: r.minElev, maxElev: r.maxElev });
-          else if (tries < 4) window.setTimeout(trySlope, 2500);
-        };
-        window.setTimeout(trySlope, 2500);
+        const r = bridgeRef.current?.setSlopeGrid(true);
+        if (r && r.cells > 0) setSlopeInfo(r);
       }
     }
 
@@ -714,19 +713,10 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
                   setSlopeInfo(null);
                   return;
                 }
-                // 켤 때는 즉시 시도하고, 지형이 아직이면 잠시 뒤 한 번 더.
-                const attempt = () => {
-                  const r = bridgeRef.current?.setSlopeGrid(true);
-                  if (r && r.cells > 0) setSlopeInfo({ maxSlope: r.maxSlope, avgSlope: r.avgSlope, minElev: r.minElev, maxElev: r.maxElev });
-                  else window.setTimeout(attempt2, 2500);
-                };
-                const attempt2 = () => {
-                  const r = bridgeRef.current?.setSlopeGrid(true);
-                  if (r && r.cells > 0) setSlopeInfo({ maxSlope: r.maxSlope, avgSlope: r.avgSlope, minElev: r.minElev, maxElev: r.maxElev });
-                };
-                attempt();
+                const r = bridgeRef.current?.setSlopeGrid(true);
+                if (r && r.cells > 0) setSlopeInfo(r);
               }}
-              title="필지 위 격자별 경사도 색 표시 (VWorld 지형 기반 참고치)"
+              title="필지 위 COP30 DEM 격자별 경사도 표시"
             >
               경사도 {slopeOn ? "ON" : "OFF"}
             </button>
@@ -765,7 +755,9 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
             <span style={{ background: "#FB8C00" }}>15–20°</span>
             <span style={{ background: "#E53935" }}>≥20°</span>
           </div>
-          <div className="slope-legend-note">VWorld 지형 기반 참고치 · 공부용 평균경사도 아님</div>
+          <div className="slope-legend-note">
+            {slopeInfo.source} {slopeInfo.resolutionM}m DEM 기반 · 인허가 조사서 대체 아님
+          </div>
         </div>
       )}
       {locMsg && <div className="my-location-msg">{locMsg}</div>}
