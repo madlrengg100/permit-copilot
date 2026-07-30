@@ -402,6 +402,24 @@ def _build_dimensions(
             }
         )
 
+    # 우수·오수 '개념' 배수로 — 가장 가까운 공공 배수처(도로측구·구거·하천)까지.
+    # 사전검토일 뿐이라 파랑으로 얇게 그리고 '개념·현장확인' 라벨을 붙인다.
+    # 실제 경로·방류지점은 설계사무소 현장확인·현황측량으로 확정한다.
+    drainage = (diagnosis.get("road_access") or {}).get("drainage") or {}
+    route = drainage.get("route_geometry")
+    if route and route.get("coordinates"):
+        coords = [[float(p[0]), float(p[1])] for p in route["coordinates"]]
+        outlet = "·".join(drainage.get("outlets") or ["공공 배수처"]).replace("(도로측구)", "")
+        segments.append(
+            {
+                "positions": coords,
+                "label": f"우수 방류→{outlet} · 개념(현장확인)",
+                "color": "#1E88E5",  # 파랑(물)
+                "width": 4,
+                "onTop": True,
+            }
+        )
+
     return {"type": "show_dimensions", "segments": segments, "labels": labels}
 
 
