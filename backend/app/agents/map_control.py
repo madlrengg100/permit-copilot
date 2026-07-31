@@ -423,6 +423,60 @@ def _build_dimensions(
     return {"type": "show_dimensions", "segments": segments, "labels": labels}
 
 
+# 사용자가 특정 선만 지도에서 보고 싶어 할 때 골라 그리는 라벨 매핑.
+# _build_dimensions 가 붙이는 라벨 접두어와 일치해야 한다.
+_OVERLAY_LABEL_KINDS = {
+    "road": ("도로 접촉",),
+    "building_line": ("건축선", "전면이격", "정북일조", "인접이격"),
+    "drainage": ("우수 방류",),
+}
+
+
+def _may_show_building_dimensions(diagnosis: dict) -> bool:
+    """건물 치수선(건축선·이격)을 지도에 그려도 되는지. 불가 판정·확정 용도제한이면
+    그리지 않는다(build_map_commands 의 게이팅과 같은 규칙)."""
+    verdict = diagnosis.get("verdict", "unknown")
+    presentation = (diagnosis.get("regulation") or {}).get("map_presentation") or {}
+    use_restriction = diagnosis.get("use_restriction") or {}
+    use_is_not_allowed = bool(
+        use_restriction and use_restriction.get("kind") != "verification_required"
+    )
+    show = presentation.get(
+        "show_building_dimensions", verdict in {"allowed", "conditional"}
+    )
+    return bool(show) and not use_is_not_allowed
+
+
+def overlay_command(diagnosis: dict, kinds) -> dict | None:
+    """요청한 종류의 선(도로접촉/건축선·이격/배수로)만 골라 지도에 다시 얹는다.
+    카메라·3D 매스는 건드리지 않고 show_dimensions 세그먼트만 돌려준다(없으면 None).
+    건축선·이격선은 건축 가능(가능/조건부) 판정일 때만 포함한다.
+    """
+    kinds = [k for k in (kinds or []) if k in _OVERLAY_LABEL_KINDS]
+    if "building_line" in kinds and not _may_show_building_dimensions(diagnosis):
+        kinds = [k for k in kinds if k != "building_line"]
+    if not kinds:
+        return None
+    loc = diagnosis.get("location") or {}
+    anchor_lon, anchor_lat = loc.get("lon"), loc.get("lat")
+    if anchor_lon is None or anchor_lat is None:
+        box = _bbox((diagnosis.get("parcel") or {}).get("geometry"))
+        if not box:
+            return None
+        anchor_lon, anchor_lat = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
+    dims = _build_dimensions(diagnosis, anchor_lon, anchor_lat)
+    if not dims:
+        return None
+    wanted = tuple(p for k in kinds for p in _OVERLAY_LABEL_KINDS[k])
+    segs = [
+        s for s in dims.get("segments", [])
+        if any(p in s.get("label", "") for p in wanted)
+    ]
+    if not segs:
+        return None
+    return {"type": "show_dimensions", "segments": segs, "labels": []}
+
+
 def build_map_commands(diagnosis: dict) -> list[dict]:
     """진단 결과 -> 지도 명령 시퀀스."""
     commands: list[dict] = []

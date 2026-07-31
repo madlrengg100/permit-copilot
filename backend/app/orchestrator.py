@@ -235,6 +235,34 @@ TOOLS: list[dict] = [
         "input_schema": {"type": "object", "properties": {}},
     },
     {
+        "name": "show_map_lines",
+        "description": (
+            "직전 진단 필지의 특정 선을 지도에 다시 그려 보여준다. 카메라·3D 매스는 그대로 두고 "
+            "선만 얹는다. 사용자가 도로 접촉·진입로·접도를 묻거나('도로 접촉 있어?', '진입로 있어?', "
+            "'근접 도로와 접촉해?', '길 낼 수 있어?') 보여달라고 하면 kinds=[\"road\"] 로, "
+            "'건축선 그려줘/보여줘'는 [\"building_line\"], '우수·오수 배수로/방류 어디로'는 [\"drainage\"] "
+            "로 호출한다. 호출한 뒤에는 표시된 선의 값을 근거로 자연어 한두 문장 답도 함께 한다. "
+            "건축선·이격선은 이격 값이 있고 건축 가능(가능/조건부) 판정일 때만 그려진다."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "kinds": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": ["road", "building_line", "drainage"],
+                    },
+                    "description": (
+                        "road=도로 접촉선(진입로·접도), building_line=건축선·이격선, "
+                        "drainage=우수 배수로"
+                    ),
+                },
+            },
+            "required": ["kinds"],
+        },
+    },
+    {
         "name": "restudy_massing",
         "description": (
             "직전 진단의 대지면적과 규제값을 그대로 쓰고 밀도만 바꿔 건축 가능 규모를 다시 산출한다. "
@@ -653,6 +681,21 @@ def _ensure_query_evidence(text: str, diagnosis: dict | None, query: str) -> str
     if any(token and token in text for token in required_tokens):
         return text
     return f"{text.rstrip()} {evidence}".strip()
+
+
+def _requested_map_lines(query: str) -> list[str]:
+    """자연어에서 지도에 그려 보여줄 선 종류를 뽑는다.
+    도로접촉(진입로·접도·길 낼 때 필요한 접도), 건축선·이격선, 우수·오수 배수로.
+    사용자가 '도로 접촉 있어?/진입로 있어?/건축선 그려줘'처럼 물으면 해당 선을 지도에 얹는다.
+    """
+    kinds: list[str] = []
+    if re.search(r"도로\s*접|접도|진입로|맹지|근접\s*도로|길\s*(?:낼|내|있|만들)", query):
+        kinds.append("road")
+    if re.search(r"건축선|이격|후퇴선|대지\s*안의?\s*공지", query):
+        kinds.append("building_line")
+    if re.search(r"배수로|방류|우수|오수", query):
+        kinds.append("drainage")
+    return kinds
 
 
 def _deterministic_verdict_judgment(diagnosis: dict | None) -> str:
@@ -2339,6 +2382,18 @@ class Orchestrator:
                 answer = str(interpreted.get("answer") or "").strip()
                 if not answer:
                     answer = await self._natural_followup_answer(original_query)
+                # 도로접촉·건축선·이격·배수로를 묻거나 보여달라면, 그 선만 지도에 다시
+                # 얹는다(카메라·3D 매스는 그대로). 건축선·이격선은 가능 판정일 때만.
+                _line_kinds = _requested_map_lines(original_query)
+                if _line_kinds:
+                    from .agents.map_control import overlay_command
+
+                    _line_cmd = overlay_command(self.diagnosis, _line_kinds)
+                    if _line_cmd:
+                        yield {
+                            "event": "map_commands",
+                            "data": {"commands": [_line_cmd]},
+                        }
                 data: dict = {"text": answer}
                 if intent == "possible_models":
                     self.update_conversation_context(
@@ -3662,6 +3717,34 @@ class Orchestrator:
             ev = self._render_event()
             events.append(ev)
             return {"rendered": True, "command_count": len(ev["data"]["commands"])}, events
+
+        if name == "show_map_lines":
+            if not self.diagnosis:
+                raise RuntimeError("먼저 특정 필지를 진단해야 그 선을 지도에 그릴 수 있습니다.")
+            from .agents.map_control import overlay_command
+
+            cmd = overlay_command(self.diagnosis, args.get("kinds") or [])
+            if cmd:
+                events.append({"event": "map_commands", "data": {"commands": [cmd]}})
+                return {
+                    "shown": True,
+                    "lines": [s.get("label", "") for s in cmd["segments"]],
+                    "note": (
+                        "요청한 선을 지도에 다시 그렸다(카메라·3D 매스는 그대로 유지). 표시한 선의 "
+                        "라벨 값을 근거로 자연어 한두 문장으로 답하라. 도로 접촉선은 지적도 기준 참고 "
+                        "판정이라 건축법상 지정도로 여부·유효폭은 도로대장·현황측량으로 확인해야 한다고 "
+                        "덧붙여라. 종합 판정 카드나 유의사항 목록은 쓰지 마라."
+                    ),
+                }, events
+            return {
+                "shown": False,
+                "note": (
+                    "요청한 선을 그릴 데이터가 없다. 건축선·이격선은 이격 수치가 수집된 지자체이면서 "
+                    "건축 가능(가능/조건부) 판정일 때만 그려지고, 불가 판정 필지에는 건물 치수선을 "
+                    "표시하지 않는다. 도로 접촉선은 지적도상 접한 도로가 있을 때만 그려진다. 이 사정을 "
+                    "자연어 한두 문장으로 설명하라."
+                ),
+            }, events
 
         if name == "restudy_massing":
             if not self.diagnosis or not self.diagnosis.get("regulation"):

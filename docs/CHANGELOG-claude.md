@@ -4,6 +4,23 @@
 > 중복 구현하지 말 것.** 규제 수치는 데이터파일에서만(하드코딩 금지),
 > 가능 모델 목록은 `orchestrator._model_options_for_diagnosis()`만 — CLAUDE.md 준수.
 
+## 2026-07-31
+
+### 자연어로 특정 선만 지도에 다시 그리기 (도로접촉·건축선·이격·배수로)
+- 사용자가 "도로 접촉 있어?/진입로 있어?/건축선 그려줘/우수 배수로 어디로" 처럼 물으면
+  카메라·3D 매스는 그대로 두고 **그 선만** 지도에 다시 얹는다.
+- `backend/app/agents/map_control.py`:
+  - `overlay_command(diagnosis, kinds)` — `_build_dimensions` 세그먼트를 라벨로 필터해
+    road/building_line/drainage 만 골라 `show_dimensions` 로 반환(카메라·매스 없음).
+  - `_may_show_building_dimensions()` — 건축선·이격선은 가능/조건부 판정일 때만(불가·확정
+    용도제한이면 제외). build_map_commands 게이팅과 동일 규칙.
+  - `_OVERLAY_LABEL_KINDS` — 라벨 접두어 매핑(도로 접촉/건축선·전면이격·정북일조·인접이격/우수 방류).
+- `backend/app/orchestrator.py`:
+  - `_requested_map_lines(query)` — 자연어에서 그릴 선 종류 추출(백엔드 단일 규칙).
+  - continuation 후속 경로(`continuation and self.diagnosis`)에서 `overlay_command` 방출.
+  - LLM tool `show_map_lines`(kinds) 추가 — 비-continuation LLM 루프 경로 커버. 둘 다 overlay_command 공용.
+- 검증: 신수리 100-2 — 도로접촉 38.5m, 진입로, 건축선(이격 후)+전면이격 3m, 우수 방류→도로 모두 표시.
+
 ## 2026-07-30
 
 ### 우수·오수 배수 방류처 감지 + 가상 배수로 (진행 중)
@@ -15,8 +32,8 @@
     '개념' 배수로 LineString(WGS84) → `drainage.route_geometry`.
   - assess 루프에서 `drainage_geometries`(구거·하천 형상) 수집. 두 반환(NO_CADASTRAL_ROAD,
     CADASTRAL_CONTACT) 모두 `"drainage": drainage_info` 사용.
-- `backend/app/agents/map_control.py`: (예정) `_build_dimensions`에 배수로 세그먼트 추가.
-- 프론트: (예정) 기존 `show_dimensions` 세그먼트 재사용(신규 명령 없이).
+- `backend/app/agents/map_control.py`: `_build_dimensions`에 배수로 세그먼트 추가(완료).
+- 프론트: 기존 `show_dimensions` 세그먼트 재사용(신규 명령 없이, 완료).
 - 원칙: 사전검토(개념)일 뿐, 실제 경로·방류지점은 **설계사무소 현장확인·현황측량**으로 확정.
 
 ### 기존 건축물 철거·개축 분기 (카드 유의사항, 결정적)
