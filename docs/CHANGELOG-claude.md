@@ -6,6 +6,22 @@
 
 ## 2026-07-31
 
+### 배수 사유지 침범 시나리오 (가장 가까운 공공 배수처까지 빨강 경로 + 건물 유무 2갈래)
+- 인접에 공공 배수처가 없을 때만, 배수로가 남의 사유지를 지나야 하는 상황을 시각화한다.
+- `backend/app/tools/road_access.py`:
+  - `_PUBLIC_DRAIN_JIMOK`(도/도로/구/구거/천/하천), `_WIDE_DRAIN_PAD`(약 180m).
+  - `_encroachment_route(parcel, candidates, target_pnu, inverse)` — 넓게 조회한 필지들에서
+    가장 가까운 공공 배수처까지 '개념' 직선 경로를 만들고, 그 선이 지나는 **사유지 필지 검출**
+    (`crosses_private`, `crossed_parcels`[jimok/address/pnu/cross_length_m]).
+  - assess: `_route`(파랑) 없고 `public_outlet is False`면 wide fetch → encroachment 계산.
+    통과 사유지(최대 3필지)에 대해 **`building_register.lookup(pnu)`로 건물 유무만 확인**
+    (`has_building`; 소유권 아님 — 소유구분은 토지대장 필요, 미연동).
+- `backend/app/agents/map_control.py` `_build_dimensions`: encroachment.route_geometry 를 **빨강**
+  세그먼트로. 라벨 2갈래 — 건물 有 "⚠ 건물 있는 사유지 통과·사실상 우회", 건물 無 "⚠ 사유지
+  통과·토지사용승낙/우회". overlay_command(drainage) 도 포착("우수 방류" 접두어 유지).
+- `backend/app/agents/prediagnosis.py` 유의사항: 같은 2갈래로 안내(지목=사전검토, 건물=건축물대장,
+  소유권=토지대장 확정 명시). 검증: 합성 맹지 시나리오로 assess/map_control 양쪽 확인.
+
 ### 자연어로 특정 선만 지도에 다시 그리기 (도로접촉·건축선·이격·배수로)
 - 사용자가 "도로 접촉 있어?/진입로 있어?/건축선 그려줘/우수 배수로 어디로" 처럼 물으면
   카메라·3D 매스는 그대로 두고 **그 선만** 지도에 다시 얹는다.

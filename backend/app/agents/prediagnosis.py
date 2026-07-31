@@ -712,6 +712,26 @@ def format_diagnosis_answer(d: dict) -> str:
     drainage = (d.get("road_access") or {}).get("drainage") or {}
     if drainage.get("public_outlet") is False:
         out.append(f"- {drainage.get('note')}")
+        # 가장 가까운 공공 배수처까지의 경로가 사유지를 지나는 경우, 건물 유무로 두
+        # 시나리오를 나눠 안내한다(지목 기준 사전검토·건물 유무는 건축물대장 참고).
+        enc = drainage.get("encroachment") or {}
+        if enc.get("crosses_private"):
+            hits = enc.get("crossed_parcels") or []
+            jimoks = "·".join(dict.fromkeys(h.get("jimok", "") for h in hits if h.get("jimok")))
+            if any(h.get("has_building") for h in hits):
+                out.append(
+                    f"- 가장 가까운 공공 배수처까지 배수로가 지목 '{jimoks}' 사유지를 지나야 하고 "
+                    "그 필지에 기존 건물이 있어(건축물대장 확인), 배수로 통과가 사실상 어렵습니다 — "
+                    "공유지(도로·구거)로 우회하는 경로를 우선 검토하고, 불가피하면 토지소유자 동의와 "
+                    "토지대장상 소유구분을 별도 확인해야 합니다(현황측량·토목설계)."
+                )
+            else:
+                out.append(
+                    f"- 가장 가까운 공공 배수처까지 배수로가 지목 '{jimoks}' 사유지를 지나야 합니다. "
+                    "해당 필지가 나대지·농지로 보이나(건축물대장상 건물 미확인), 사유지 통과는 "
+                    "토지사용승낙(동의)이 있어야 하며 소유구분은 토지대장으로 확정해야 합니다. "
+                    "지도의 빨간 경로는 방향을 짚는 개념선입니다(현황측량으로 확정)."
+                )
 
     if d.get("jurisdiction_warning"):
         out.append(f"- {d['jurisdiction_warning']}")

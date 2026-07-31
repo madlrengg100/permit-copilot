@@ -15,7 +15,7 @@ from pyproj import Transformer
 from shapely.geometry import LineString, shape
 from shapely.ops import nearest_points, transform, unary_union
 
-from . import vworld
+from . import building_register, vworld
 
 Fetcher = Callable[[float, float, float, float], Awaitable[list[dict]]]
 TO_METERS = Transformer.from_crs("EPSG:4326", "EPSG:5179", always_xy=True)
@@ -91,6 +91,63 @@ def _drainage(roads: list, adjacent_nonroads: list) -> dict:
             "우회해야 하며, 방류처 확보는 개발행위허가 심사 대상입니다(현황측량·토목설계 확인)."
         )
     return {"public_outlet": bool(outlets), "outlets": outlets, "note": note}
+
+
+# 배수로가 '지나갈 수 있는' 공공 지목(도로·구거·하천). 나머지(전·답·대 등)는
+# 사유지라 통과하려면 토지사용승낙이 필요하다.
+_PUBLIC_DRAIN_JIMOK = {"도", "도로", "구", "구거", "천", "하천"}
+# 인접에 공공 배수처가 없을 때, 가장 가까운 공공 배수처를 찾으려 넓히는 조회 반경(도 단위, 약 180m).
+_WIDE_DRAIN_PAD = 0.0018
+
+
+def _encroachment_route(parcel, candidates: list, target_pnu: str, inverse) -> dict | None:
+    """인접에 공공 배수처가 없을 때, 넓게 조회한 필지들에서 가장 가까운 공공 배수처
+    (도로·구거·하천)까지의 '개념' 경로를 만들고, 그 직선이 지나는 사유지 필지를 검출한다.
+    사유지를 지나면 토지사용승낙 없이 배수로를 낼 수 없으므로 '침범' 경고용으로 쓴다.
+    실제 경로가 아니라 방류 방향·통과 사유지를 짚는 개념선이며 현황측량으로 확정한다.
+    """
+    outlets = []
+    others = []  # (metric geom, jimok, address, pnu)
+    for item in candidates:
+        if item.get("pnu") == target_pnu:
+            continue
+        try:
+            geom = _metric(item["geometry"])
+        except Exception:
+            continue
+        if item.get("jimok") in _PUBLIC_DRAIN_JIMOK:
+            outlets.append(geom)
+        else:
+            others.append(
+                (geom, item.get("jimok") or "미상", item.get("address", ""), item.get("pnu", ""))
+            )
+    if not outlets:
+        return None
+    try:
+        _, discharge = nearest_points(parcel.representative_point(), unary_union(outlets))
+        start = parcel.representative_point()
+        route = LineString([(start.x, start.y), (discharge.x, discharge.y)])
+    except Exception:
+        return None
+    if route.length < 0.5:  # 사실상 공공 배수처에 붙어 있으면 침범이 아니다
+        return None
+    crossed = []
+    for geom, jimok, address, pnu in others:
+        if route.intersects(geom):
+            seg = route.intersection(geom)
+            crossed.append({
+                "jimok": jimok,
+                "address": address,
+                "pnu": pnu,
+                "cross_length_m": round(getattr(seg, "length", 0.0), 1),
+            })
+    crossed.sort(key=lambda item: -item["cross_length_m"])
+    return {
+        "route_geometry": transform(inverse.transform, route).__geo_interface__,
+        "length_m": round(route.length, 1),
+        "crosses_private": bool(crossed),
+        "crossed_parcels": crossed,
+    }
 
 
 def _drainage_route(parcel, outlet_geometries: list, inverse) -> dict | None:
@@ -173,6 +230,31 @@ async def assess(
     _route = _drainage_route(parcel, road_geometries + drainage_geometries, _inverse)
     if _route:
         drainage_info["route_geometry"] = _route
+    elif not drainage_info["public_outlet"]:
+        # 인접에 공공 배수처가 없다 → 넓게 조회해 가장 가까운 도로·구거·하천까지의
+        # '개념' 경로를 만들고, 그 직선이 지나는 사유지를 검출한다(침범 사전검토).
+        try:
+            wider = await fetch(
+                minx - _WIDE_DRAIN_PAD, miny - _WIDE_DRAIN_PAD,
+                maxx + _WIDE_DRAIN_PAD, maxy + _WIDE_DRAIN_PAD,
+            )
+            enc = _encroachment_route(parcel, wider, pnu, _inverse)
+        except Exception:
+            enc = None
+        if enc:
+            # 통과 사유지(길게 지나는 것부터 최대 3필지)에 건물이 있으면 '사실상 통과 불가'
+            # 근거가 강해진다. 건축물대장(표제부)으로 건물 유무만 확인한다(소유권 아님).
+            for parcel_hit in enc.get("crossed_parcels", [])[:3]:
+                hit_pnu = parcel_hit.get("pnu")
+                if not hit_pnu:
+                    continue
+                try:
+                    reg = await building_register.lookup(hit_pnu)
+                    if reg.get("status") in {"FOUND", "CLEAR"}:
+                        parcel_hit["has_building"] = bool(reg.get("has_buildings"))
+                except Exception:
+                    pass
+            drainage_info["encroachment"] = enc
     if not roads:
         categories: dict[str, int] = {}
         for item in adjacent_nonroads:

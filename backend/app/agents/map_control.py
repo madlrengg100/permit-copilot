@@ -420,6 +420,30 @@ def _build_dimensions(
             }
         )
 
+    # 인접에 공공 배수처가 없어 배수로가 남의 사유지를 지나야 하는 경우 — 가장 가까운
+    # 공공 배수처까지의 '개념' 경로를 빨강으로 그리고 통과 사유지를 경고한다. 지목 기준
+    # 사전검토이며(소유권은 토지대장·현황측량으로 확정), 건물 유무는 건축물대장 참고치.
+    enc = drainage.get("encroachment") or {}
+    enc_route = enc.get("route_geometry")
+    if enc_route and enc_route.get("coordinates"):
+        coords = [[float(p[0]), float(p[1])] for p in enc_route["coordinates"]]
+        if enc.get("crosses_private"):
+            hits = enc.get("crossed_parcels") or []
+            jimoks = "·".join(dict.fromkeys(h.get("jimok", "") for h in hits if h.get("jimok")))
+            has_bldg = any(h.get("has_building") for h in hits)
+            label = (
+                f"⚠ 우수 방류→건물 있는 사유지({jimoks}) 통과 · 사실상 우회 필요"
+                if has_bldg
+                else f"⚠ 우수 방류→사유지({jimoks}) 통과 · 토지사용승낙/우회 필요"
+            )
+            color = "#C62828"  # 빨강 = 침범 경고
+        else:
+            label = "우수 방류→공공 배수처 · 개념(현장확인)"
+            color = "#1E88E5"
+        segments.append(
+            {"positions": coords, "label": label, "color": color, "width": 4, "onTop": True}
+        )
+
     return {"type": "show_dimensions", "segments": segments, "labels": labels}
 
 
