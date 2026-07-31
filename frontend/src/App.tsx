@@ -494,7 +494,18 @@ export default function App() {
           if (panelContext) {
             setPanel((current: any) => {
               const next = current
-                ? {...current, building_use: panelContext.building_use}
+                ? {
+                    ...current,
+                    building_use: panelContext.building_use,
+                    // 검토 범위가 바뀌면 배지도 그 범위 판정으로 갱신(없으면 유지).
+                    ...(panelContext.verdict ? {verdict: panelContext.verdict} : {}),
+                    ...(panelContext.verdict_label
+                      ? {verdict_label: panelContext.verdict_label}
+                      : {}),
+                    ...(panelContext.verdict_color
+                      ? {color: panelContext.verdict_color}
+                      : {}),
+                  }
                 : current;
               if (next) panelRef.current = next;
               return next;

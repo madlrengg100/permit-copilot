@@ -2423,14 +2423,25 @@ class Orchestrator:
                     )
                     # 판매시설 등 직전 단일용도 판정은 진단 원본에 보존하되,
                     # 팝업의 현재 검토 범위는 후속 질문의 의미에 맞게 전환한다.
+                    # 검토 범위가 '가능한 건축물 전체'로 바뀌면 배지도 그 범위 판정으로 바꾼다.
+                    # 직전 단일용도가 불가여도(판매시설 등) 지을 수 있는 다른 용도가 있으면
+                    # 전체 관점은 조건부 가능이므로, 배지가 '불가'로 남지 않게 갱신한다.
+                    _zuo = (
+                        (self.diagnosis.get("regulation") or {}).get("zone_use_overview") or {}
+                    )
+                    _context_cmd = {
+                        "type": "set_panel_context",
+                        "building_use": "가능한 건축물 전체",
+                    }
+                    if _zuo.get("allowed") or _zuo.get("conditional"):
+                        _context_cmd.update({
+                            "verdict": "conditional",
+                            "verdict_label": "조건부 가능",
+                            "verdict_color": "#F9A825",
+                        })
                     yield {
                         "event": "map_commands",
-                        "data": {
-                            "commands": [{
-                                "type": "set_panel_context",
-                                "building_use": "가능한 건축물 전체",
-                            }],
-                        },
+                        "data": {"commands": [_context_cmd]},
                     }
                     data["text"] = (
                         f"{answer}\n\n"

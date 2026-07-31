@@ -30,6 +30,10 @@ export type MapCommand =
       /** 같은 필지 후속 질문에서 법적 진단 원본은 보존하고 현재 표시 범위만 바꾼다. */
       type: "set_panel_context";
       building_use: string;
+      /** '가능한 건축물 전체'처럼 검토 범위가 바뀌면 배지도 그 범위의 판정으로 갱신한다. */
+      verdict?: string;
+      verdict_label?: string;
+      verdict_color?: string;
     }
   | {
       type: "fly_to";

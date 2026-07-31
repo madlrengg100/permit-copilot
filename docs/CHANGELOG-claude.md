@@ -6,6 +6,18 @@
 
 ## 2026-07-31
 
+### '다른 건물 가능?'(possible_models) 배지도 검토 범위에 맞게 갱신
+- 문제: "판매시설 불가"(배지 불가) 뒤 "다른 건물 가능?"을 물으면 검토용도만
+  "가능한 건축물 전체"로 바뀌고 **배지는 '건축 불가'로 남아** 문구(조건부)와 어긋났다.
+  원인 = `set_panel_context`가 verdict를 안 실어 보냄.
+- 수정(최소 3곳):
+  - `orchestrator.py` possible_models: `set_panel_context`에 verdict 실음 —
+    zone_use_overview에 allowed/conditional 용도가 있으면 conditional(조건부 가능/#F9A825).
+  - `frontend/lib/mapBridge.ts`: set_panel_context 타입에 verdict/verdict_label/verdict_color(optional) 추가.
+  - `frontend/App.tsx`: set_panel_context 처리 시 배지(color·verdict_label)도 갱신.
+  - 프론트 빌드 완료(dist 갱신). 모델 옵션·판정 로직은 그대로(모델은 계속 보임).
+- 검증: 작전동 100-2 판매시설(불가)→다른건물 → set_panel_context 배지 "조건부 가능/#F9A825".
+
 ### 진단 스트리밍: 지도·종합판정 먼저, '검토 의견'은 이어서(체감 속도 개선)
 - 병목 측정: 진단 파이프라인 ~4s(이미 병렬) + 카드의 검토 의견 LLM ~5s. 그런데 모든
   이벤트를 리스트로 모아 끝에 방출해 지도가 준비돼도 판정 LLM까지 기다렸다 한꺼번에 떴다.
