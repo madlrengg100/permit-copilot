@@ -6,6 +6,17 @@
 
 ## 2026-07-31
 
+### 건축물대장 juso 주소 폴백(대단지·구축 아파트 기존건물 검출)
+- 문제: VWorld `get_parcel(좌표)`는 좌표가 떨어진 **토지 필지 PNU**를 주는데, 건축물대장은
+  **건물 대표지번**에 등록될 수 있어(예: 한내로 62 한신아파트 → 토지 1095 vs 대장 1093-4)
+  PNU 조회가 0건 → 기존건물 미검출 → 배치 불가가 안 걸리던 문제. 전국 대단지에서 재발 가능.
+- 수정: `building_register`에 juso.go.kr 도로명주소 검색을 폴백으로 추가. **PNU로 0건일 때만**
+  `_juso_loc(address)`로 건물 대표지번을 얻어 표제부를 재조회(`_query_title` 공통 추출로 중복
+  없음). `lookup(pnu, address=...)` 시그니처만 확장, 나머지 호출부는 그대로. config에
+  `JUSO_CONFM_KEY` 추가, prediagnosis가 `matched_address` 전달. 주소 하드코딩 없이 전국 적용.
+- 검증: 한내로 62 → 15동 검출(source '주소 보정')·실질 배치 불가, 작전동 947 → PNU로 6동(폴백
+  안 탐), 신수리 100-2 빈땅 → 0건(오검출 없음)·조건부. unittest 106 OK.
+
 ### 배치 제한 신호 일반화(placement_restricted): 협소 + 기존건물
 - 협소(min_lot_area)와 기존 건축물(existing_buildings.has_buildings)은 둘 다 '신축 배치
   제한'이라 `prediagnosis`에서 단일 `placement_restricted` 신호로 통일. 흩어진 min_lot_area

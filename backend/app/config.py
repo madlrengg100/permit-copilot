@@ -84,6 +84,9 @@ USE_MOCK = not VWORLD_KEY
 # 형식이 들어와도 HTTP 클라이언트가 사용할 원문 키로 한 번만 정규화한다.
 DATA_GO_KR_SERVICE_KEY = unquote(os.getenv("DATA_GO_KR_SERVICE_KEY", ""))
 LAW_OPEN_API_OC = os.getenv("LAW_OPEN_API_OC", "")
+# 행안부 juso.go.kr 도로명주소 검색 승인키. 건축물대장이 토지 필지 PNU가 아닌
+# 건물 대표지번에 등록된 경우(대단지·구축 아파트 등) 주소로 정확한 지번을 얻는다.
+JUSO_CONFM_KEY = os.getenv("JUSO_CONFM_KEY", "")
 
 # VWorld 데이터 레이어 ID
 LAYER_PARCEL = "LP_PA_CBND_BUBUN"   # 연속지적도(부번)

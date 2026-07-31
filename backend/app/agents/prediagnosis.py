@@ -1164,7 +1164,10 @@ async def run_prediagnosis(
         land_conversion.assess(
             state["parcel"]["geometry"], state["jimok_info"]
         ),
-        building_register.lookup(state["parcel"].get("pnu", "")),
+        building_register.lookup(
+            state["parcel"].get("pnu", ""),
+            address=state["location"].get("matched_address", ""),
+        ),
         road_access.assess(
             state["parcel"]["geometry"], state["parcel"].get("pnu", "")
         ),
