@@ -6,6 +6,12 @@
 
 ## 2026-07-31
 
+### 건축선 색 충돌 해소 (침범 배수로 빨강과 겹칠 때)
+- `map_control._build_dimensions`: 사유지 침범 배수로가 빨강(#C62828)으로 그려질 때
+  (`drainage.encroachment.crosses_private`)만 건축선을 보라(#7E57C2)로 바꾼다. 침범이
+  없으면 건축선은 기본 빨강(#E53935) 유지. 한 화면에 두 빨강이 겹쳐 구분 안 되던 문제.
+- 검증: 두리 96-7(단독주택, 침범)→건축선 보라, 신수리 100-2(정상)→건축선 빨강 유지.
+
 ### 문서 현행화 (README · ARCHITECTURE · SYSTEM-SPEC)
 - 이번 세션 신기능을 사용자용 3종 문서에 반영(코드 변경 없음, 문서만).
   - README: 도구 표에 road_access(배수)·land_ownership·building_register, '최근 추가

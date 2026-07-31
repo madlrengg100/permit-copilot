@@ -311,7 +311,11 @@ def _build_dimensions(
     # 이격거리 = '인접대지경계선(지적선) → 건축선' 사이 거리.
     #   · 건축선: 실제 필지 경계를 안쪽으로 이격만큼 오프셋한 선(경계 모양을 따라감).
     #   · 이격 눈금: 주황, 경계선에서 건축선까지 수직으로 이은 선(그 거리 라벨).
-    building_line = "#E53935"
+    # 건축선은 기본 빨강이지만, 사유지 침범 배수로가 빨강으로 그려질 때는 색이 겹쳐
+    # 구분이 안 되므로 건축선을 보라로 바꾼다(같은 화면에 두 빨강 방지).
+    _drain = (diagnosis.get("road_access") or {}).get("drainage") or {}
+    _enc_red = bool((_drain.get("encroachment") or {}).get("crosses_private"))
+    building_line = "#7E57C2" if _enc_red else "#E53935"
     tick_color = "#FF8A00"
 
     def _inset_ring(setback_m: float) -> list[list[float]] | None:
