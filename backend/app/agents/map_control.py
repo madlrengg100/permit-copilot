@@ -428,17 +428,22 @@ def _build_dimensions(
     if enc_route and enc_route.get("coordinates"):
         coords = [[float(p[0]), float(p[1])] for p in enc_route["coordinates"]]
         if enc.get("crosses_private"):
-            hits = enc.get("crossed_parcels") or []
-            jimoks = "·".join(dict.fromkeys(h.get("jimok", "") for h in hits if h.get("jimok")))
-            has_bldg = any(h.get("has_building") for h in hits)
-            label = (
-                f"⚠ 우수 방류→건물 있는 사유지({jimoks}) 통과 · 사실상 우회 필요"
-                if has_bldg
-                else f"⚠ 우수 방류→사유지({jimoks}) 통과 · 토지사용승낙/우회 필요"
-            )
+            # 소유구분이 국·공유인 필지는 통과 가능이라 제외하고, 사유(또는 미상)만 경고 대상.
+            blocking = [
+                h for h in (enc.get("crossed_parcels") or [])
+                if h.get("ownership") != "국공유"
+            ]
+            jimoks = "·".join(dict.fromkeys(h.get("jimok", "") for h in blocking if h.get("jimok")))
+            confirmed = any(h.get("ownership") == "사유" for h in blocking)  # 소유구분 확인됨
+            has_bldg = any(h.get("has_building") for h in blocking)
+            kind = "사유지" if confirmed else "사유추정지"  # 미상이면 지목 proxy
+            extra = ", 건물有" if has_bldg else ""
+            need = "사실상 우회 필요" if has_bldg else "토지사용승낙/우회 필요"
+            tail = need if confirmed else f"{need}(소유구분 확인)"
+            label = f"⚠ 우수 방류→{kind}({jimoks}{extra}) 통과 · {tail}"
             color = "#C62828"  # 빨강 = 침범 경고
         else:
-            label = "우수 방류→공공 배수처 · 개념(현장확인)"
+            label = "우수 방류→공공용지 통과 · 개념(현장확인)"
             color = "#1E88E5"
         segments.append(
             {"positions": coords, "label": label, "color": color, "width": 4, "onTop": True}

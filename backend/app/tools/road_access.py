@@ -15,7 +15,7 @@ from pyproj import Transformer
 from shapely.geometry import LineString, shape
 from shapely.ops import nearest_points, transform, unary_union
 
-from . import building_register, vworld
+from . import building_register, land_ownership, vworld
 
 Fetcher = Callable[[float, float, float, float], Awaitable[list[dict]]]
 TO_METERS = Transformer.from_crs("EPSG:4326", "EPSG:5179", always_xy=True)
@@ -242,18 +242,32 @@ async def assess(
         except Exception:
             enc = None
         if enc:
-            # 통과 사유지(길게 지나는 것부터 최대 3필지)에 건물이 있으면 '사실상 통과 불가'
-            # 근거가 강해진다. 건축물대장(표제부)으로 건물 유무만 확인한다(소유권 아님).
+            # 통과 필지(길게 지나는 것부터 최대 3필지)의 실제 소유구분을 확인한다. 사유지면
+            # 승낙 없이 통과 불가, 국·공유지면 통과 가능이라 침범이 아니다. 소유구분이 1차 근거,
+            # 건물 유무(건축물대장)는 '사실상 우회' 강조용 보조 정보다.
             for parcel_hit in enc.get("crossed_parcels", [])[:3]:
                 hit_pnu = parcel_hit.get("pnu")
                 if not hit_pnu:
                     continue
+                try:
+                    own = await land_ownership.lookup_ownership(hit_pnu)
+                    if own.get("ownership"):
+                        parcel_hit["ownership"] = own["ownership"]  # "사유"/"국공유"
+                        parcel_hit["ownership_detail"] = own.get("detail")
+                except Exception:
+                    pass
                 try:
                     reg = await building_register.lookup(hit_pnu)
                     if reg.get("status") in {"FOUND", "CLEAR"}:
                         parcel_hit["has_building"] = bool(reg.get("has_buildings"))
                 except Exception:
                     pass
+            # 차단(침범) 여부 재계산: 소유구분이 국·공유면 통과 가능(차단 아님), 사유면 차단.
+            # 소유구분 미상이면 지목 proxy(비공공 지목이라 사유로 간주)로 보수적으로 본다.
+            enc["crosses_private"] = any(
+                hit.get("ownership") != "국공유"  # 사유 또는 미상
+                for hit in enc.get("crossed_parcels", [])
+            )
             drainage_info["encroachment"] = enc
     if not roads:
         categories: dict[str, int] = {}

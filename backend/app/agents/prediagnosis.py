@@ -716,20 +716,29 @@ def format_diagnosis_answer(d: dict) -> str:
         # 시나리오를 나눠 안내한다(지목 기준 사전검토·건물 유무는 건축물대장 참고).
         enc = drainage.get("encroachment") or {}
         if enc.get("crosses_private"):
-            hits = enc.get("crossed_parcels") or []
-            jimoks = "·".join(dict.fromkeys(h.get("jimok", "") for h in hits if h.get("jimok")))
-            if any(h.get("has_building") for h in hits):
+            blocking = [
+                h for h in (enc.get("crossed_parcels") or [])
+                if h.get("ownership") != "국공유"
+            ]
+            jimoks = "·".join(dict.fromkeys(h.get("jimok", "") for h in blocking if h.get("jimok")))
+            confirmed = any(h.get("ownership") == "사유" for h in blocking)
+            has_bldg = any(h.get("has_building") for h in blocking)
+            land = "사유지" if confirmed else "사유로 추정되는 필지(소유구분 확인 필요)"
+            basis = (
+                "토지특성정보 소유구분상 사유지로 확인됩니다"
+                if confirmed
+                else "지목 기준 사유 추정이며 소유구분은 토지특성정보·토지대장으로 확정해야 합니다"
+            )
+            if has_bldg:
                 out.append(
-                    f"- 가장 가까운 공공 배수처까지 배수로가 지목 '{jimoks}' 사유지를 지나야 하고 "
-                    "그 필지에 기존 건물이 있어(건축물대장 확인), 배수로 통과가 사실상 어렵습니다 — "
-                    "공유지(도로·구거)로 우회하는 경로를 우선 검토하고, 불가피하면 토지소유자 동의와 "
-                    "토지대장상 소유구분을 별도 확인해야 합니다(현황측량·토목설계)."
+                    f"- 가장 가까운 공공 배수처까지 배수로가 지목 '{jimoks}' {land}를 지나야 하고 "
+                    f"그 필지에 기존 건물이 있어(건축물대장 확인), 통과가 사실상 어렵습니다 — "
+                    f"공유지(도로·구거)로 우회하는 경로를 우선 검토해야 합니다. {basis}."
                 )
             else:
                 out.append(
-                    f"- 가장 가까운 공공 배수처까지 배수로가 지목 '{jimoks}' 사유지를 지나야 합니다. "
-                    "해당 필지가 나대지·농지로 보이나(건축물대장상 건물 미확인), 사유지 통과는 "
-                    "토지사용승낙(동의)이 있어야 하며 소유구분은 토지대장으로 확정해야 합니다. "
+                    f"- 가장 가까운 공공 배수처까지 배수로가 지목 '{jimoks}' {land}를 지나야 합니다. "
+                    f"사유지 통과는 토지사용승낙(동의)이 있어야 하며, {basis}. "
                     "지도의 빨간 경로는 방향을 짚는 개념선입니다(현황측량으로 확정)."
                 )
 

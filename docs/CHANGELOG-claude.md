@@ -6,6 +6,19 @@
 
 ## 2026-07-31
 
+### 배수 침범 판정 근거를 '소유구분(국/공/사유)'으로 (토지소유정보 API)
+- 사유지 여부의 1차 근거를 지목 proxy → **실제 소유구분**으로 격상(건물 유무는 보조).
+- `backend/app/tools/land_ownership.py`(신규): `lookup_ownership(pnu)` — 공공데이터포털/NSDI
+  '국토교통부_토지소유정보' 속성 API로 소유구분(posesnSeCodeNm) 조회 → "국공유"/"사유"/None.
+  응답 형태가 기관마다 달라 방어적 파싱(필드명 posesn·소유 힌트 + 값 토큰). 엔드포인트는
+  `LAND_OWNERSHIP_API_URL` env 로 덮어쓰기 가능. 키는 기존 `DATA_GO_KR_SERVICE_KEY` 재사용.
+- `road_access.assess`: encroachment 통과필지(최대 3)에 소유구분(1차)+건물(보조) 조회.
+  `crosses_private` 재계산 — 국공유면 통과가능(차단 아님), 사유·미상이면 차단.
+- `map_control`/`prediagnosis`: 라벨·유의사항을 소유구분 인지형 3갈래 —
+  사유(확인)/사유추정(미상, "소유구분 확인")/국공유(통과가능, 파랑). 건물有는 "사실상 우회".
+- **운영**: data.go.kr '토지소유정보' 오픈API(속성정보) 활용신청 필요(사용자 진행 중).
+  미연동/조회불가면 ownership=None → 지목 proxy 로 폴백(사유추정). unittest 106 통과.
+
 ### 배수 사유지 침범 시나리오 (가장 가까운 공공 배수처까지 빨강 경로 + 건물 유무 2갈래)
 - 인접에 공공 배수처가 없을 때만, 배수로가 남의 사유지를 지나야 하는 상황을 시각화한다.
 - `backend/app/tools/road_access.py`:
