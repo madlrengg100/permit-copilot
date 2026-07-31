@@ -89,6 +89,22 @@ def _piece_colors(zones: list[str]) -> list[str]:
     return out
 
 
+def _restriction_color(label: str) -> str:
+    """규제 중첩 범례 색 — 생태·자연도 등급/재해 유형별 관례색."""
+    s = label or ""
+    if "1등급" in s:
+        return "#C62828"  # 빨강(보전가치 최상)
+    if "2등급" in s:
+        return "#EF6C00"  # 주황
+    if "3등급" in s:
+        return "#9E9E9E"  # 회색(참고)
+    if "별도관리" in s:
+        return "#6A1B9A"  # 보라
+    if "재해" in s or "위험" in s:
+        return "#AD1457"  # 자홍
+    return "#EF6C00"
+
+
 def _view_altitude_m(area_m2: float) -> float:
     """필지 크기에 맞는 카메라 고도(m). 해수면이 아니라 **지면 위 높이**다.
 
@@ -627,6 +643,41 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
                     }
                     for i, s in enumerate(pieces)
                 ],
+            }
+        )
+
+    # 3.6) 생태·자연도·재해위험지구 등 규제 중첩 범례 — overlap 에 조각 지오메트리가
+    #      없어 지도에 깔지 않고 우하단 범례(show_restriction_pieces)로만 안내한다.
+    #      같은 라벨(등급)은 합쳐 한 줄로 보여준다.
+    restriction_pieces: dict[str, dict] = {}
+    restriction_titles: list[str] = []
+    for layer in (
+        regulatory_screen.get("ecological_nature") or {},
+        regulatory_screen.get("ecological_separate_management") or {},
+        regulatory_screen.get("disaster") or {},
+    ):
+        overlaps = [
+            o for o in (layer.get("overlaps") or [])
+            if float(o.get("share_pct") or 0) > 0
+        ]
+        if overlaps and layer.get("title"):
+            restriction_titles.append(layer["title"])
+        for ov in overlaps:
+            label = ov.get("name") or layer.get("title") or "규제 중첩"
+            piece = restriction_pieces.setdefault(
+                label,
+                {"label": label, "share_pct": 0.0, "area_m2": 0.0,
+                 "color": _restriction_color(label)},
+            )
+            piece["share_pct"] = round(piece["share_pct"] + float(ov.get("share_pct") or 0), 1)
+            piece["area_m2"] = round(piece["area_m2"] + float(ov.get("area_m2") or 0), 1)
+    if restriction_pieces:
+        commands.append(
+            {
+                "type": "show_restriction_pieces",
+                "title": "·".join(dict.fromkeys(restriction_titles)) + " 중첩",
+                "note": "선택 필지 내 환경·재해 규제 중첩 · 등급만으로 건축 불가는 아님(환경성 검토·관계기관 협의 대상)",
+                "pieces": list(restriction_pieces.values()),
             }
         )
 

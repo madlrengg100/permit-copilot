@@ -145,6 +145,7 @@ export default function App() {
   >(null);
   const [restrictionLegend, setRestrictionLegend] = useState<{
     title: string;
+    note?: string;
     pieces: Array<{ label: string; share_pct: number; area_m2: number; color: string }>;
   } | null>(null);
 
@@ -523,6 +524,7 @@ export default function App() {
           if (rp?.type === "show_restriction_pieces") {
             setRestrictionLegend({
               title: rp.title,
+              note: rp.note,
               pieces: rp.pieces.map(({ label, share_pct, area_m2, color }) => ({
                 label, share_pct, area_m2, color,
               })),
@@ -925,7 +927,9 @@ export default function App() {
                 </span>
               </div>
             ))}
-            <div className="zone-legend-note">색 영역 = 선택 필지 내 산지구분 중첩</div>
+            <div className="zone-legend-note">
+              {restrictionLegend.note ?? "선택 필지 내 규제 중첩 (사전검토 참고용)"}
+            </div>
           </div>
         )}
       </div>

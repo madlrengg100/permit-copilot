@@ -79,15 +79,17 @@ export type MapCommand =
       }>;
     }
   | {
-      /** 공익용·임업용산지 등 규제 레이어와 필지의 교차 영역 */
+      /** 생태·자연도·재해위험지구 등 규제 레이어 중첩. geometry 가 있으면 지도에도
+       *  깔고, 없으면(생태·자연도처럼 조각 도형이 없는 경우) 우하단 범례로만 안내한다. */
       type: "show_restriction_pieces";
       title: string;
+      note?: string;
       pieces: Array<{
         label: string;
         share_pct: number;
         area_m2: number;
         color: string;
-        geometry: GeoJSONPolygon;
+        geometry?: GeoJSONPolygon;
       }>;
     }
   | {
@@ -1151,6 +1153,7 @@ export class MapBridge {
     const ws3d = window.ws3d;
     this.clearRestrictionPieces();
     for (const piece of cmd.pieces) {
+      if (!piece.geometry) continue;  // 조각 도형이 없으면(생태·자연도 등) 범례로만 안내
       const pieceColor = ws3d.common.Color.fromCssColorString(piece.color);
       for (const ring of outerRings(piece.geometry)) {
         if (ring.length < 3) continue;

@@ -6,6 +6,16 @@
 
 ## 2026-07-31
 
+### 생태·자연도 등 규제 중첩 범례(우하단) — 죽어있던 restrictionLegend 배선
+- 프런트에 규제 범례(restrictionLegend 상태·CSS·MapCanvas 핸들러·App 렌더)가 이미 있었으나
+  백엔드가 show_restriction_pieces 를 안 보내 미사용 상태였음. regulatory_screen 의
+  ecological_nature/ecological_separate_management/disaster overlaps 를 실어 우하단 범례로 표시.
+- `map_control`: zone_pieces 뒤에 show_restriction_pieces 방출(같은 등급 라벨은 share/area 합산,
+  `_restriction_color`로 등급·유형별 색). overlap 에 조각 도형이 없어 지도엔 안 깔고 범례만.
+- 프런트: mapBridge 타입에서 piece.geometry 를 optional 로, 핸들러에 geometry 없으면 skip 가드,
+  restrictionLegend 에 note(백엔드 제공) 반영(기존 하드코딩 "산지구분" 문구 제거). 빌드 완료.
+- 검증: 백천동 산 32 → title "생태·자연도 중첩", 2등급 44.9+33.4=78.3% 병합, #EF6C00. unittest 106 OK.
+
 ### 검토의견도 실질 배치 불가 반영(전국, flag 기반)
 - 전체용도 검토의견 프롬프트가 첫 문장을 무조건 "건축 가능/조건부 허용"으로 강제해, 배치 불가
   (기존건물·협소)인데도 가능한 것처럼 나오던 문제. placement_restricted 또는
