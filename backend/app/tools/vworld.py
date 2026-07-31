@@ -140,6 +140,47 @@ async def get_individual_land_price(pnu: str) -> dict | None:
         return None
 
 
+@async_ttl_cache(ttl_seconds=1800, maxsize=2048)
+async def get_ledger_area_m2(pnu: str) -> float | None:
+    """PNU의 토지대장 공부면적(㎡). VWorld NED 토지특성(getLandCharacteristics)의
+    ``lndpclAr`` — 토지이음과 같은 등록면적이라, 지적도 폴리곤 기하면적보다 법적
+    기준(대장 면적)에 맞다. 실패·mock 이면 None → 호출부가 기하면적으로 폴백한다."""
+    if USE_MOCK or not VWORLD_KEY or not pnu:
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(
+                "https://api.vworld.kr/ned/data/getLandCharacteristics",
+                params={
+                    "pnu": pnu, "format": "json", "numOfRows": "20",
+                    "pageNo": "1", "key": VWORLD_KEY, "domain": VWORLD_DOMAIN,
+                },
+            )
+            response.raise_for_status()
+            data = response.json()
+        wrap = next(
+            (v for v in data.values() if isinstance(v, dict) and "field" in v), None
+        )
+        fields = (wrap or {}).get("field") or []
+        if isinstance(fields, dict):
+            fields = [fields]
+
+        def _area(f: dict) -> float | None:
+            try:
+                return float(f.get("lndpclAr"))
+            except (TypeError, ValueError):
+                return None
+
+        latest = max(
+            (f for f in fields if _area(f)),
+            key=lambda f: (str(f.get("stdrYear") or ""), str(f.get("lastUpdtDt") or "")),
+            default=None,
+        )
+        return _area(latest) if latest else None
+    except Exception:
+        return None
+
+
 # ---------------------------------------------------------------- 지오코딩
 
 
@@ -374,14 +415,21 @@ async def get_parcel(lon: float, lat: float) -> dict:
     props = f["properties"]
     geometry = f["geometry"]
 
-    # 연속지적도에는 면적 필드가 없다. 경계 폴리곤에서 측지 면적을 계산한다.
-    # 공부(토지대장)상 면적과는 소폭 차이가 날 수 있고, 법적으로는 대장 면적이
-    # 우선이므로 area_source 로 출처를 밝힌다.
-    area = geodesic_area_m2(geometry)
-
+    # 연속지적도에는 면적 필드가 없다. 우선 경계 폴리곤에서 측지면적을 계산해 두되,
+    # 법적 기준·토지이음과 맞추기 위해 토지대장 공부면적(토지특성)을 조회해 대체한다.
     pnu = props.get("pnu", "")
     price = _to_int(props.get("jiga"))
-    price_info = None if price else await get_individual_land_price(pnu)
+    # 공부면적·공시지가 조회는 서로 독립이라 병렬로 부른다.
+    ledger_area, price_info = await asyncio.gather(
+        get_ledger_area_m2(pnu),
+        get_individual_land_price(pnu) if not price else _none(),
+    )
+    if ledger_area and ledger_area > 0:
+        area = ledger_area
+        area_source = "토지대장 공부면적(VWorld 토지특성) · 토지이음과 동일 기준"
+    else:
+        area = geodesic_area_m2(geometry)
+        area_source = "지적도 경계 기하계산(측지면적) — 토지대장 공부면적과 다를 수 있음"
 
     return {
         "pnu": pnu,
@@ -391,7 +439,7 @@ async def get_parcel(lon: float, lat: float) -> dict:
         # 그래서 공백 분리가 아니라 '끝에 오는 한글'을 뽑는다.
         "jimok": _trailing_hangul(props.get("jibun", "")),
         "area_m2": round(area, 1),
-        "area_source": "지적도 경계 기하계산(측지면적) — 토지대장 공부면적과 다를 수 있음",
+        "area_source": area_source,
         "jiga_won_per_m2": price or (
             price_info.get("price_won_per_m2") if price_info else None
         ),
@@ -480,6 +528,11 @@ def _to_int(v) -> int | None:
         return int(v)
     except (TypeError, ValueError):
         return None
+
+
+async def _none():
+    """asyncio.gather 자리를 맞추기 위한 무동작 코루틴(공시지가가 이미 있을 때)."""
+    return None
 
 
 # --------------------------------------------------------------- 용도지역

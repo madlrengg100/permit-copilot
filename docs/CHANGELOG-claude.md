@@ -6,6 +6,18 @@
 
 ## 2026-07-31
 
+### 면적을 토지대장 공부면적으로(토지이음 일치) — 기하계산 대체
+- 사유: area_m2 를 연속지적도 폴리곤의 측지 기하면적으로 계산해 토지이음(공부면적)과
+  미세 불일치. 법적 기준은 대장 공부면적.
+- 수정: `vworld.get_ledger_area_m2(pnu)` 신설 — VWorld NED 토지특성(getLandCharacteristics)
+  의 lndpclAr(공부면적) 조회(기존 VWORLD_KEY, 새 키 불필요). get_parcel 이 이 값을 area_m2
+  로 쓰고(공시지가와 병렬 gather), 실패 시 기하면적으로 폴백. geometry(지도·걸침·매스)는
+  그대로 — 표시·규모·협소판정 면적만 공부면적. area_source 로 출처 명시.
+- 검증: 한내로62 47096.1→47097.4, 신수리100-2 632.5→631.0, 백천동산32 22168.7→22169.0
+  (모두 토지이음 lndpclAr 일치). 호출부 전부 단일필지라 지연 영향 없음. unittest 106 OK.
+- 남은 불일치(안내): 용도지역 걸침%·건폐율/용적률은 VWorld WFS 경계 오차 기반 — 토지이음
+  (getLandUseAttr) 권위값 승격이 다음 단계(별도 확인 후).
+
 ### 생태·자연도 등 규제 중첩 범례(우하단) — 죽어있던 restrictionLegend 배선
 - 프런트에 규제 범례(restrictionLegend 상태·CSS·MapCanvas 핸들러·App 렌더)가 이미 있었으나
   백엔드가 show_restriction_pieces 를 안 보내 미사용 상태였음. regulatory_screen 의
