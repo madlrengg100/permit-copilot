@@ -1281,6 +1281,18 @@ async def run_prediagnosis(
             "reason": reg["reason"],
         }
 
+    # 협소·기존건물(placement_restricted)은 멸실 없이 신축을 배치할 수 없으므로,
+    # 건축 불가와 같은 map_presentation으로 카드·팝업·규모·매스·치수·모델을 억제한다
+    # (배지 문구만 '실질 배치 불가'). 위 표현이 이미 있으면 그대로 둔다.
+    if state["placement_restricted"] and not reg.get("map_presentation"):
+        reg["map_presentation"] = {
+            "verdict": "not_allowed",
+            "label": "실질 배치 불가",
+            "color": "#C62828",
+            "show_building_mass": False,
+            "show_building_dimensions": False,
+        }
+
     # 용도지역상 가능한 용도라도 농지·산지 전용 제한 검토가 남으면
     # 화면의 종합 표시는 최소 '조건부'여야 한다.
     if (
