@@ -1181,6 +1181,16 @@ async def run_prediagnosis(
     # 필지 폴리곤으로 용도지역 걸침을 확인한다. 점 조회는 필지가 경계에
     # 걸쳐 있으면 점 위치에 따라 답이 달라진다 (국토계획법 제84조 케이스).
     if zone_shares:
+        # 걸침 조각 면적은 기하면적 기준이라 조각 합이 공부면적(전체면적)과 어긋난다.
+        # 공부면적/기하면적 비로 스케일하면 토지이음의 걸침 면적과 맞고 조각 합=전체면적이
+        # 된다. share_pct(=조각/기하 비율)는 그대로라 제84조 가중평균 결과는 바뀌지 않고,
+        # 지도용 geometry 도 건드리지 않는다.
+        ledger_area = state["parcel"].get("area_m2")
+        geo_area = vworld.geodesic_area_m2(state["parcel"].get("geometry") or {})
+        if ledger_area and geo_area > 0 and abs(ledger_area - geo_area) > 0.05:
+            factor = ledger_area / geo_area
+            for s in zone_shares:
+                s["area_m2"] = round(float(s.get("area_m2") or 0) * factor, 1)
         state["land_use"]["zone_shares"] = zone_shares
         state["land_use"]["straddling"] = len(zone_shares) >= 2
         # 판정 기준 지역은 점이 아니라 최대 면적 부분으로 잡는다
