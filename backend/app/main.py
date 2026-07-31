@@ -362,6 +362,18 @@ async def chat(
                             req.message,
                             continuation=effective_continuation,
                         ):
+                            # 최초 진단 카드의 '검토 의견'은 무거운 LLM이라, 카드·지도를
+                            # 먼저 흘려보낸 뒤 여기서 이어 계산·방출한다(체감 속도 개선).
+                            if event.get("event") == "pending_judgment":
+                                try:
+                                    judgment_event = await orch.render_pending_judgment(
+                                        str((event.get("data") or {}).get("query", ""))
+                                    )
+                                except Exception:  # noqa: BLE001
+                                    judgment_event = None
+                                if judgment_event:
+                                    await queue.put(("event", judgment_event))
+                                continue
                             if (
                                 event.get("event") == "error"
                                 and _is_timeout_message(

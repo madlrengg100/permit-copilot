@@ -3255,6 +3255,43 @@ class Orchestrator:
             "data": {"commands": build_map_commands(self.diagnosis or {})},
         }
 
+    async def render_pending_judgment(self, query: str) -> dict | None:
+        """최초 진단 카드의 '검토 의견'(판단 문단)을 뒤늦게 계산해 message 이벤트로 만든다.
+        무거운 LLM(≈5s)이라 카드·지도를 먼저 보낸 뒤 소비 지점이 이걸 호출해 이어붙인다.
+        단일 용도면 _verdict_judgment, 그 외(용도 미지정·시설물)면 all-uses 판단을 쓴다.
+        """
+        diagnosis = self.diagnosis or {}
+        req = diagnosis.get("request") or {}
+        names_specific_use = bool(
+            not req.get("inferred", True) and req.get("building_use") != "시설물"
+        )
+        judgment = ""
+        if names_specific_use:
+            try:
+                judgment = await asyncio.wait_for(
+                    self._verdict_judgment(query), timeout=8.0
+                )
+            except asyncio.TimeoutError:
+                logger.warning(
+                    "single-use verdict judgment timeout; using deterministic fallback"
+                )
+            if not judgment:
+                judgment = _deterministic_verdict_judgment(diagnosis)
+        else:
+            try:
+                judgment = await asyncio.wait_for(
+                    self._all_uses_verdict_judgment_with_llm(query), timeout=8.0
+                )
+            except asyncio.TimeoutError:
+                logger.warning(
+                    "all-uses verdict judgment timeout; using deterministic fallback"
+                )
+            if not judgment:
+                judgment = _all_uses_verdict_judgment(diagnosis)
+        if not judgment:
+            return None
+        return {"event": "message", "data": {"text": f"## 검토 의견\n{judgment}"}}
+
     async def _diagnose_and_emit(
         self, query: str, emit_card: bool = True, lines_only: list | None = None
     ) -> tuple[dict, list[dict]]:
@@ -3407,48 +3444,12 @@ class Orchestrator:
             self.diagnosis["use_restriction"] = restriction
 
         if emit_card:
-            # 최초 진단만 확정 형식 카드를 한 번 표시한다.
+            # 최초 진단만 확정 형식 카드를 한 번 표시한다. '검토 의견'(판단 문단)은
+            # 무거운 LLM(≈5s)이라 지금 계산하지 않는다 — 종합판정 카드·가능 모델을 먼저
+            # 흘려보내고, 그 아래 붙일 검토 의견은 pending_judgment 마커로 미뤄, 소비 지점
+            # (main.py)이 이어서 계산·방출한다. 지도·카드가 판정 LLM을 기다리지 않게 하는
+            # 스트리밍 최적화다(총 시간은 같아도 체감이 빠르다).
             card_text = format_diagnosis_answer(self.diagnosis)
-            # 사용자가 특정 용도(단일)나 층별 복합 용도를 물었으면(inferred=False)
-            # 유의사항 아래에 제미나이가 데이터를 읽어 해석한 판단 문단을 붙인다.
-            # 용도 미지정 일반 질문(inferred=True)은 종합 판정 카드만 그대로 둔다.
-            diagnosed_request = self.diagnosis.get("request") or {}
-            names_specific_use = bool(
-                not diagnosed_request.get("inferred", True)
-                and diagnosed_request.get("building_use") != "시설물"
-            )
-            reviews_all_uses = bool(
-                diagnosed_request.get("inferred", True)
-                or diagnosed_request.get("building_use") == "시설물"
-            )
-            judgment = ""
-            if reviews_all_uses:
-                try:
-                    judgment = await asyncio.wait_for(
-                        self._all_uses_verdict_judgment_with_llm(query),
-                        timeout=8.0,
-                    )
-                except asyncio.TimeoutError:
-                    logger.warning(
-                        "all-uses verdict judgment timeout; using deterministic fallback"
-                    )
-                if not judgment:
-                    judgment = _all_uses_verdict_judgment(self.diagnosis)
-            if names_specific_use:
-                try:
-                    judgment = await asyncio.wait_for(
-                        self._verdict_judgment(query), timeout=8.0
-                    )
-                except asyncio.TimeoutError:
-                    logger.warning(
-                        "single-use verdict judgment timeout; using deterministic fallback"
-                    )
-                if not judgment:
-                    judgment = _deterministic_verdict_judgment(self.diagnosis)
-            # 단일 용도와 모든 용도 모두 읽기 쉬운 검토 의견을 제공한다.
-            # 단, 모든 용도는 용도 목록을 반복하지 않고 핵심 제약만 요약한다.
-            if judgment:
-                card_text = f"{card_text}\n\n## 검토 의견\n{judgment}"
             events.append(
                 {"event": "message", "data": {"text": card_text}}
             )
@@ -3466,25 +3467,20 @@ class Orchestrator:
                         "options": model_options,
                     },
                 })
+            # 검토 의견은 뒤이어 방출 — 마커로 남기고 소비 지점이 render_pending_judgment 호출.
+            events.append(
+                {"event": "pending_judgment", "data": {"query": query}}
+            )
             self._diag_shown = True
             if _pnu:
                 self._diag_shown_by_pnu[_pnu] = True
-            if judgment:
-                # 판단 문단까지 카드에 이미 실었으므로 모델이 결론을 되풀이하지 않게 한다.
-                note = (
-                    "종합 판정 카드와 그 아래 '검토 의견'(가능/불가 판단 문단)까지 시스템이 "
-                    "이미 화면에 표시했다. 같은 판정을 다시 서술하거나 표·번호목록으로 "
-                    "나열하지 마라. 필요하면 사용자가 이어서 확인하면 좋을 다음 단계 한 문장만 "
-                    "덧붙이거나, 덧붙일 것이 없으면 생략하라."
-                )
-            else:
-                note = (
-                    "종합 판정·건폐율/용적률·규모·부담금·인허가 단계 등 표준 진단 카드는 "
-                    "시스템이 이미 화면에 표시했다. 그 내용을 표로 다시 나열하지 마라. "
-                    "자연어 답변 첫 문장에는 진단 데이터의 전체 지번 주소를 한 번 명시하고, "
-                    "주소 없이 '해당 필지'라고만 쓰지 마라. "
-                    "사용자가 물은 것의 의도에 맞춰 1~3문장 자연어로 이어 답하라."
-                )
+            # 판단 문단까지 시스템이 (곧) 표시하므로 모델이 결론을 되풀이하지 않게 한다.
+            note = (
+                "종합 판정 카드와 그 아래 '검토 의견'(가능/불가 판단 문단)까지 시스템이 "
+                "이미/곧 화면에 표시한다. 같은 판정을 다시 서술하거나 표·번호목록으로 "
+                "나열하지 마라. 필요하면 사용자가 이어서 확인하면 좋을 다음 단계 한 문장만 "
+                "덧붙이거나, 덧붙일 것이 없으면 생략하라."
+            )
         else:
             # 후속 용도 검토 — 카드를 다시 찍지 않는다. 모델이 자연어로 답한다.
             note = (
