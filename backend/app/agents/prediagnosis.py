@@ -1201,6 +1201,12 @@ async def run_prediagnosis(
     reg = zoning.apply_straddling_limits(reg, zone_shares, jurisdiction)
     state["regulation"] = reg
 
+    # 협소 필지 — 대지면적이 용도지역 법정 최소 대지면적(시행령 제80조) 미만이면
+    # 조건부 가능이라도 배치가 제한될 수 있음을 알린다(법령 값은 데이터파일에서).
+    from ..tools import min_lot_area
+
+    state["min_lot_area"] = min_lot_area.check(zone, state["parcel"].get("area_m2"))
+
     # 보전산지·공익용산지 또는 공원구역은 용도지역의 건폐율·용적률만으로
     # '조건부 가능'이라 할 수 없다. 법정 예외 허용시설인지 확인하기 전에는
     # 건축 가능 규모를 제시하지 않고 판단을 보류한다.

@@ -1073,6 +1073,8 @@ def _model_options_for_diagnosis(
         or massing.get("layout_feasible") is False
     ):
         return []
+    if diagnosis.get("min_lot_area"):  # 협소(법정 최소 대지면적 미만) → 배치 제한, 모델 숨김
+        return []
 
     overview = regulation.get("zone_use_overview") or {}
     possible = set(overview.get("allowed") or []) | set(overview.get("conditional") or [])
@@ -3299,6 +3301,10 @@ class Orchestrator:
                 )
             if not judgment:
                 judgment = _all_uses_verdict_judgment(diagnosis)
+        # 협소 필지(법정 최소 대지면적 미만)면 배치 제한 사유를 검토 의견 앞에 둔다.
+        lot = diagnosis.get("min_lot_area")
+        if lot:
+            judgment = f"{lot['note']}\n\n{judgment}".strip()
         if not judgment:
             return None
         return {"event": "message", "data": {"text": f"## 검토 의견\n{judgment}"}}

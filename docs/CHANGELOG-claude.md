@@ -6,6 +6,14 @@
 
 ## 2026-07-31
 
+### 협소 필지(법정 최소 대지면적 미만) — 배치 제한 안내 + 모델 숨김
+- 사유: 22.9㎡ 필지가 조건부 가능+모델로 나오는데 현실적으로 협소해 배치 불가.
+- `data/min_lot_area.json`(건축법 시행령 제80조 값)·`tools/min_lot_area.py::check(zone,area)`.
+- `prediagnosis`: 대지면적<법정 최소면적이면 `diagnosis.min_lot_area` 설정.
+- `orchestrator._model_options_for_diagnosis`: min_lot_area 있으면 모델 숨김.
+- `orchestrator.render_pending_judgment`: 검토 의견 앞에 협소 사유("조건부 가능이나 배치 제한").
+- 검증: 작전동 100-2(제3종주거·22.9㎡)→협소 사유+모델 없음, 정상 필지 무영향, unittest OK.
+
 ### 모델 클릭: 3D 렌더 실패가 검토용도 갱신을 막지 않게
 - `frontend/App.tsx` 모델 클릭 핸들러: `showHousingModel`이 '유효한 매스 없음'으로 throw하면
   같은 try 안의 `setback-for-use`(검토용도·이격 갱신)까지 중단되던 문제. 3D 렌더만 별도
