@@ -3356,10 +3356,21 @@ class Orchestrator:
                 )
             if not judgment:
                 judgment = _all_uses_verdict_judgment(diagnosis)
-        # 협소 필지(법정 최소 대지면적 미만)면 배치 제한 사유를 검토 의견 앞에 둔다.
-        lot = diagnosis.get("min_lot_area")
-        if lot:
-            judgment = f"{lot['note']}\n\n{judgment}".strip()
+        # 실질 배치 불가(협소·기존건물)면 그 사유를 검토 의견 맨 앞에 결정적으로 둔다.
+        # LLM 문단이 '조건부'로 시작해도 배지(실질 배치 불가)와 어긋나지 않게 보장하는
+        # 안전장치다(제미나이가 프롬프트 지시를 안 따를 때 대비). 이미 배치 불가로
+        # 시작하면 중복해 붙이지 않는다.
+        if diagnosis.get("placement_restricted") and "배치" not in judgment[:80]:
+            existing = diagnosis.get("existing_buildings") or {}
+            lot = diagnosis.get("min_lot_area") or {}
+            if existing.get("has_buildings"):
+                lead = (
+                    f"이 필지에는 기존 건축물 {existing.get('count')}건이 확인되어, "
+                    "멸실·해체를 선행하지 않으면 신축을 배치할 수 없습니다(실질 배치 불가)."
+                )
+            else:
+                lead = lot.get("note") or "이 필지는 실질적으로 신축 배치가 불가합니다."
+            judgment = f"{lead}\n\n{judgment}".strip()
         if not judgment:
             return None
         return {"event": "message", "data": {"text": f"## 검토 의견\n{judgment}"}}
