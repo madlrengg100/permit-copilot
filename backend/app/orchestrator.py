@@ -941,6 +941,23 @@ def _all_uses_verdict_judgment(diagnosis: dict | None) -> str:
     ]
     procedures = "·".join(permit_names[:4])
 
+    # 협소·기존건물 등 실질 배치 불가면 '조건부 가능' 대신 배치 불가 결론을 낸다.
+    if diagnosis.get("placement_restricted") or (
+        (regulation.get("map_presentation") or {}).get("verdict") == "not_allowed"
+    ):
+        existing = diagnosis.get("existing_buildings") or {}
+        cause = (
+            f"기존 건축물 {existing.get('count')}건이 있어 멸실·해체를 선행하지 않으면"
+            if existing.get("has_buildings")
+            else "법정 최소 대지면적에 못 미치는 협소 대지라"
+        )
+        return (
+            f"{address} 필지는 {zone or '해당 용도지역'}으로 용도지역상으로는 "
+            f"{possible_examples or '일부 용도'}가 조건부이나, {cause} 실질적으로 신축 "
+            "배치가 불가합니다. 신축하려면 기존 건축물의 소유권·임대차를 확인해 해체·멸실 "
+            "정리 또는 합필 등으로 배치 요건을 먼저 갖춘 뒤에야 개별 용도의 인허가 절차를 "
+            "검토할 수 있습니다."
+        )
     if zone and has_possible_use:
         first = (
             f"{address} 필지는 {zone}입니다. 건축물 용도 중 {possible_examples}은 "
@@ -3255,7 +3272,13 @@ class Orchestrator:
                     "조건을 충족해야 최종 허가가 가능한지를 짧게 이어서 설명하라. 첫 문장은 반드시 "
                     "'[전체 지번]은 [용도지역]의 [지목]로, [대표 용도 3개] 등은 건축 가능 또는 "
                     "조건부 허용 대상입니다.' 정도의 짧은 구조로 써라. 가능한 용도와 조건부 용도에서 "
-                    "대표 건축물만 합계 3개 제시하라. 둘째 문장에는 조건부 판정에 직접 영향을 준 "
+                    "대표 건축물만 합계 3개 제시하라. 단, placement_restricted가 true이거나 "
+                    "map_presentation.verdict가 not_allowed이면 이 필지는 실질적으로 신축 배치가 "
+                    "불가하므로, 첫 문장을 '가능/조건부 허용' 대신 '[전체 지번]은 용도지역상으로는 "
+                    "여러 용도가 조건부이나, [기존 건축물 규모 또는 협소 대지 사유]로 실질적으로 신축 "
+                    "배치가 불가합니다.'처럼 배치 불가 결론으로 시작하고, existing_buildings의 실제 "
+                    "동수·용도(공동주택 등)나 최소 대지면적 미달을 사유로 읽어 멸실·해체 선행 또는 "
+                    "합필 필요를 설명하라. 둘째 문장에는 조건부 판정에 직접 영향을 준 "
                     "핵심 규제와 서로 다른 "
                     "법률의 요건은 하나가 다른 하나를 대신하지 않고 각각 충족해야 한다는 점과 "
                     "permit_requirements에 있는 관계기관 협의·필요한 심의·허가를 통해 조정·확인하는 "
