@@ -2393,6 +2393,22 @@ class Orchestrator:
         if continuation and self.diagnosis:
             interpreted = await self._interpret_followup(original_query)
             intent = interpreted.get("intent") or "followup_explanation"
+            # 제미나이가 '다른 주소로 가서 건축 가능한지 보라'고 판단하면(target_address),
+            # 그 주소로 이동해 새로 진단한다(정규식 아닌 LLM 판단, 도로명도 처리).
+            _target = str(interpreted.get("target_address") or "").strip()
+            if _target and not _same_parcel_address(_target, self.diagnosis):
+                yield {"event": "tool_start", "data": {"tool": "prediagnose"}}
+                try:
+                    _out, _ev = await self._diagnose_and_emit(
+                        f"{_target}에 건축 가능 여부를 진단해줘. 사용자 질문: {original_query}",
+                        emit_card=True,
+                    )
+                    for _e in _ev:
+                        yield _e
+                except Exception as exc:
+                    yield {"event": "error", "data": {"tool": "prediagnose", "message": str(exc)}}
+                self._selection_changed = False
+                return
             # 특정 건축물의 신규 가능 여부 검토만 아래 결정식 진단 경로로 보낸다.
             # 그 밖의 같은-PNU 질문은 제미나이가 현재 상태를 읽고 해석한 답으로
             # 끝내므로 종합진단이나 모델 카드가 임의로 다시 붙지 않는다.
@@ -2882,6 +2898,16 @@ class Orchestrator:
                             "단어가 아니라 의도로 판단하고, 선을 보려는 뜻이 없으면 빈 배열."
                         ),
                     },
+                    "target_address": {
+                        "type": "string",
+                        "description": (
+                            "사용자가 '현재 필지가 아닌 다른 주소'의 건축 가능 여부를 묻거나 "
+                            "그 주소로 이동을 원하면 그 주소를 최대한 완전하게 담는다"
+                            "(지번·도로명 모두. 예: '서울특별시 금천구 한내로 62'). "
+                            "현재 필지를 설명하다 인접 지번을 '언급'만 한 경우(예: 접한 도로 "
+                            "지번이 뭐냐)엔 담지 않는다. 이동·재진단 의도일 때만. 아니면 빈 문자열."
+                        ),
+                    },
                 },
                 "required": ["intent", "subject", "answer"],
             },
@@ -2904,6 +2930,9 @@ class Orchestrator:
                     "사용자가 지도에서 특정 선(접한 도로·진입로, 건축선·이격, 배수 방향)을 "
                     "보고 싶어 하는 뜻이면 map_lines 에 해당 종류를 담아라. 정해진 단어가 "
                     "아니라 의도로 판단하고, 선을 보려는 뜻이 아니면 빈 배열로 둔다. "
+                    "사용자가 현재 필지가 아닌 '다른 주소'의 건축 가능 여부를 묻거나 그리로 "
+                    "이동을 원하면, 그 주소를 target_address 에 완전하게 담아라(그러면 "
+                    "answer 는 비워도 된다. 시스템이 그 주소로 이동해 새로 진단한다). "
                     "확인되지 않은 법적 사실이나 수치를 만들지 마라."
                 ),
                 messages=[{

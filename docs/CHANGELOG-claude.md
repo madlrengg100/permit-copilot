@@ -6,6 +6,12 @@
 
 ## 2026-07-31
 
+### 후속에서 '다른 주소 건물 가능?' → 이동+진단 (LLM 판단, 정규식 X)
+- `_interpret_followup`에 `target_address` 추가(제미나이가 '다른 주소로 가서 건축 가능한지'
+  판단 시 그 주소를 담음). continuation 블록에서 target_address면 `_diagnose_and_emit`로
+  이동·재진단. 도로명도 처리, 언급뿐이면 이동 안 함(A: 한내로 62→서울 이동+카드, B: '도로
+  접촉 있어?'→이동 X 검증).
+
 ### 협소 필지(법정 최소 대지면적 미만) — 배치 제한 안내 + 모델 숨김
 - 사유: 22.9㎡ 필지가 조건부 가능+모델로 나오는데 현실적으로 협소해 배치 불가.
 - `data/min_lot_area.json`(건축법 시행령 제80조 값)·`tools/min_lot_area.py::check(zone,area)`.
