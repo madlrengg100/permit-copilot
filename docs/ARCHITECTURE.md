@@ -180,6 +180,8 @@ extract_request(client, query)   # "테헤란로 152에 업무시설" → (주�
   (빨강)를 `overlay_command`이 골라 그린다. 사용자가 선만 청하면(제미나이 의도 해석)
   `build_lines_only_commands`가 카드·매스·팝업 없이 `clear_mass·fly_to·highlight_parcel`
   + 요청 선만 낸다. `_may_show_building_dimensions`로 불가 필지엔 건물 치수선을 그리지 않는다.
+  침범 경로 라벨은 방류 목적지(구거/도로/하천, `encroachment.outlet`)와 통과 사유지 지목을
+  함께 표시하며, 침범 빨강과 겹치지 않게 그때 **건축선은 보라(#7E57C2)** 로 바뀐다.
 
 > 별표1의 4번째 에이전트 — `agents/area_recommender.py` (지역추천): "○○ 비도시
 > 지역에서 농막 지을 데 찾아줘" 류 탐색형 질의를 처리한다.
