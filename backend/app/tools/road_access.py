@@ -96,6 +96,10 @@ def _drainage(roads: list, adjacent_nonroads: list) -> dict:
 # 배수로가 '지나갈 수 있는' 공공 지목(도로·구거·하천). 나머지(전·답·대 등)는
 # 사유지라 통과하려면 토지사용승낙이 필요하다.
 _PUBLIC_DRAIN_JIMOK = {"도", "도로", "구", "구거", "천", "하천"}
+# 방류 목적지 지목을 사람이 읽는 이름으로(라벨·안내용).
+_OUTLET_DISPLAY = {
+    "도": "도로", "도로": "도로", "구": "구거", "구거": "구거", "천": "하천", "하천": "하천",
+}
 # 인접에 공공 배수처가 없을 때, 가장 가까운 공공 배수처를 찾으려 넓히는 조회 반경(도 단위, 약 180m).
 _WIDE_DRAIN_PAD = 0.0018
 
@@ -106,7 +110,7 @@ def _encroachment_route(parcel, candidates: list, target_pnu: str, inverse) -> d
     사유지를 지나면 토지사용승낙 없이 배수로를 낼 수 없으므로 '침범' 경고용으로 쓴다.
     실제 경로가 아니라 방류 방향·통과 사유지를 짚는 개념선이며 현황측량으로 확정한다.
     """
-    outlets = []
+    outlets = []  # (metric geom, 표시지목, address)
     others = []  # (metric geom, jimok, address, pnu)
     for item in candidates:
         if item.get("pnu") == target_pnu:
@@ -115,22 +119,25 @@ def _encroachment_route(parcel, candidates: list, target_pnu: str, inverse) -> d
             geom = _metric(item["geometry"])
         except Exception:
             continue
-        if item.get("jimok") in _PUBLIC_DRAIN_JIMOK:
-            outlets.append(geom)
+        jm = item.get("jimok")
+        if jm in _PUBLIC_DRAIN_JIMOK:
+            outlets.append((geom, _OUTLET_DISPLAY.get(jm, jm), item.get("address", "")))
         else:
             others.append(
-                (geom, item.get("jimok") or "미상", item.get("address", ""), item.get("pnu", ""))
+                (geom, jm or "미상", item.get("address", ""), item.get("pnu", ""))
             )
     if not outlets:
         return None
     try:
-        _, discharge = nearest_points(parcel.representative_point(), unary_union(outlets))
         start = parcel.representative_point()
+        _, discharge = nearest_points(start, unary_union([o[0] for o in outlets]))
         route = LineString([(start.x, start.y), (discharge.x, discharge.y)])
     except Exception:
         return None
     if route.length < 0.5:  # 사실상 공공 배수처에 붙어 있으면 침범이 아니다
         return None
+    # 방류 목적지 — 끝점이 닿는 공공 배수처(가장 가까운 것)
+    _og, outlet_jimok, outlet_addr = min(outlets, key=lambda o: o[0].distance(discharge))
     crossed = []
     for geom, jimok, address, pnu in others:
         if route.intersects(geom):
@@ -147,6 +154,7 @@ def _encroachment_route(parcel, candidates: list, target_pnu: str, inverse) -> d
         "length_m": round(route.length, 1),
         "crosses_private": bool(crossed),
         "crossed_parcels": crossed,
+        "outlet": {"jimok": outlet_jimok, "address": outlet_addr},
     }
 
 

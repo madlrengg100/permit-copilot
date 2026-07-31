@@ -444,7 +444,8 @@ def _build_dimensions(
             extra = ", 건물有" if has_bldg else ""
             need = "사실상 우회 필요" if has_bldg else "토지사용승낙/우회 필요"
             tail = need if confirmed else f"{need}(소유구분 확인)"
-            label = f"⚠ 우수 방류→{kind}({jimoks}{extra}) 통과 · {tail}"
+            dest = (enc.get("outlet") or {}).get("jimok") or "공공 배수처"  # 방류 목적지
+            label = f"⚠ 우수 방류→{dest} · {kind}({jimoks}{extra}) 통과 · {tail}"
             color = "#C62828"  # 빨강 = 침범 경고
         else:
             label = "우수 방류→공공용지 통과 · 개념(현장확인)"

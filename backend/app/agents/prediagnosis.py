@@ -729,15 +729,23 @@ def format_diagnosis_answer(d: dict) -> str:
                 if confirmed
                 else "지목 기준 사유 추정이며 소유구분은 토지특성정보·토지대장으로 확정해야 합니다"
             )
+            _outlet = enc.get("outlet") or {}
+            dest = _outlet.get("jimok") or "공공 배수처"
+            dest_addr = _outlet.get("address") or ""
+            where = (
+                f"가장 가까운 공공 배수처인 {dest}({dest_addr})"
+                if dest_addr
+                else f"가장 가까운 공공 배수처({dest})"
+            )
             if has_bldg:
                 out.append(
-                    f"- 가장 가까운 공공 배수처까지 배수로가 지목 '{jimoks}' {land}를 지나야 하고 "
+                    f"- {where}까지 배수로가 지목 '{jimoks}' {land}를 지나야 하고 "
                     f"그 필지에 기존 건물이 있어(건축물대장 확인), 통과가 사실상 어렵습니다 — "
                     f"공유지(도로·구거)로 우회하는 경로를 우선 검토해야 합니다. {basis}."
                 )
             else:
                 out.append(
-                    f"- 가장 가까운 공공 배수처까지 배수로가 지목 '{jimoks}' {land}를 지나야 합니다. "
+                    f"- {where}까지 배수로가 지목 '{jimoks}' {land}를 지나야 합니다. "
                     f"사유지 통과는 토지사용승낙(동의)이 있어야 하며, {basis}. "
                     "지도의 빨간 경로는 방향을 짚는 개념선입니다(현황측량으로 확정)."
                 )
