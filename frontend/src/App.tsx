@@ -653,7 +653,16 @@ export default function App() {
           const type = action.slice("housing:".length) as HousingModelType;
           try {
             const requestGeneration = ++modelRequestGenerationRef.current;
-            const ew = bridge?.showHousingModel(type);
+            // 3D 렌더 실패가 아래 검토용도·이격 갱신을 막지 않게 분리한다.
+            let ew: ReturnType<NonNullable<typeof bridge>["showHousingModel"]> = null;
+            try {
+              ew = bridge?.showHousingModel(type) ?? null;
+            } catch {
+              setMessages((c) => [...c, {
+                role: "status",
+                text: "⚠ 이 필지는 3D 모델을 세울 유효한 건축 매스가 없습니다(협소·배치 불가). 검토 용도·이격만 갱신합니다.",
+              }]);
+            }
             // 경사지면 절토·성토(토공량) 추정을 함께 안내한다. 모델을 여러 번/여러
             // 종류로 눌러도 같은 필지면 수치가 같아 똑같은 박스가 쌓인다. 토공
             // 안내는 항상 1개만 남기도록 기존 토공 메시지를 지우고 최신 것만 붙인다.
