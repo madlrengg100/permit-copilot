@@ -6,6 +6,15 @@
 
 ## 2026-07-31
 
+### 문서 현행화 (README · ARCHITECTURE · SYSTEM-SPEC)
+- 이번 세션 신기능을 사용자용 3종 문서에 반영(코드 변경 없음, 문서만).
+  - README: 도구 표에 road_access(배수)·land_ownership·building_register, '최근 추가
+    기능' 섹션, DATA_GO_KR_SERVICE_KEY·LAND_OWNERSHIP_API_URL env.
+  - ARCHITECTURE: 4.3 선 오버레이/build_lines_only, 4.4 도구 21개(+land_ownership),
+    road_access 배수 설명, 7절 env.
+  - SYSTEM-SPEC: 5.3 선 오버레이·선만 렌더·LLM 의도해석, 6.0 함수 일람, 9절 env.
+- CHANGELOG-claude.md(이 파일)·CONVERSATION-STATE.md 도 이번 세션 내내 갱신 유지.
+
 ### 후속질문의 선 의도는 제미나이 해석으로(하드코딩 제거)
 - 후속(continuation) 경로에서 어떤 선을 그릴지를 키워드 정규식(`_requested_map_lines`)
   대신 **`_interpret_followup`(LLM)의 `map_lines`** 로 판단한다. 의도 기반이라 "접한 길
