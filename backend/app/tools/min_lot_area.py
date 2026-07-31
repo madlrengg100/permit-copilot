@@ -18,8 +18,9 @@ def _categories() -> dict[str, int]:
 
 
 def _category(zone: str) -> str:
-    for key in ("주거", "상업", "공업", "녹지"):
-        if key in (zone or ""):
+    # 카테고리 목록은 데이터파일에서 온다(함수에 박지 않음). '기타'는 폴백.
+    for key in _categories():
+        if key != "기타" and key in (zone or ""):
             return key
     return "기타"
 

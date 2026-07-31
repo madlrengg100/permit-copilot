@@ -2435,7 +2435,10 @@ class Orchestrator:
                         "type": "set_panel_context",
                         "building_use": "가능한 건축물 전체",
                     }
-                    if _zuo.get("allowed") or _zuo.get("conditional"):
+                    if (
+                        (_zuo.get("allowed") or _zuo.get("conditional"))
+                        and not self.diagnosis.get("min_lot_area")  # 협소면 배치 불가 배지 유지
+                    ):
                         _context_cmd.update({
                             "verdict": "conditional",
                             "verdict_label": "조건부 가능",

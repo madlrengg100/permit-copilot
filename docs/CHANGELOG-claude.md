@@ -12,7 +12,12 @@
 - `prediagnosis`: 대지면적<법정 최소면적이면 `diagnosis.min_lot_area` 설정.
 - `orchestrator._model_options_for_diagnosis`: min_lot_area 있으면 모델 숨김.
 - `orchestrator.render_pending_judgment`: 검토 의견 앞에 협소 사유("조건부 가능이나 배치 제한").
-- 검증: 작전동 100-2(제3종주거·22.9㎡)→협소 사유+모델 없음, 정상 필지 무영향, unittest OK.
+- 배지·매스도 협소 반영(기존 '실질 배치 불가' 메커니즘 재사용):
+  `map_control`: `layout_infeasible`에 `diagnosis.min_lot_area` OR 추가 → 배지 '실질 배치 불가';
+  매스 게이트에 `not min_lot_area` 추가 → 협소면 매스 안 세움.
+  `orchestrator` set_panel_context: 협소면 '조건부 가능' 배지로 덮지 않음(배치 불가 유지).
+  `min_lot_area._category`: 카테고리 목록을 데이터파일에서 읽음(함수에 안 박음).
+- 검증: 작전동 100-2 → 배지 '실질 배치 불가'·매스X·모델X·검토의견 협소, 정상 필지 무영향, unittest OK.
 
 ### 모델 클릭: 3D 렌더 실패가 검토용도 갱신을 막지 않게
 - `frontend/App.tsx` 모델 클릭 핸들러: `showHousingModel`이 '유효한 매스 없음'으로 throw하면
