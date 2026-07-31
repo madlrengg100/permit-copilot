@@ -294,6 +294,15 @@ altitude = clamp(√면적 × 2, 60, 700)   [지면 위 높이, m]
 40° 이내) 반투명 렌더 시 구분이 불가능하므로, 뒤 조각을 대비색(파랑→보라→주황→노랑)으로
 교체한다. 색의 의미는 우측 범례가 설명한다.
 
+**선 오버레이 · '선만' 렌더링** — `_build_dimensions`는 도로 접촉선(마젠타), 건축선·이격선
+(가능 판정일 때만), 우수·오수 '개념' 배수로(파랑)를 세그먼트로 만든다. 인접에 공공 배수처가
+없어 배수로가 사유지를 지나면 최근접 공공 배수처까지 **침범 경로**를 그리되, 통과 필지의
+소유구분(토지소유정보)·건물 유무(건축물대장)로 라벨을 3갈래(사유 확인/사유추정/국공유
+통과가능)로 나눈다. `overlay_command(diagnosis, kinds)`는 요청한 선만 골라 얹고,
+`build_lines_only_commands`는 "도로 접촉 있어?"·"건축선 그려줘"처럼 선만 청하는 질문에서
+카드·매스·팝업 없이 `clear_mass·fly_to·highlight_parcel` + 요청 선만 낸다. 어떤 선을 그릴지는
+후속 경로에서 제미나이(`_interpret_followup.map_lines`)가 의도로 해석한다(키워드 매칭 아님).
+
 ### 5.4 LLM 어댑터
 
 Anthropic과 OpenAI 호환 엔드포인트를 동일 인터페이스로 흡수한다.
@@ -358,6 +367,9 @@ Gemini는 `extra_content.google.thought_signature` 동반을 요구하며, 누�
 | `footprint` | `inset_for_area(geojson, ratio)` | 경계 안쪽 오프셋 배치 도형 |
 | `jimok` | `classify(jimok)` | 지목 → 전용허가 필요성 |
 | | `normalize(code_or_name)` | 한 글자 코드 → 지목명 |
+| `road_access` | `assess(parcel_geometry, pnu, fetch)` | 접도 + 우수·오수 방류처·가상 배수로·사유지 침범(`drainage`/`encroachment`) 사전검토 |
+| `land_ownership` | `lookup_ownership(pnu)` | 소유구분(국유·공유·사유) — 국토교통부 토지소유정보 API. 미연동 시 None → 지목 proxy 폴백 |
+| `building_register` | `lookup(pnu)` | 건축물대장 표제부(건물 유무·용도·규모). 침범 판정 '사실상 우회' 보조 |
 
 ### 6.1 `vworld.py` — 공간정보 조회
 
@@ -609,6 +621,8 @@ lonBackOff = backOff · sin(heading) / (111320 · cos(lat))
 | `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GEMINI_API_KEY` … | — | provider별 키 |
 | `VWORLD_KEY` | — | 미설정 시 mock 모드 |
 | `VWORLD_DOMAIN` | `http://localhost:5173` | **인증키 등록 서비스URL**(접속 URL 아님) |
+| `DATA_GO_KR_SERVICE_KEY` | — | 공공데이터포털 키. 건축물대장 표제부 + 토지소유정보 공용(활용신청은 API별) |
+| `LAND_OWNERSHIP_API_URL` | 토지소유정보 기본 엔드포인트 | 소유구분 조회 URL 덮어쓰기. 미설정·조회불가 시 지목 proxy 폴백 |
 | `APP_TOKEN` | — | `/api/chat` 보호. 외부 노출 시 필수 |
 | `ALLOWED_ORIGINS` | `http://localhost:5173` | CORS |
 | `VITE_APP_TOKEN` | — | 프론트 전송 토큰(`APP_TOKEN` 과 일치 필요) |

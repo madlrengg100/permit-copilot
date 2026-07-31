@@ -175,6 +175,11 @@ extract_request(client, query)   # "테헤란로 152에 업무시설" → (주�
 - **3D(매스)** — 건축 가능 규모의 3D 입체(`extrude_mass`), 치수선(`show_dimensions`),
   용도별 건물 모델(`show_housing_model`: 주택/공장/상가/창고). **실제 3D 렌더링은
   백엔드가 아니라 프론트 `lib/mapBridge.ts` 가 VWorld 3D(ws3d/Cesium)에서** 한다.
+- **선 오버레이** — `show_dimensions` 세그먼트로 특정 선만 얹는다. 도로 접촉선(마젠타),
+  건축선·이격선(가능 판정일 때만), 우수·오수 '개념' 배수로(파랑) 또는 사유지 침범 경로
+  (빨강)를 `overlay_command`이 골라 그린다. 사용자가 선만 청하면(제미나이 의도 해석)
+  `build_lines_only_commands`가 카드·매스·팝업 없이 `clear_mass·fly_to·highlight_parcel`
+  + 요청 선만 낸다. `_may_show_building_dimensions`로 불가 필지엔 건물 치수선을 그리지 않는다.
 
 > 별표1의 4번째 에이전트 — `agents/area_recommender.py` (지역추천): "○○ 비도시
 > 지역에서 농막 지을 데 찾아줘" 류 탐색형 질의를 처리한다.
@@ -204,7 +209,7 @@ side = √면적 ;  altitude = clamp(side × 2, 60, 700)   # 지면 위 높이
 ### 4.4 도구 계층 (`app/tools/`)
 
 사전진단 에이전트가 sub-오케스트레이터로서 아래 도구들을 정해진 순서로 호출한다.
-초기 5개에서 현재 **20개 모듈**로 확장됐다.
+초기 5개에서 현재 **21개 모듈**로 확장됐다.
 
 | 모듈 | 역할 |
 |---|---|
@@ -217,7 +222,8 @@ side = √면적 ;  altitude = clamp(side × 2, 60, 700)   # 지면 위 높이
 | `legal_conflicts.py` | 명시적 금지·예외 미확정·독립 법률 누적 적용 평가 |
 | `setback_rules.py` | 대지 안의 공지(이격) 조회 (119개 지자체 별표) |
 | `site_constraints.py` | 이격·정북일조·주차 반영 개념 건축 가능 영역 |
-| `road_access.py` | 도로 접도(연속지적도 지목 '도로' 인접) 사전검토 |
+| `road_access.py` | 도로 접도(연속지적도 지목 '도로' 인접) + 우수·오수 배수 방류처·가상 배수로·사유지 침범 경로 사전검토 |
+| `land_ownership.py` | 필지 소유구분(국유·공유·사유) — 국토교통부 토지소유정보 API. 배수로 사유지 침범 판정 근거 |
 | `jimok.py` | 지목 → 전용허가 필요성 (농지법/산지관리법) |
 | `land_conversion.py` | 농지·산지 전용 규제 판정 |
 | `regulatory_screen.py` | 재해·환경·국가유산 스크리닝 |
@@ -484,6 +490,8 @@ _meta.sources[]                    조례명 · 조례번호 · 시행일 · 조
 | `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GEMINI_API_KEY` … | — | provider에 맞는 키 |
 | `VWORLD_KEY` | — | 없으면 mock 모드로 동작 |
 | `VWORLD_DOMAIN` | `http://localhost:5173` | **인증키에 등록한 서비스URL** (접속 URL 아님) |
+| `DATA_GO_KR_SERVICE_KEY` | — | 공공데이터포털 키. 건축물대장 표제부 + 토지소유정보 공용 |
+| `LAND_OWNERSHIP_API_URL` | 토지소유정보 기본 엔드포인트 | 소유구분 조회 URL. 활용신청 상세와 다르면 덮어씀. 미설정·조회불가 시 지목 proxy 폴백 |
 | `APP_TOKEN` | — | `/api/chat` 보호. 외부 노출 시 필수 |
 | `ALLOWED_ORIGINS` | `http://localhost:5173` | CORS |
 | `VITE_APP_TOKEN` | — | 프론트에서 보낼 토큰. `APP_TOKEN` 과 일치해야 함 |
