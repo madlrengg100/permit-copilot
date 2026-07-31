@@ -2398,9 +2398,13 @@ class Orchestrator:
                 answer = str(interpreted.get("answer") or "").strip()
                 if not answer:
                     answer = await self._natural_followup_answer(original_query)
-                # 도로접촉·건축선·이격·배수로를 묻거나 보여달라면, 그 선만 지도에 다시
-                # 얹는다(카메라·3D 매스는 그대로). 건축선·이격선은 가능 판정일 때만.
-                _line_kinds = _requested_map_lines(original_query)
+                # 도로접촉·건축선·이격·배수로를 보고 싶어 하면, 그 선만 지도에 다시
+                # 얹는다(카메라·3D 매스는 그대로). 어떤 선인지는 제미나이 해석(map_lines)이
+                # 정한다 — 키워드 매칭이 아니라 의도로 판단한다. 가능 판정일 때만 건축선·이격.
+                _line_kinds = [
+                    k for k in (interpreted.get("map_lines") or [])
+                    if k in {"road", "building_line", "drainage"}
+                ]
                 if _line_kinds:
                     from .agents.map_control import overlay_command
 
@@ -2848,6 +2852,20 @@ class Orchestrator:
                     },
                     "subject": {"type": "string"},
                     "answer": {"type": "string"},
+                    "map_lines": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": ["road", "building_line", "drainage"],
+                        },
+                        "description": (
+                            "사용자가 지도에서 '보고 싶어 하는 선'이 있으면 그 종류를 담는다. "
+                            "접한 도로·진입로·접도·맹지 여부를 묻거나 그 선을 보고자 하면 road, "
+                            "건축선·이격·대지 안의 공지·후퇴선을 보고자 하면 building_line, "
+                            "우수·오수 배수 방향·방류처·배수로를 보고자 하면 drainage. "
+                            "단어가 아니라 의도로 판단하고, 선을 보려는 뜻이 없으면 빈 배열."
+                        ),
+                    },
                 },
                 "required": ["intent", "subject", "answer"],
             },
@@ -2867,6 +2885,9 @@ class Orchestrator:
                     "answer에는 최신 진단 데이터에 근거해 질문에 직접 답하라. 사전적 의미 "
                     "질문은 뜻을 먼저 설명한 뒤 이 필지에서의 의미를 연결하라. possible_models는 "
                     "허용·조건부 용도를 간결히 검토하되 모델 버튼 문구를 직접 만들지 마라. "
+                    "사용자가 지도에서 특정 선(접한 도로·진입로, 건축선·이격, 배수 방향)을 "
+                    "보고 싶어 하는 뜻이면 map_lines 에 해당 종류를 담아라. 정해진 단어가 "
+                    "아니라 의도로 판단하고, 선을 보려는 뜻이 아니면 빈 배열로 둔다. "
                     "확인되지 않은 법적 사실이나 수치를 만들지 마라."
                 ),
                 messages=[{
