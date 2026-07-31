@@ -1207,6 +1207,12 @@ async def run_prediagnosis(
 
     state["min_lot_area"] = min_lot_area.check(zone, state["parcel"].get("area_m2"))
 
+    # 신축 배치 제한 — 협소(위) 또는 기존 건축물이 있어 멸실 없이는 신축을 배치할 수
+    # 없는 경우. 배지·매스·모델을 '실질 배치 불가'로 통일하는 단일 신호다.
+    state["placement_restricted"] = bool(state["min_lot_area"]) or bool(
+        (state["existing_buildings"] or {}).get("has_buildings")
+    )
+
     # 보전산지·공익용산지 또는 공원구역은 용도지역의 건폐율·용적률만으로
     # '조건부 가능'이라 할 수 없다. 법정 예외 허용시설인지 확인하기 전에는
     # 건축 가능 규모를 제시하지 않고 판단을 보류한다.

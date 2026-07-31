@@ -6,6 +6,14 @@
 
 ## 2026-07-31
 
+### 배치 제한 신호 일반화(placement_restricted): 협소 + 기존건물
+- 협소(min_lot_area)와 기존 건축물(existing_buildings.has_buildings)은 둘 다 '신축 배치
+  제한'이라 `prediagnosis`에서 단일 `placement_restricted` 신호로 통일. 흩어진 min_lot_area
+  게이트 4곳(map_control 매스·배지, orchestrator _model_options·set_panel_context)을 이 신호로
+  일반화(새 파일·새 로직 없음, 기존 '실질 배치 불가' 재사용).
+- 검증: 작전동 947(기존건물)·100-2(협소) → 배지 '실질 배치 불가'·매스X·모델X,
+  신수리 100-2(빈땅) → 조건부·매스·모델 정상. 자연어(검토의견)는 LLM이 그대로.
+
 ### 후속에서 '다른 주소 건물 가능?' → 이동+진단 (LLM 판단, 정규식 X)
 - `_interpret_followup`에 `target_address` 추가(제미나이가 '다른 주소로 가서 건축 가능한지'
   판단 시 그 주소를 담음). continuation 블록에서 target_address면 `_diagnose_and_emit`로

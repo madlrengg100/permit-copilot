@@ -1073,7 +1073,7 @@ def _model_options_for_diagnosis(
         or massing.get("layout_feasible") is False
     ):
         return []
-    if diagnosis.get("min_lot_area"):  # 협소(법정 최소 대지면적 미만) → 배치 제한, 모델 숨김
+    if diagnosis.get("placement_restricted"):  # 협소·기존건물 → 배치 제한, 모델 숨김
         return []
 
     overview = regulation.get("zone_use_overview") or {}
@@ -2453,7 +2453,7 @@ class Orchestrator:
                     }
                     if (
                         (_zuo.get("allowed") or _zuo.get("conditional"))
-                        and not self.diagnosis.get("min_lot_area")  # 협소면 배치 불가 배지 유지
+                        and not self.diagnosis.get("placement_restricted")  # 배치 제한이면 배지 유지
                     ):
                         _context_cmd.update({
                             "verdict": "conditional",

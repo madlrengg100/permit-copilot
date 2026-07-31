@@ -637,7 +637,7 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
     if (
         mass
         and mass.get("layout_feasible", True)
-        and not diagnosis.get("min_lot_area")  # 협소면 매스를 세우지 않는다
+        and not diagnosis.get("placement_restricted")  # 협소·기존건물이면 매스 X
         and parcel
         and parcel.get("geometry")
         and show_building_mass
@@ -722,7 +722,7 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
 
     limit_exceeded = bool(mass and mass.get("exceeds_far_limit"))
     layout_infeasible = bool(mass and mass.get("layout_feasible") is False) or bool(
-        diagnosis.get("min_lot_area")  # 협소(법정 최소 대지면적 미만)도 실질 배치 불가
+        diagnosis.get("placement_restricted")  # 협소·기존건물도 실질 배치 불가
     )
     panel_verdict = (
         "limit_exceeded" if limit_exceeded
