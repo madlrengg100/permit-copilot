@@ -6,6 +6,21 @@
 
 ## 2026-07-31
 
+### '선만' 묻는 질문은 카드·매스·팝업 없이 선만 (새 필지 첫 질문 포함)
+- "건축선 그려줘"·"도로 접촉 있어?"처럼 선만 청하는 질문은, 새 필지 첫 질문이어도
+  종합판정 카드·3D 매스·가능여부 팝업을 내지 않고 요청한 선만 그린다.
+- `orchestrator._is_line_only_query(query)`: 선 요청이면서 가능여부·규모를 함께 묻지
+  않는 질문 판정(원문 기준 — 좌표 주입 후 문장엔 '건축 가능 여부 진단'이 섞여 오탐).
+- `orchestrator.ask`: coordinate_diagnosis 앞에 line-only 라우팅 추가. 같은 필지 진단이
+  있으면 `build_lines_only_commands`, 없으면 `_diagnose_and_emit(lines_only=...)`로 조용히
+  진단 후 선만. 답은 `_natural_followup_answer`(카드 아님).
+- `_diagnose_and_emit(lines_only=[...])`: 진단은 돌리되 _render_event·모델·카드 대신
+  build_lines_only_commands 만 방출.
+- `map_control.build_lines_only_commands(diagnosis, kinds)`: build_map_commands 결과에서
+  clear_mass·fly_to·highlight_parcel만 남기고 overlay_command(요청 선) 추가.
+- 검증: 새 필지 첫 "도로 접촉 있어?"→도로접촉선만/팝업·매스·카드 없음, "창고 지을 수
+  있어?"→정식 진단 회귀 정상. CONVERSATION-STATE.md에 예외 명문화. unittest 106 통과.
+
 ### 배수 침범 판정 근거를 '소유구분(국/공/사유)'으로 (토지소유정보 API)
 - 사유지 여부의 1차 근거를 지목 proxy → **실제 소유구분**으로 격상(건물 유무는 보조).
 - `backend/app/tools/land_ownership.py`(신규): `lookup_ownership(pnu)` — 공공데이터포털/NSDI

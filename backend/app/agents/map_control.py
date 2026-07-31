@@ -461,6 +461,19 @@ _OVERLAY_LABEL_KINDS = {
 }
 
 
+def build_lines_only_commands(diagnosis: dict, kinds) -> list[dict]:
+    """'선만' 보여주는 최소 지도 명령. 필지로 이동·강조하고 요청한 선(도로접촉/건축선/
+    이격/배수로)만 얹는다. 3D 매스·가능여부 팝업·전체 치수선은 내지 않는다.
+    선만 묻는 질문(예: '건축선 그려줘', '도로 접촉 있어?') 전용이다.
+    """
+    base_types = {"clear_mass", "fly_to", "highlight_parcel"}
+    cmds = [c for c in build_map_commands(diagnosis) if c.get("type") in base_types]
+    overlay = overlay_command(diagnosis, kinds)
+    if overlay:
+        cmds.append(overlay)
+    return cmds
+
+
 def _may_show_building_dimensions(diagnosis: dict) -> bool:
     """건물 치수선(건축선·이격)을 지도에 그려도 되는지. 불가 판정·확정 용도제한이면
     그리지 않는다(build_map_commands 의 게이팅과 같은 규칙)."""

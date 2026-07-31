@@ -698,6 +698,22 @@ def _requested_map_lines(query: str) -> list[str]:
     return kinds
 
 
+def _is_line_only_query(query: str) -> bool:
+    """'선만' 묻는 질문인지. 도로접촉·건축선·이격·배수로 선을 청하되, 건축 가능여부·규모를
+    함께 묻지 않는 질문은 종합판정 카드·3D 매스·팝업 없이 선만 그린다.
+    """
+    if not _requested_map_lines(query):
+        return False
+    # 가능여부·규모를 함께 물으면 정식 진단(카드)으로 보낸다.
+    if re.search(
+        r"지을\s*수|지어|신축|건축\s*(?:가능|불가|할)|가능(?:해|한|합니|하나|할까|여부|성|한지)|"
+        r"규모|건폐율|용적률|층수|얼마나|몇\s*층|평수|지을까|되나요?|될까",
+        query,
+    ):
+        return False
+    return True
+
+
 def _deterministic_verdict_judgment(diagnosis: dict | None) -> str:
     """단일 용도 검토 의견의 LLM 지연·실패 시 실제 진단값으로 만드는 요약."""
     diagnosis = diagnosis or {}
@@ -2439,6 +2455,59 @@ class Orchestrator:
                 self._selection_changed = False
                 return
 
+        # 선만 묻는 질문('건축선 그려줘'·'도로 접촉 있어?')은 종합판정 카드·3D 매스·
+        # 가능여부 팝업 없이 요청한 선만 그린다. 좌표 주입 전 '원문' 기준으로 판정한다
+        # (주입된 문장엔 '건축 가능 여부 진단' 이 들어가 오탐될 수 있다).
+        _line_only = (
+            _requested_map_lines(original_query)
+            if _is_line_only_query(original_query) else None
+        )
+        if _line_only:
+            same_diag = bool(
+                self.diagnosis
+                and not self._selection_changed
+                and (
+                    not coordinate_match
+                    or _same_parcel_coordinate(coordinate_match, self.diagnosis)
+                )
+            )
+            if same_diag:
+                from .agents.map_control import build_lines_only_commands
+
+                yield {
+                    "event": "map_commands",
+                    "data": {
+                        "commands": build_lines_only_commands(self.diagnosis, _line_only)
+                    },
+                }
+                yield {
+                    "event": "message",
+                    "data": {"text": await self._natural_followup_answer(original_query)},
+                }
+                self._selection_changed = False
+                return
+            if coordinate_match:
+                yield {"event": "tool_start", "data": {"tool": "prediagnose"}}
+                try:
+                    _out, events = await self._diagnose_and_emit(
+                        user_query, lines_only=_line_only
+                    )
+                    for event in events:
+                        yield event
+                    yield {
+                        "event": "message",
+                        "data": {
+                            "text": await self._natural_followup_answer(original_query)
+                        },
+                    }
+                    self._selection_changed = False
+                except Exception as exc:
+                    yield {
+                        "event": "error",
+                        "data": {"tool": "prediagnose", "message": str(exc)},
+                    }
+                return
+
         coordinate_diagnosis = bool(
             coordinate_match
             and (
@@ -3166,7 +3235,7 @@ class Orchestrator:
         }
 
     async def _diagnose_and_emit(
-        self, query: str, emit_card: bool = True
+        self, query: str, emit_card: bool = True, lines_only: list | None = None
     ) -> tuple[dict, list[dict]]:
         """진단을 돌리고 지도 반영·경고를 이벤트로 내보낸다.
 
@@ -3174,6 +3243,9 @@ class Orchestrator:
           한 번 표시한다(사실이 사라지지 않게).
         emit_card=False (recheck_use 등 후속 용도 검토): 지도만 갱신하고 카드는
           다시 찍지 않는다. 모델이 데이터를 근거로 자연어로 답하게 한다.
+        lines_only=[...] ('건축선 그려줘'·'도로 접촉 있어?' 등 선만 묻는 질문): 진단은
+          돌려 선 기하를 얻되, 종합판정 카드·3D 매스·가능여부 팝업은 내지 않고 요청한
+          선만 지도에 얹는다.
         """
         events: list[dict] = []
         steps: list[dict] = []
@@ -3247,6 +3319,14 @@ class Orchestrator:
             )
         events.extend(steps)
         events.append({"event": "diagnosis", "data": self.diagnosis})
+
+        # 선만 묻는 질문: 진단 데이터로 요청한 선만 얹고, 카드·3D 매스·팝업은 내지 않는다.
+        if lines_only:
+            from .agents.map_control import build_lines_only_commands
+
+            cmds = build_lines_only_commands(self.diagnosis, lines_only)
+            events.append({"event": "map_commands", "data": {"commands": cmds}})
+            return self.diagnosis, events
 
         # 진단이 끝나면 지도 반영은 확정 절차다. 여기서 바로 실행한다.
         events.append(self._render_event())
