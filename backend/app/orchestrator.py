@@ -3768,6 +3768,7 @@ class Orchestrator:
                 }, events
             query = (args.get("query") or "").strip()
             places = await vworld.search_places(query)
+            stripped = ""
             if not places:
                 # 지역명을 함께 넣었을 때 결과가 없는 일부 POI를 위해 장소명만 재시도한다.
                 stripped = re.sub(
@@ -3777,6 +3778,26 @@ class Orchestrator:
                 ).strip()
                 if stripped and stripped != query:
                     places = await vworld.search_places(stripped)
+            if not places:
+                # POI 검색이 비어도 지오코더는 '예산 삽교초등학교'처럼 지역명+시설명을
+                # 견고하게 처리하고, 지역명으로 동명 시설(옥곡초 경산/여수 등)까지 구분한다.
+                # 어르신이 번지 대신 '○○초등학교' 같은 랜드마크로 말해도 위치를 잡는다.
+                for cand in (query, stripped):
+                    if not cand:
+                        continue
+                    try:
+                        g = await vworld.geocode(cand)
+                    except Exception:
+                        logger.debug("장소 지오코딩 폴백 실패: %s", cand, exc_info=True)
+                        continue
+                    if g and g.get("lon") is not None:
+                        places = [{
+                            "title": query,
+                            "road": g.get("matched_address", ""),
+                            "parcel": "",
+                            "lon": g["lon"], "lat": g["lat"],
+                        }]
+                        break
             if not places:
                 return {
                     "found": False,
