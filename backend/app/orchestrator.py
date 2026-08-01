@@ -1193,6 +1193,10 @@ class Orchestrator:
         # 자연어 후속 질문이 짧아도 제미나이가 무엇을 이어 묻는지 알 수 있도록
         # 필지별 UI·대화 상태를 구조화해 보관한다.
         self._context_by_pnu: dict[str, dict] = {}
+        # 사용자가 가르친 제어 표현 사전(사용자말 → 정식 대상). '수치선=치수선'처럼
+        # 규칙이 못 잡는 표현을 학습해 다음부터는 빠른 경로로 바로 처리한다. 세션에
+        # 저장돼 재시작·재접속에도 유지된다.
+        self.control_glossary: dict[str, str] = {}
 
     def snapshot_state(self) -> dict:
         """타임아웃 재시도 전의 필지별 상담 상태를 복제한다."""
@@ -1208,6 +1212,7 @@ class Orchestrator:
             "_messages_by_pnu": self._messages_by_pnu,
             "_diag_shown_by_pnu": self._diag_shown_by_pnu,
             "_context_by_pnu": self._context_by_pnu,
+            "control_glossary": self.control_glossary,
         })
 
     def restore_state(self, snapshot: dict) -> None:
@@ -1218,6 +1223,8 @@ class Orchestrator:
         # 이전 버전 세션 파일도 안전하게 복원한다.
         if not hasattr(self, "_context_by_pnu"):
             self._context_by_pnu = {}
+        if not hasattr(self, "control_glossary"):
+            self.control_glossary = {}
 
     def _active_pnu(self) -> str:
         return (
@@ -1265,6 +1272,16 @@ class Orchestrator:
                 last_control_target=target,
                 last_control_shown=bool(show),
             )
+
+    def _control_result(self, target: str, show: bool) -> tuple[dict | None, str]:
+        """대상 제어의 지도명령과 한국어 안내 문구를 함께 만든다.
+
+        문구는 라벨 뒤에 '표시를'을 붙여 받침에 무관하게 자연스럽게 한다.
+        """
+        cmd = self._control_command(target, show)
+        label = self._CONTROL_LABELS.get(target, "표시")
+        verb = "다시 켰습니다" if show else "껐습니다"
+        return cmd, f"{label} 표시를 {verb}."
 
     def set_selected_parcel(
         self,
@@ -1461,21 +1478,17 @@ class Orchestrator:
                 restore_target = _target
             else:
                 restore_target = "building_model"
-            _label = self._CONTROL_LABELS.get(restore_target, "3D 건축 모델")
             if restore_target == "building_model" and building_display_blocked:
                 yield {
                     "event": "message",
                     "data": {"text": "현재 건축 불가 판정이므로 3D 건축 모델을 표시하지 않습니다."},
                 }
                 return
-            _cmd = self._control_command(restore_target, show=True)
+            _cmd, _msg = self._control_result(restore_target, show=True)
             if _cmd:
                 yield {"event": "map_commands", "data": {"commands": [_cmd]}}
                 self._record_control(restore_target, show=True)
-            yield {
-                "event": "message",
-                "data": {"text": f"{_label}을 다시 표시했습니다."},
-            }
+            yield {"event": "message", "data": {"text": _msg}}
             return
 
         # '건축면적만/바닥면적만/평면만 보여줘'(입체 숨기고 평면 윤곽만)는 표시 토글이라
@@ -1604,6 +1617,23 @@ class Orchestrator:
                 "data": {"text": message},
             }
             return
+
+        # 학습된 제어 표현(사용자가 가르친 말 → 정식 대상)을 빠른 경로로 즉시
+        # 처리한다. 예: 앞서 '수치선=치수선'을 학습했으면 규칙에 없어도 바로 켜고 끈다.
+        for _term, _tgt in self.control_glossary.items():
+            if not _term or _term not in compact_query or _tgt not in self._CONTROL_LABELS:
+                continue
+            _off = re.search(r"(꺼|끄|숨|닫|접|치워|없애|안보이|off)", compact_query, re.I)
+            _on = re.search(r"(켜|보여|표시|열|펼|띄워|나타내|복원|다시|on)", compact_query, re.I)
+            if not (_off or _on):
+                continue
+            _show = bool(_on and not _off)
+            _cmd, _msg = self._control_result(_tgt, _show)
+            if _cmd:
+                yield {"event": "map_commands", "data": {"commands": [_cmd]}}
+                self._record_control(_tgt, _show)
+                yield {"event": "message", "data": {"text": _msg}}
+                return
 
         # 지도 표시 제어는 필지 진단보다 먼저 처리한다. "용도지역 꺼줘"의
         # '용도'를 건축물 용도 질문으로 오인해 사전진단을 실행하면 안 된다.
@@ -2526,6 +2556,43 @@ class Orchestrator:
                 self.update_conversation_context(pending_offer="show_models")
             elif self.conversation_context().get("pending_offer"):
                 self.update_conversation_context(pending_offer="")
+            # 규칙이 못 잡은 제어 표현을 제미나이가 의미로 해석해 왔으면 실행한다.
+            # 새 표현(learn_term)은 학습사전에 넣어 다음부터 빠른 경로로 바로 처리한다.
+            _control = interpreted.get("control") or {}
+            _c_action = str(_control.get("action") or "").strip()
+            _c_target = str(_control.get("target") or "").strip()
+            if _c_action == "restore":
+                _rctx = self.conversation_context()
+                _c_target = _rctx.get("last_control_target") or "building_model"
+                _c_show = True
+            elif _c_action in {"hide", "show"}:
+                _c_show = _c_action == "show"
+            else:
+                _c_action = ""
+            if _c_action and _c_target in self._CONTROL_LABELS:
+                if _c_target == "building_model" and _c_show and building_display_blocked:
+                    yield {
+                        "event": "message",
+                        "data": {"text": "현재 건축 불가 판정이므로 3D 건축 모델을 표시하지 않습니다."},
+                    }
+                    self._selection_changed = False
+                    return
+                _cmd, _msg = self._control_result(_c_target, _c_show)
+                _learn = str(_control.get("learn_term") or "").strip()
+                _learned = ""
+                if _learn and re.sub(r"\s+", "", _learn) not in self.control_glossary:
+                    self.control_glossary[re.sub(r"\s+", "", _learn)] = _c_target
+                    _learned = (
+                        f" 앞으로 '{_learn}'도 {self._CONTROL_LABELS[_c_target]} 표시로 "
+                        "알겠습니다."
+                    )
+                if _cmd:
+                    yield {"event": "map_commands", "data": {"commands": [_cmd]}}
+                    self._record_control(_c_target, _c_show)
+                yield {"event": "message", "data": {"text": _msg + _learned}}
+                self.messages.append({"role": "assistant", "content": _msg + _learned})
+                self._selection_changed = False
+                return
             # 제미나이가 '다른 주소로 가서 건축 가능한지 보라'고 판단하면(target_address),
             # 그 주소로 이동해 새로 진단한다(정규식 아닌 LLM 판단, 도로명도 처리).
             _target = str(interpreted.get("target_address") or "").strip()
@@ -3093,6 +3160,42 @@ class Orchestrator:
                             "이미 표시를 명령했으면 되묻지 말고 바로 possible_models."
                         ),
                     },
+                    "control": {
+                        "type": "object",
+                        "description": (
+                            "사용자가 지도 표시를 켜거나 끄라고 한 제어 명령을 의미로 해석해 담는다. "
+                            "규칙이 못 잡은 표현·동의어·구어·오타도 뜻으로 판단한다. 예: '수치선 꺼', "
+                            "'눈금 지워', '지적선 안 보이게', '아까 그거 다시 켜'. 표시 제어가 아니면 "
+                            "빈 객체로 둔다(그러면 intent 로 답한다)."
+                        ),
+                        "properties": {
+                            "action": {
+                                "type": "string",
+                                "enum": ["hide", "show", "restore", ""],
+                                "description": "끄기=hide, 켜기=show, 방금 끈 것을 되살리기=restore.",
+                            },
+                            "target": {
+                                "type": "string",
+                                "enum": [
+                                    "dimensions", "building_model", "cadastre",
+                                    "zoning", "slope", "panel", "",
+                                ],
+                                "description": (
+                                    "치수선/수치선/눈금=dimensions, 3D 건물/모델=building_model, "
+                                    "지적도/지적선=cadastre, 용도지역=zoning, 경사도=slope, "
+                                    "판정 팝업/결과창=panel. restore 면 비워도 된다."
+                                ),
+                            },
+                            "learn_term": {
+                                "type": "string",
+                                "description": (
+                                    "사용자가 그 대상을 부른 표현(예: '수치선'). 규칙에 없던 새 표현이면 "
+                                    "담아라. 다음부터 그 표현도 같은 대상으로 바로 처리하도록 학습한다. "
+                                    "이미 익숙한 표준어면 빈 문자열."
+                                ),
+                            },
+                        },
+                    },
                 },
                 "required": ["intent", "subject", "answer"],
             },
@@ -3115,7 +3218,11 @@ class Orchestrator:
                     "specific_use_feasibility, 용어의 뜻·개념을 묻는다면 term_definition, "
                     "현재 필지의 수치·규제·중첩 사실을 묻는다면 parcel_fact, 인허가 절차를 "
                     "묻는다면 permit_procedure, 나머지는 followup_explanation으로 분류하라. "
-                    "표시·숨김 같은 지도 제어는 이 단계 전에 이미 처리된다. "
+                    "표준적인 표시·숨김 지도 제어는 이 단계 전에 규칙으로 처리되지만, "
+                    "규칙이 못 알아들은 제어 표현(동의어·구어·오타, 예: '수치선 꺼', '눈금 "
+                    "지워', '지적선 안 보이게')은 control 에 action·target 으로 의미를 담아라. "
+                    "규칙에 없던 새 표현이면 learn_term 에 사용자가 쓴 그 말을 담아, 다음부터 "
+                    "같은 대상으로 바로 처리하도록 학습시킨다. 표시 제어가 아니면 control 은 비운다. "
                     "answer에는 최신 진단 데이터에 근거해 질문에 직접 답하라. 사전적 의미 "
                     "질문은 뜻을 먼저 설명한 뒤 이 필지에서의 의미를 연결하라. possible_models는 "
                     "허용·조건부 용도를 간결히 검토하되 모델 버튼 문구를 직접 만들지 마라. "
