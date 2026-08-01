@@ -251,6 +251,22 @@ def _build_dimensions(
             }
         )
 
+    # 높이 — 가로·세로처럼 건물 높이도 보이게. 매스 동측 변 중간 높이에 라벨을 띄운다
+    # (label 은 지형 상대 height 라 매스 옆면에 붙는다). 층수도 함께.
+    if _mass_top > 0:
+        _floors = mass.get("floors")
+        labels.append(
+            {
+                "lon": maxlon,
+                "lat": mid_lat,
+                "height": _mass_top / 2,
+                "text": (
+                    f"높이 약 {_mass_top:,.1f}m"
+                    + (f" · {_floors}층" if _floors else "")
+                ),
+            }
+        )
+
     # 이격거리 — 값이 있을 때만(수집된 지자체만; 아산 등). 건물 용도·지역·규모에
     # 따라 정해진 전면(건축선)·인접경계 이격을, 필지 경계선에서 '안쪽으로 그 거리만큼'
     # 뻗는 오프셋 치수선으로 각각 표시해 가상 건물이 얼마나 물러나 앉는지 보이게 한다.
