@@ -1001,6 +1001,26 @@ def _same_parcel_address(address_in_query: str, diagnosis: dict | None) -> bool:
     )
 
 
+def _target_in_query(target: str, query: str) -> bool:
+    """LLM이 낸 이동 대상 주소(target_address)가 실제 질문에 근거하는지 확인한다.
+
+    의도 판단은 제미나이가 하지만, 주소 없는 질문에서 엉뚱한 주소를 지어내는(환각)
+    경우가 있어 결정적 가드를 둔다: 지번/번지면 '장소 토큰 + 숫자'가, 번지 없는
+    주소(도로명·POI)면 마지막 장소 토큰이 질문 원문(공백 무시)에 실제로 있어야
+    이동을 허용한다. 없으면 환각으로 보고 이동하지 않는다.
+    """
+    q = re.sub(r"\s+", "", query or "")
+    t = (target or "").strip()
+    if not q or not t:
+        return False
+    m = re.search(r"([가-힣]{2,})\s*(?:산\s*)?(\d+(?:-\d+)?)\s*$", t)
+    if m:
+        place, num = m.group(1), re.sub(r"\s", "", m.group(2))
+        return place in q and num in q
+    toks = [re.sub(r"\s+", "", w) for w in t.split() if len(w) >= 2]
+    return bool(toks) and toks[-1] in q
+
+
 def _same_parcel_coordinate(
     coordinate_match: re.Match | None, diagnosis: dict | None
 ) -> bool:
@@ -2414,7 +2434,12 @@ class Orchestrator:
             # 제미나이가 '다른 주소로 가서 건축 가능한지 보라'고 판단하면(target_address),
             # 그 주소로 이동해 새로 진단한다(정규식 아닌 LLM 판단, 도로명도 처리).
             _target = str(interpreted.get("target_address") or "").strip()
-            if _target and not _same_parcel_address(_target, self.diagnosis):
+            # 환각 방지: 제미나이가 낸 주소가 질문 원문에 실제로 있어야 이동한다.
+            if (
+                _target
+                and _target_in_query(_target, original_query)
+                and not _same_parcel_address(_target, self.diagnosis)
+            ):
                 yield {"event": "tool_start", "data": {"tool": "prediagnose"}}
                 try:
                     _out, _ev = await self._diagnose_and_emit(
