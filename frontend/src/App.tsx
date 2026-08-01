@@ -928,7 +928,7 @@ export default function App() {
               </div>
             ))}
             <div className="zone-legend-note">
-              {restrictionLegend.note ?? "선택 필지 내 규제 중첩 (사전검토 참고용)"}
+              {restrictionLegend.note ?? "환경·재해 중첩 (사전검토 참고용)"}
             </div>
           </div>
         )}

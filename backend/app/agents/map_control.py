@@ -676,7 +676,7 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
             {
                 "type": "show_restriction_pieces",
                 "title": "·".join(dict.fromkeys(restriction_titles)) + " 중첩",
-                "note": "선택 필지 내 환경·재해 규제 중첩 · 등급만으로 건축 불가는 아님(환경성 검토·관계기관 협의 대상)",
+                "note": "환경·재해 중첩 (사전검토 참고용)",
                 "pieces": list(restriction_pieces.values()),
             }
         )
