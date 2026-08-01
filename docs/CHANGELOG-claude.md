@@ -4,6 +4,41 @@
 > 중복 구현하지 말 것.** 규제 수치는 데이터파일에서만(하드코딩 금지),
 > 가능 모델 목록은 `orchestrator._model_options_for_diagnosis()`만 — CLAUDE.md 준수.
 
+## 2026-08-01
+
+### 도로: '지적 폭'(오표기) 제거 → 접도(2m) 여부 + 건물 높이 치수
+- 굽은/가지친 도로 필지는 최소사각형이 커 '지적 폭'이 무의미(852m 통과도로를 폭처럼).
+  → 화면에서 도로 필지 규모/외곽선 전부 제거하고, 정작 중요한 접도만 남김.
+- `prediagnosis`: 카드가 접촉 길이 vs 건축법 접도 최소 2m 를 결정적으로 표기
+  (2m 미만이면 '접도 최소 2m 미달 가능 — 현황측량 확정'). `_estimated_width_m` 는
+  내부 후퇴폭 참고용으로만 유지, road_parcel_geometry·cadastral_length/area 제거.
+- `map_control`: 긴 도로 외곽선 제거(접촉선만). 3D 치수에 건물 '높이 약 Xm·N층'
+  라벨 추가(매스 옆면 중간 높이, label height 방식 — 프론트 무변경).
+- 측정 해제 토스트('측정 표시를 지웠습니다') 미표시. 규제 범례 문구 '규제'→'환경·재해 중첩'.
+
+### 검토의견 근거 보충: 영어 status 누수 제거 + 이격 자연화
+- `_query_evidence` 가 road.get('status')(CADASTRAL_CONTACT 등 영어 코드)를 사용자
+  문구에 그대로 붙이던 것 → 한국어 서술(summary/message/label)만. 이격 모두 0이면
+  '이격 0.0m·0.0m·0.0m' 나열 대신 '모두 0m로 별도 후퇴선이 적용되지 않습니다'로.
+
+### 예외 처리 전수 감사 — 조용히 삼키던 broad except 27곳에 로깅
+- get_planned_roads 의 shape 스코프 NameError 가 broad except 로 조용히 삼켜진 사례 계기.
+  전 코드 broad except 전수조사: 로그 없이 폴백하던 27곳에 logger.debug/warning(exc_info)
+  추가(폴백 동작 유지, 코드 버그는 로그로 드러나게). 6개 파일에 모듈 logger 신설.
+  함수-내부 import 전수 대조 → 스코프 버그는 vworld 한 곳뿐(수정됨), 나머지 안전.
+
+### 환각 이동 방지 — 두 이동 경로 모두 결정적 가드
+- 증상: 개념 후속질문('접촉 길이와 중심선 후퇴는 왜 중요한데')에서 제미나이가
+  target_address 를 환각(예산 두리 111)으로 지어내 엉뚱한 필지로 튕김.
+- `_target_in_query()` 가드: LLM이 낸 이동 주소의 지명/랜드마크 토큰이 질문 원문에
+  실제로 있어야 이동(번지 숫자 강제 X — 어르신은 '○○초교 근처'로 말함). continuation
+  target_address 와 move_to_place 양쪽에 적용. 이동 의도는 LLM, 가드는 환각 검증만.
+
+### 랜드마크 이동 견고화 — move_to_place 에 geocode 폴백
+- VWorld POI(search_places)가 '예산 삽교초등학교'(지역+시설명)에서 0건 → 실패하던 것을,
+  geocode 폴백으로 보완(geocode 는 지역+시설명 견고 처리, 동명 학교를 지역명으로 구분).
+  번지 없이 학교명만으로 그 위치 필지로 이동해 진단 유도.
+
 ## 2026-07-31
 
 ### 도시계획 도로 레이어 연계 — 접함 geometry + 집행여부(미집행=미개설) (전국)
