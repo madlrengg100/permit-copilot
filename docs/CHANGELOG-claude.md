@@ -6,6 +6,16 @@
 
 ## 2026-07-31
 
+### 도시계획 도로 레이어 연계 — 접함 geometry + 집행여부(미집행=미개설) (전국)
+- 도로대장 자체 API는 없지만 VWorld 도시계획 도로 레이어(lt_c_upisuq151)가 접촉 geometry와
+  집행여부(exc_nam: 미집행/집행)를 준다. vworld.get_planned_roads(geometry) 신설 — 도로 없음
+  (NO_CADASTRAL_ROAD/UNAVAILABLE)일 때만 단독 조회(gather 밖). 필지에 접하는 도시계획도로를
+  집행여부로 갈라 판정: 개설=접도 근거 / 미집행=미개설이라 현재 접도 불가(조건부 유지).
+  레이어가 비면 토지이음 지정목록 '접함'으로 폴백. 문구는 출처 인용 없이 사실 서술.
+- 버그 수정: shape 가 get_zone_shares 안에서만 import 돼 get_planned_roads 에서 NameError→
+  broad except 로 조용히 []가 되던 것(스로틀로 오인). 함수 내 지연 import 로 해결.
+- 검증: 산32 소로2류 미집행(미개설) 정확 반영, 신수리 지적도로 그대로. unittest 106 OK.
+
 ### 도시계획도로(소로/중로/대로 등) 접함을 접도 근거로 반영 (전국 공통)
 - 문제: road_access 가 연속지적도 '도로' 필지만 봐서, 토지이음에 도시계획시설 도로가 '접함'인
   필지도 NO_CADASTRAL_ROAD('맹지')로 떨어짐(백천동 산32: 토지이음 소로2류 접함인데 도로 없음).

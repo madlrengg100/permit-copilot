@@ -1200,27 +1200,49 @@ async def run_prediagnosis(
             )
         )
 
-    # 연속지적도상 도로 필지가 없어도, 토지이음(도시계획시설)에 도로가 '접함'이면 접도
-    # 근거가 될 수 있다(예정도로 포함). '도로 없음/맹지' 대신 이를 반영하되, 개설 여부는
-    # 확인 대상이라 판정은 조건부로 남긴다.
+    # 연속지적도상 도로 필지가 없어도, 도시계획시설 도로가 필지에 접하면 접도 근거가 될
+    # 수 있다. VWorld 도시계획 도로 레이어는 접촉 geometry와 '집행 여부'(미집행=미개설)까지
+    # 주므로, 결정만 됐는지/실제 개설됐는지를 갈라 판정한다. 레이어가 비면 토지이음 지정
+    # 목록(접함)으로 폴백한다.
     if state["road_access"].get("status") in {"NO_CADASTRAL_ROAD", "UNAVAILABLE"}:
-        planned_roads = list(dict.fromkeys(
-            r["name"]
-            for r in (state["land_use"]["designation_lookup"].get("records") or [])
-            if r.get("relation") == "접함"
-            and re.search(r"(광로|대로|중로|소로)", r.get("name") or "")
-        ))
-        if planned_roads:
-            ra = state["road_access"]
-            ra["planned_roads"] = planned_roads
-            ra["status"] = "PLANNED_ROAD_ABUTS"
-            ra["label"] = "도시계획도로 접함(접도 검토)"
-            ra["summary"] = ra["message"] = (
-                "연속지적도상 도로 필지는 없으나 토지이음에 도시계획시설 도로("
-                + "·".join(planned_roads)
-                + ")가 접함으로 확인됩니다. 개설 여부와 유효 도로폭을 도로대장·현황측량으로 "
-                "확인하면 건축법상 접도 요건을 검토할 수 있습니다."
+        # 도로 없음일 때만 도시계획 도로 레이어를 단독 조회한다(다른 VWorld 호출과
+        # 동시 실행 시 레이트리밋 위험이 있어 gather 밖에서 부른다).
+        planned = await vworld.get_planned_roads(state["parcel"].get("geometry"))
+        if not planned:  # 레이어가 비면 토지이음 지정목록의 도로 '접함'으로 폴백
+            planned = [
+                {"name": r["name"], "executed": ""}
+                for r in (state["land_use"]["designation_lookup"].get("records") or [])
+                if r.get("relation") == "접함"
+                and re.search(r"(광로|대로|중로|소로)", r.get("name") or "")
+            ]
+        if planned:
+            names = list(dict.fromkeys(p["name"] for p in planned))
+            unexecuted = any("미집행" in (p.get("executed") or "") for p in planned)
+            opened = any(
+                p.get("executed") and "미집행" not in p["executed"] for p in planned
             )
+            ra = state["road_access"]
+            ra["planned_roads"] = planned
+            ra["status"] = "PLANNED_ROAD_ABUTS"
+            if opened:
+                ra["label"] = "도시계획도로 접함(개설)"
+                ra["summary"] = ra["message"] = (
+                    f"도시계획시설 도로({'·'.join(names)})가 필지에 접하고 개설(집행)된 "
+                    "도로입니다. 유효 도로폭·중심선 후퇴선은 현황측량으로 확정해야 합니다."
+                )
+            elif unexecuted:
+                ra["label"] = "도시계획도로 미집행(미개설)"
+                ra["summary"] = ra["message"] = (
+                    f"도시계획시설 도로({'·'.join(names)})가 필지에 접하지만 아직 개설되지 "
+                    "않은 미집행(미개설) 도로입니다. 현재는 실제 도로가 없어 접도 요건을 "
+                    "충족하지 못하며, 도로 개설 또는 별도 진입로 확보가 선행되어야 합니다."
+                )
+            else:
+                ra["label"] = "도시계획도로 접함(접도 검토)"
+                ra["summary"] = ra["message"] = (
+                    f"도시계획시설 도로({'·'.join(names)})가 필지에 접합니다. 개설 여부와 "
+                    "유효 도로폭을 현황측량으로 확인하면 접도 요건 검토가 가능합니다."
+                )
 
     zone = state["land_use"]["zones"][0]
     jurisdiction = ordinance.detect_jurisdiction(state["location"]["matched_address"])

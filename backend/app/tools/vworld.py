@@ -740,3 +740,65 @@ async def get_zone_shares(geometry: dict | None) -> list[dict]:
     shares = [s for s in shares if s["share_pct"] >= 1.0]
     shares.sort(key=lambda s: -s["area_m2"])
     return shares
+
+
+@async_ttl_cache(ttl_seconds=900, maxsize=1024)
+async def get_planned_roads(geometry: dict | None) -> list[dict]:
+    """필지에 접하는 도시계획시설(도로)을 VWorld 도시계획 도로 레이어(lt_c_upisuq151)에서
+    조회한다. 도로대장 자체는 아니지만 결정 규격(소로2류 등)과 집행 여부(exc_nam:
+    미집행=미개설)를 줘, 접도 요건 사전검토에서 '결정만 됐는지/개설됐는지'를 가른다."""
+    if USE_MOCK or not geometry:
+        return []
+    from shapely.geometry import shape  # shapely 는 함수 내 지연 import(get_zone_shares 관례)
+    try:
+        parcel = shape(geometry).buffer(0)
+    except Exception:
+        return []
+    minx, miny, maxx, maxy = parcel.bounds
+    pad = 0.0005
+    params = {
+        "service": "data", "request": "GetFeature", "version": "2.0",
+        "data": "lt_c_upisuq151",
+        "geomFilter": f"BOX({minx - pad},{miny - pad},{maxx + pad},{maxy + pad})",
+        "geometry": "true", "crs": "EPSG:4326", "size": "50",
+    }
+    # 진단 중 다른 VWorld 호출과 누적돼 간헐적 스로틀(HTTP200 ERROR)이 날 수 있어
+    # 짧게 재시도한다. 이 값이 비면 접도 근거를 놓치므로 조용히 포기하지 않는다.
+    data = None
+    for attempt in range(3):
+        try:
+            data = await _get("data", params)
+            break
+        except VWorldError:
+            if attempt < 2:
+                await asyncio.sleep(0.5)
+    if data is None:
+        return []
+    feats = (
+        data.get("response", {}).get("result", {})
+        .get("featureCollection", {}).get("features", []) or []
+    )
+    out: list[dict] = []
+    seen: set = set()
+    for f in feats:
+        try:
+            geom = shape(f["geometry"]).buffer(0)
+        except Exception:
+            continue
+        # 경계 오차를 감안해 접하거나 매우 근접한 도로만(맞닿음 = 접도 후보).
+        if not parcel.intersects(geom) and parcel.distance(geom) > 1e-5:
+            continue
+        props = f.get("properties", {})
+        name = (props.get("dgm_nm") or props.get("atr_nam") or "도시계획도로").strip()
+        key = (name, props.get("road_no"))
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append({
+            "name": name,
+            "grade": (props.get("pmi_nam") or props.get("grad_se") or "").strip(),
+            "executed": (props.get("exc_nam") or "").strip(),  # '미집행' = 미개설
+            "road_no": props.get("road_no"),
+            "notice_sn": props.get("ntfc_sn"),
+        })
+    return out
