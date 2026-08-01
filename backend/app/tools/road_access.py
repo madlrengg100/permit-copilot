@@ -47,24 +47,21 @@ def _metric(geometry: dict):
     return transform(TO_METERS.transform, shape(geometry).buffer(0))
 
 
-def _road_rect_dims(road) -> tuple[float | None, float | None]:
-    """도로 지적필지 최소회전사각형의 (긴 변=연장, 짧은 변=폭) 참고치(m).
+def _estimated_width_m(road) -> float | None:
+    """도로 지적필지 최소회전사각형의 짧은 변(내부 후퇴폭 판정용 참고치).
 
-    곧은 도로는 (연장, 실제 폭)에 가깝지만, 굽거나 가지친 도로 필지는 최소사각형이
-    큰 사각형이 돼 '폭'이 의미를 잃는다. 그래서 화면에는 '지적 폭'이 아니라
-    '도로 필지 규모(연장·면적)'로 정직하게 표기한다.
+    곧은 도로는 실제 폭에 가깝지만 굽거나 가지친 도로 필지는 의미가 약하다. 그래서
+    화면 표기에는 쓰지 않고, 4m 미만 여부 등 내부 참고 판정에만 쓴다.
     """
     if road.is_empty:
-        return None, None
+        return None
     coords = list(road.minimum_rotated_rectangle.exterior.coords)
     lengths = [
         ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
         for (x1, y1), (x2, y2) in zip(coords, coords[1:])
     ]
     positive = [value for value in lengths if value > 0.05]
-    if not positive:
-        return None, None
-    return round(max(positive), 1), round(min(positive), 1)
+    return round(min(positive), 1) if positive else None
 
 
 # 우수·오수를 방류할 수 있는 공공 배수처의 지목(단자·정식명 둘 다).
@@ -236,16 +233,11 @@ async def assess(
             continue
         road = candidate
         road_geometries.append(road)
-        _length, _width = _road_rect_dims(road)
         roads.append({
             "pnu": item.get("pnu", ""),
             "address": item.get("address", ""),
             "contact_length_m": round(contact, 1),
-            "cadastral_length_m": _length,        # 연장(긴 변) — 화면 '도로 필지 규모'
-            "cadastral_width_estimate_m": _width,  # 짧은 변 — 내부 후퇴폭 판정용(참고)
-            "cadastral_area_m2": round(road.area, 1),
-            # 도로 필지 자체를 3D에 그리도록 WGS84 형상을 함께 넘긴다.
-            "road_parcel_geometry": transform(_inverse.transform, road).__geo_interface__,
+            "cadastral_width_estimate_m": _estimated_width_m(road),  # 내부 후퇴폭 참고
         })
 
     roads.sort(key=lambda item: -item["contact_length_m"])

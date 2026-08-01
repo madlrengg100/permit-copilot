@@ -557,18 +557,16 @@ def format_diagnosis_answer(d: dict) -> str:
         n += 1
         out.append(f"- {ra['label']}: {ra.get('message', '')}")
         road = (ra.get("roads") or [{}])[0]
-        if road.get("contact_length_m") is not None:
-            # '지적 폭'은 굽은/가지친 도로 필지에서 무의미하므로, 도로 필지 규모
-            # (연장·면적)로 정직하게 표기한다. 실제 형상은 3D 지도에서 확인.
-            length = road.get("cadastral_length_m")
-            area = road.get("cadastral_area_m2")
-            size = []
-            if length:
-                size.append(f"연장 약 {length}m")
-            if area:
-                size.append(f"면적 약 {area:,.0f}㎡")
-            extra = f" · 도로 필지 규모 {' · '.join(size)}" if size else ""
-            out.append(f"- 접촉 길이 약 {road['contact_length_m']}m{extra}")
+        contact = road.get("contact_length_m")
+        if contact is not None:
+            # 도로 필지 규모·지적 폭은 접도 판단에 무의미하므로 쓰지 않는다. 정작 중요한
+            # 건 접촉 길이가 건축법 접도 최소(2m)를 넘는지다. 우리 접촉값은 연속지적도
+            # 기반 참고치라 '미달 가능'으로 표기하고 현황측량 확정을 안내한다.
+            if contact < 2.0:
+                extra = " · 건축법 접도 최소 2m 미달 가능 — 현황측량으로 실제 접도 확정 필요"
+            else:
+                extra = " · 건축법 접도 최소 2m 이상(유효 도로폭·후퇴선은 현황측량 확인)"
+            out.append(f"- 접촉 길이 약 {contact}m{extra}")
 
     # 재해·환경·국가유산
     rs = d.get("regulatory_screen") or {}
