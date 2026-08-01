@@ -2506,6 +2506,32 @@ class Orchestrator:
                         }
                 data: dict = {"text": answer}
                 if intent == "possible_models":
+                    # 직전 단일용도가 불허(판매시설 등)면 매스가 아예 계산되지 않아 3D·모델이
+                    # 뜨지 않는다. 지을 수 있는 용도가 있으면 그 용도로 재진단해 매스를 만들고
+                    # 지도를 갱신한다(매스는 용도 무관 = 건폐율·용적률 envelope). 원본 불허
+                    # 판정은 _diagnose_and_emit 가 pnu 별로 보존한다.
+                    _reg0 = self.diagnosis.get("regulation") or {}
+                    _zuo0 = _reg0.get("zone_use_overview") or {}
+                    _viable = list(_zuo0.get("allowed") or []) + list(_zuo0.get("conditional") or [])
+                    if (
+                        _reg0.get("verdict") == "not_allowed"
+                        and _viable
+                        and not self.diagnosis.get("placement_restricted")
+                    ):
+                        _addr = (
+                            (self.diagnosis.get("parcel") or {}).get("jibun")
+                            or (self.diagnosis.get("location") or {}).get("matched_address")
+                            or "이 필지"
+                        )
+                        try:
+                            _out2, _ev2 = await self._diagnose_and_emit(
+                                f"{_addr}에 {_viable[0]} 건축 가능 여부를 진단해줘",
+                                emit_card=False,
+                            )
+                            for _e2 in _ev2:
+                                yield _e2
+                        except Exception:
+                            logger.debug("possible_models 매스 재생성 실패", exc_info=True)
                     self.update_conversation_context(
                         last_intent=intent,
                         last_subject="현재 필지에서 허용되는 다른 건축물·모델",
