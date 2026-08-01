@@ -1310,6 +1310,9 @@ class Orchestrator:
         self._turn_requests_location_change = bool(
             re.search(r"(이동|가\s*줘|찾아\s*줘|찾아줘)", original_query)
         )
+        # 이동 도구(move_to_place)가 환각 장소로 날아가지 못하게, 이번 턴 원문을 보관해
+        # 도구가 넘긴 장소명이 질문에 실제로 있는지 검증한다.
+        self._turn_user_query = original_query
         parcel_question = bool(
             re.search(
                 r"(지을|짓|건축|신축|건물|가능|규모|건폐율|용적률|층수|용도|"
@@ -3767,6 +3770,19 @@ class Orchestrator:
                     ),
                 }, events
             query = (args.get("query") or "").strip()
+            # 환각 방지: 모델이 넘긴 장소명이 이번 턴 질문에 실제로 없으면(지어낸 것)
+            # 이동하지 않는다. geocode 폴백이 견고한 만큼, 근거 없는 장소로 날아가지
+            # 않도록 후속 target_address 와 같은 결정적 가드를 건다.
+            if query and not _target_in_query(
+                query, getattr(self, "_turn_user_query", "")
+            ):
+                return {
+                    "found": False,
+                    "note": (
+                        f"'{query}'는 사용자 질문에 없는 장소다(환각 가능). 이동하지 말고 "
+                        "사용자가 말한 지명·장소를 그대로 확인해 다시 시도하라."
+                    ),
+                }, events
             places = await vworld.search_places(query)
             stripped = ""
             if not places:
