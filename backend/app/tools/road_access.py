@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from functools import lru_cache
 from pathlib import Path
 from typing import Awaitable, Callable
@@ -16,6 +17,8 @@ from shapely.geometry import LineString, shape
 from shapely.ops import nearest_points, transform, unary_union
 
 from . import building_register, land_ownership, vworld
+
+logger = logging.getLogger(__name__)
 
 Fetcher = Callable[[float, float, float, float], Awaitable[list[dict]]]
 TO_METERS = Transformer.from_crs("EPSG:4326", "EPSG:5179", always_xy=True)
@@ -248,6 +251,9 @@ async def assess(
             )
             enc = _encroachment_route(parcel, wider, pnu, _inverse)
         except Exception:
+            # 조회 실패는 정상 폴백이지만, 코드 버그(NameError 등)까지 조용히 삼키지
+            # 않도록 로그를 남긴다(침범 경로가 사라진 원인을 추적 가능하게).
+            logger.warning("침범 배수 경로 계산 실패", exc_info=True)
             enc = None
         if enc:
             # 통과 필지(길게 지나는 것부터 최대 3필지)의 실제 소유구분을 확인한다. 사유지면
