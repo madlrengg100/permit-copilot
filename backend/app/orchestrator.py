@@ -1236,6 +1236,36 @@ class Orchestrator:
             if value is not None:
                 context[key] = value
 
+    # 지도·기능 제어의 정식 대상과 한국어 이름. '다시 켜'가 마지막에 끈 대상을
+    # 되살릴 수 있도록, 각 대상의 켜기/끄기 지도명령을 한 곳에서 만든다.
+    _CONTROL_LABELS = {
+        "building_model": "3D 건축 모델",
+        "dimensions": "치수선",
+        "cadastre": "지적도",
+        "zoning": "용도지역",
+        "slope": "경사도",
+        "panel": "판정 팝업",
+    }
+
+    def _control_command(self, target: str, show: bool) -> dict | None:
+        """대상을 켜거나(show=True) 끄는 지도명령 하나를 만든다."""
+        if target == "building_model":
+            return {"type": "show_building_shape" if show else "hide_building_shape"}
+        if target in {"dimensions", "cadastre", "zoning", "slope", "panel"}:
+            return {"type": "set_layers", target: show}
+        return None
+
+    def _record_control(self, target: str, show: bool) -> None:
+        """방금 실행한 제어(대상·켜짐여부)를 필지 대화 상태에 남긴다.
+
+        '다시 켜/복원'이 마지막에 '끈' 대상을 정확히 되살리게 한다.
+        """
+        if target in self._CONTROL_LABELS:
+            self.update_conversation_context(
+                last_control_target=target,
+                last_control_shown=bool(show),
+            )
+
     def set_selected_parcel(
         self,
         *,
@@ -1408,6 +1438,7 @@ class Orchestrator:
                 "event": "map_commands",
                 "data": {"commands": [{"type": "hide_building_shape"}]},
             }
+            self._record_control("building_model", show=False)
             yield {
                 "event": "message",
                 "data": {"text": "LOD1과 건물 윤곽을 숨겼습니다."},
@@ -1422,19 +1453,28 @@ class Orchestrator:
         if _is_building_restore_request(original_query) and not _asks_possible_use_list(
             original_query
         ):
-            if building_display_blocked:
+            # '다시 켜/복원'은 방금 '끈' 대상을 되살린다. 치수선을 껐으면 치수선을,
+            # 모델을 껐으면 모델을. 무엇을 껐는지는 필지 대화 상태(last_control)가 안다.
+            _ctx = self.conversation_context()
+            _target = _ctx.get("last_control_target")
+            if _target and _ctx.get("last_control_shown") is False:
+                restore_target = _target
+            else:
+                restore_target = "building_model"
+            _label = self._CONTROL_LABELS.get(restore_target, "3D 건축 모델")
+            if restore_target == "building_model" and building_display_blocked:
                 yield {
                     "event": "message",
                     "data": {"text": "현재 건축 불가 판정이므로 3D 건축 모델을 표시하지 않습니다."},
                 }
                 return
-            yield {
-                "event": "map_commands",
-                "data": {"commands": [{"type": "show_building_shape"}]},
-            }
+            _cmd = self._control_command(restore_target, show=True)
+            if _cmd:
+                yield {"event": "map_commands", "data": {"commands": [_cmd]}}
+                self._record_control(restore_target, show=True)
             yield {
                 "event": "message",
-                "data": {"text": "3D 건축 모델을 다시 표시했습니다."},
+                "data": {"text": f"{_label}을 다시 표시했습니다."},
             }
             return
 
@@ -1622,6 +1662,10 @@ class Orchestrator:
                 "event": "map_commands",
                 "data": {"commands": [{"type": "set_layers", **layer_command}]},
             }
+            # 마지막 제어 대상을 남긴다 — '다시 켜'가 방금 끈 레이어(치수선 등)를
+            # 되살리도록. 여러 개면 마지막 항목이 최근 제어가 된다.
+            for _k, _v in layer_command.items():
+                self._record_control(_k, show=_v)
             changed = ", ".join(
                 f"{'팝업' if key == 'panel' else '치수선' if key == 'dimensions' else '용도지역' if key == 'zoning' else '지적도' if key == 'cadastre' else '경사도'} "
                 f"{'켜기' if enabled else '끄기'}"

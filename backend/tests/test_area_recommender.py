@@ -546,6 +546,44 @@ class PossibleUsesFollowupTest(unittest.IsolatedAsyncioTestCase):
         commands = await self._map_commands("모델 꺼")
         self.assertEqual(commands, [{"type": "hide_building_shape"}])
 
+    async def test_restore_targets_last_hidden_not_always_building(self):
+        # '다시 켜'는 방금 '끈' 대상을 되살린다. 치수선을 껐으면 치수선을,
+        # 모델을 껐으면 모델을 복원해야 한다(맥락 없는 항상-모델 복원 금지).
+        async def run(orch, query):
+            out = []
+            async for event in orch.ask(query):
+                if event["event"] == "map_commands":
+                    out += event["data"]["commands"]
+            return out
+
+        base = {
+            "parcel": {"pnu": "RESTORE-TEST"},
+            "verdict": "conditional",
+            "regulation": {"verdict": "conditional"},
+            "massing": {"floors": 3},
+        }
+        parcel = {"pnu": "RESTORE-TEST", "lon": 127.0, "lat": 37.0, "address": "테스트"}
+
+        # 치수선을 끈 뒤 '다시 켜' → 치수선을 되살린다.
+        orch = Orchestrator(client=None)
+        orch.diagnosis = dict(base)
+        orch.selected_parcel = dict(parcel)
+        await run(orch, "치수선 꺼")
+        self.assertEqual(
+            await run(orch, "다시 켜"),
+            [{"type": "set_layers", "dimensions": True}],
+        )
+
+        # 모델을 끈 뒤 '다시 켜' → 모델을 되살린다.
+        orch2 = Orchestrator(client=None)
+        orch2.diagnosis = dict(base)
+        orch2.selected_parcel = dict(parcel)
+        await run(orch2, "모델 꺼")
+        self.assertEqual(
+            await run(orch2, "다시 켜"),
+            [{"type": "show_building_shape"}],
+        )
+
     async def test_explicit_address_feasibility_variants_bypass_orchestrator_llm(self):
         # client=None에서도 tool-selection LLM으로 빠지지 않고 prediagnose에
         # 직접 진입해야 한다. 실제 공간조회는 이 단위 테스트에서 대체한다.
