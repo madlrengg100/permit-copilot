@@ -1001,24 +1001,33 @@ def _same_parcel_address(address_in_query: str, diagnosis: dict | None) -> bool:
     )
 
 
+_ADMIN_SUFFIX = re.compile(
+    r"(특별자치도|특별자치시|광역시|특별시|자치구|자치군|[도시군구읍면동리로길가])$"
+)
+
+
 def _target_in_query(target: str, query: str) -> bool:
     """LLM이 낸 이동 대상 주소(target_address)가 실제 질문에 근거하는지 확인한다.
 
-    의도 판단은 제미나이가 하지만, 주소 없는 질문에서 엉뚱한 주소를 지어내는(환각)
-    경우가 있어 결정적 가드를 둔다: 지번/번지면 '장소 토큰 + 숫자'가, 번지 없는
-    주소(도로명·POI)면 마지막 장소 토큰이 질문 원문(공백 무시)에 실제로 있어야
-    이동을 허용한다. 없으면 환각으로 보고 이동하지 않는다.
+    번지 숫자를 강제하지 않는다 — 어르신은 '○○초등학교 근처', '△△슈퍼 부근'처럼
+    지명·랜드마크로 말하지 번지까지 외우지 않는다. target 의 지명/시설명 토큰(행정
+    접미사 제거) 중 하나라도 질문 원문(공백 무시)에 실제로 있으면 이동을 허용하고,
+    아무것도 없으면(=제미나이가 지어낸 주소) 무시한다.
+
+    이동할지 말지(의도)는 제미나이가 넓게 판단하고, 이 가드는 오직 '그 주소가 질문에
+    근거하는가(환각 아님)'만 결정적으로 검증한다.
     """
     q = re.sub(r"\s+", "", query or "")
     t = (target or "").strip()
     if not q or not t:
         return False
-    m = re.search(r"([가-힣]{2,})\s*(?:산\s*)?(\d+(?:-\d+)?)\s*$", t)
-    if m:
-        place, num = m.group(1), re.sub(r"\s", "", m.group(2))
-        return place in q and num in q
-    toks = [re.sub(r"\s+", "", w) for w in t.split() if len(w) >= 2]
-    return bool(toks) and toks[-1] in q
+    for tok in re.split(r"\s+", t):
+        if len(tok) >= 2 and not tok.isdigit() and tok in q:
+            return True
+        core = _ADMIN_SUFFIX.sub("", tok)  # '삽교읍'→'삽교', '한내로'→'한내'
+        if len(core) >= 2 and core in q:
+            return True
+    return False
 
 
 def _same_parcel_coordinate(
