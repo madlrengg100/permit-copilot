@@ -6,6 +6,16 @@
 
 ## 2026-08-01
 
+### '가능 모델 보여줘'가 이전 매스 복원으로 새던 문제 (라우팅 가드)
+- `_is_building_restore_request` 가 '모델…보여'를 잡아 '**가능** 모델 보여줘'까지 복원
+  요청(show_building_shape)으로 오인 → 직전 단일용도가 불허라 매스가 없으면 단독주택
+  등 아무 모델도 안 떴다(possible_models 로 못 감).
+- 수정: 1419행 restore 게이트에 `and not _asks_possible_use_list(original_query)` 가드.
+  '가능/다른/허용 모델' 등 목록 요청은 restore 를 건너뛰고 LLM 후속해석→possible_models
+  로 흘려보내 목록·매스를 새로 만든다. 순수 복원('모델 켜/다시 켜/이전 모델 보여줘/
+  원래대로')만 결정적으로 처리. 새 하드코딩 없이 **기존 의미 판별기 재사용**(CLAUDE.md
+  준수 — 프런트 정규식 추가 없음). 106 테스트 통과.
+
 ### possible_models: 불허 요청용도라도 지을 수 있는 용도로 매스 재생성
 - 창고·판매시설 등 요청 용도가 그 지역서 불허면 verdict=not_allowed → 매스 미계산.
   그 뒤 '다른 건물?'(possible_models)로 배지·모델옵션은 떠도 3D 매스가 없어 '모델 켜'/

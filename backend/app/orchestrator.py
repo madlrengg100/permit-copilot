@@ -1416,7 +1416,12 @@ class Orchestrator:
 
         # 숨김 또는 건축면적 평면으로 전환하기 전의 상세 3D 모델을 복원한다.
         # 상세 모델을 선택한 적이 없으면 같은 진단의 LOD1 매스를 복원한다.
-        if _is_building_restore_request(original_query):
+        # 단, '가능/다른 모델 보여줘'처럼 대체 모델 목록을 묻는 뜻이면(=possible_models)
+        # 이전 매스 복원이 아니라 LLM 후속 해석으로 넘겨 목록·매스를 새로 만든다.
+        # '모델 켜/다시 켜/이전 모델 보여줘' 같은 순수 복원만 여기서 결정적으로 처리한다.
+        if _is_building_restore_request(original_query) and not _asks_possible_use_list(
+            original_query
+        ):
             if building_display_blocked:
                 yield {
                     "event": "message",
