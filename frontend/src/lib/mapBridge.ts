@@ -1288,7 +1288,7 @@ export class MapBridge {
           label: {
             text: seg.label,
             // 가로·세로 치수 라벨과 동일: 색 없으면 검정 글자/노랑 배경.
-            font: isCustom ? "bold 13px 'Malgun Gothic', sans-serif" : "bold 13px 'Malgun Gothic', sans-serif",
+            font: isCustom ? "bold 13px 'Malgun Gothic', sans-serif" : "13px 'Malgun Gothic', sans-serif",
             fillColor: isCustom ? ws3d.common.Color.WHITE : ws3d.common.Color.BLACK,
             showBackground: true,
             backgroundColor: isCustom ? segColor.withAlpha(0.95) : yellow.withAlpha(0.98),
@@ -1324,7 +1324,7 @@ export class MapBridge {
         position: ws3d.common.Cartesian3.fromDegrees(midLon, midLat, 1),
         label: {
           text: seg.label,
-          font: isCustom ? "bold 13px 'Malgun Gothic', sans-serif" : "bold 13px 'Malgun Gothic', sans-serif",
+          font: isCustom ? "bold 13px 'Malgun Gothic', sans-serif" : "13px 'Malgun Gothic', sans-serif",
           fillColor: isCustom ? ws3d.common.Color.WHITE : ws3d.common.Color.BLACK,
           showBackground: true,
           backgroundColor: isCustom ? segColor.withAlpha(0.95) : yellow.withAlpha(0.98),
