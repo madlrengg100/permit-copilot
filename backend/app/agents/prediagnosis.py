@@ -1200,6 +1200,28 @@ async def run_prediagnosis(
             )
         )
 
+    # 연속지적도상 도로 필지가 없어도, 토지이음(도시계획시설)에 도로가 '접함'이면 접도
+    # 근거가 될 수 있다(예정도로 포함). '도로 없음/맹지' 대신 이를 반영하되, 개설 여부는
+    # 확인 대상이라 판정은 조건부로 남긴다.
+    if state["road_access"].get("status") in {"NO_CADASTRAL_ROAD", "UNAVAILABLE"}:
+        planned_roads = list(dict.fromkeys(
+            r["name"]
+            for r in (state["land_use"]["designation_lookup"].get("records") or [])
+            if r.get("relation") == "접함"
+            and re.search(r"(광로|대로|중로|소로)", r.get("name") or "")
+        ))
+        if planned_roads:
+            ra = state["road_access"]
+            ra["planned_roads"] = planned_roads
+            ra["status"] = "PLANNED_ROAD_ABUTS"
+            ra["label"] = "도시계획도로 접함(접도 검토)"
+            ra["summary"] = ra["message"] = (
+                "연속지적도상 도로 필지는 없으나 토지이음에 도시계획시설 도로("
+                + "·".join(planned_roads)
+                + ")가 접함으로 확인됩니다. 개설 여부와 유효 도로폭을 도로대장·현황측량으로 "
+                "확인하면 건축법상 접도 요건을 검토할 수 있습니다."
+            )
+
     zone = state["land_use"]["zones"][0]
     jurisdiction = ordinance.detect_jurisdiction(state["location"]["matched_address"])
     state["jurisdiction"] = jurisdiction
@@ -1314,7 +1336,7 @@ async def run_prediagnosis(
             state["land_conversion"].get("status")
             in {"PERMIT_REQUIRED", "RESTRICTED_REVIEW", "MANUAL_REVIEW", "UNKNOWN"}
             or state["road_access"].get("status")
-            in {"NO_CADASTRAL_ROAD", "UNAVAILABLE"}
+            in {"NO_CADASTRAL_ROAD", "UNAVAILABLE", "PLANNED_ROAD_ABUTS"}
             or state["regulatory_screen"].get("status") == "REVIEW"
         )
     ):
