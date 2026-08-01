@@ -157,7 +157,12 @@ side = √면적 ;  altitude = clamp(side × 2, 60, 700)   # 지면 위 높이
 길고 좁은 필지를 짧은 쪽에서 정면으로 보면 낮은 건물도 가느다란 탑처럼 보인다.
 
 **불허 필지에는 건물을 세우지 않는다** (`verdict != "not_allowed"` 조건).
-지을 수 없는 곳에 건물을 그려 보여주면 가능한 것처럼 읽힌다.
+지을 수 없는 곳에 건물을 그려 보여주면 가능한 것처럼 읽힌다. 단 `possible_models`
+('다른 건물?')에서 그 지역에 지을 수 있는 용도가 있으면 그 용도로 재진단해 매스를 만든다.
+
+**치수선**은 가로·세로에 더해 두 선이 만나는 모서리에서 `height_m` 만큼 **수직 높이선(노랑)**
+을 세워 3축(가로·세로·높이)을 완성한다. 후속 오버레이(`overlay_command`)도 도로접촉·건축선·
+배수로에 더해 치수(가로·세로·높이)·면적(대지·건축)을 요청 시 다시 그린다.
 
 ### 4.4 도구 계층 (`app/tools/`)
 
@@ -166,14 +171,14 @@ side = √면적 ;  altitude = clamp(side × 2, 60, 700)   # 지면 위 높이
 
 | 모듈 | 역할 |
 |---|---|
-| `vworld.py` / `landuse.py` | 지오코딩·필지·용도지역·bbox 필지목록 |
+| `vworld.py` / `landuse.py` | 지오코딩·필지·용도지역·bbox 필지목록. `get_ledger_area_m2`(토지대장 공부면적 `lndpclAr`)·`get_planned_roads`(도시계획 도로 `lt_c_upisuq151`, 집행여부) 포함 |
 | `zoning.py` | 용도별 허용 판정 `USE_MATRIX`(10개 용도) + 조례 밀도 상한 |
 | `ordinance.py` / `ordinance_index.py` | 건폐율/용적률 조례(검증 11+자동 196) + 조문 근거 검색(TF-IDF 7,585청크·193관할) |
 | `setback_rules.py` / `site_constraints.py` | 이격(119개 지자체 별표) + 정북일조·주차 반영 개념 영역 |
-| `road_access.py` | 도로 접도(연속지적도) 사전검토 |
+| `road_access.py` | 도로 접도(연속지적도, 접촉 길이 vs 접도 최소 2m) + 도시계획도로 접함 격상(`PLANNED_ROAD_ABUTS`) 사전검토 |
 | `jimok.py` / `land_conversion.py` | 지목·농지/산지 전용 규제 |
 | `regulatory_screen.py` / `local_spatial.py` / `ogc.py` | 재해·환경·국가유산 스크리닝, 산지 SQLite RTree(106만 폴리곤), OGC 클라이언트 |
-| `building_register.py` | 건축물대장 표제부(건축HUB API) |
+| `building_register.py` | 건축물대장 표제부(건축HUB API). PNU 0건 시 juso.go.kr 주소로 건물 대표지번 폴백 |
 | `permit_requirements.py` / `conversion_charges.py` / `development_charge.py` | 인허가 단계·부담금 참고액 |
 | `massing.py` / `footprint.py` / `law_open.py` | 규모 환산·건축면적 형상·현행 법령 검증 |
 
@@ -184,9 +189,10 @@ side = √면적 ;  altitude = clamp(side × 2, 60, 700)   # 지면 위 높이
   `VWORLD_DOMAIN` 을 `domain=` 으로 함께 보내야 통과한다. (지오코더는 검증하지 않는다)
   → **이 값은 브라우저 접속 URL이 아니라 인증키에 등록한 서비스URL이어야 한다.**
 - **오류도 HTTP 200으로 온다.** `response.status == "ERROR"` 를 직접 확인해야 한다.
-- **연속지적도에는 면적 필드가 없다.** 경계 폴리곤에서 pyproj `Geod` 로 측지면적을 계산한다.
-  공부(토지대장) 면적과 소폭 다를 수 있고 법적으로는 대장 면적이 우선이라,
-  `area_source` 로 출처를 밝힌다.
+- **연속지적도에는 면적 필드가 없다.** 법적 기준인 공부면적을 우선 쓴다 — `get_ledger_area_m2`
+  가 NED 토지특성(`getLandCharacteristics`)의 `lndpclAr`(토지대장 등록면적)을 `area_m2` 로
+  삼고, 실패하면 경계 폴리곤에서 pyproj `Geod` 로 측지면적을 계산해 폴백한다. 걸침 조각 면적도
+  공부면적에 안분하며, 출처는 `area_source` 로 밝힌다(토지이음과 일치).
 - **지목은 지번 끝에 한글로 붙어 오고 띄어쓰기가 일정하지 않다** (`'737 대'`, `'100-10 도'`, `'1유'`).
   공백 분리가 아니라 끝에 오는 한글을 뽑는다(`_trailing_hangul`).
 - **용도지역 레이어는 도시/비도시가 분리되어 있다.** `LT_C_UQ111`(도시) 하나만 조회하면
@@ -424,6 +430,8 @@ _meta.sources[]                    조례명 · 조례번호 · 시행일 · 조
 | `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GEMINI_API_KEY` … | — | provider에 맞는 키 |
 | `VWORLD_KEY` | — | 없으면 mock 모드로 동작 |
 | `VWORLD_DOMAIN` | `http://localhost:5173` | **인증키에 등록한 서비스URL** (접속 URL 아님) |
+| `DATA_GO_KR_SERVICE_KEY` | — | 공공데이터포털 키. 건축물대장 표제부 + 토지소유정보 공용 |
+| `JUSO_CONFM_KEY` | — | 행안부 juso.go.kr 도로명주소 승인키. 건축물대장 PNU 0건 시 건물 대표지번 주소 폴백 |
 | `APP_TOKEN` | — | `/api/chat` 보호. 외부 노출 시 필수 |
 | `ALLOWED_ORIGINS` | `http://localhost:5173` | CORS |
 | `VITE_APP_TOKEN` | — | 프론트에서 보낼 토큰. `APP_TOKEN` 과 일치해야 함 |
@@ -474,8 +482,8 @@ cd frontend && npm run dev
 
 - 산출값은 **밀도 규제만 반영한 이론값**이다. 일조권 사선제한, 정북방향 이격거리,
   대지 안의 공지, 주차대수 산정으로 실제 규모는 더 줄어든다.
-- 면적은 **지적도 경계의 측지 계산값**이고 토지대장 공부면적과 다를 수 있다.
-  법적으로는 대장 면적이 우선이다.
+- 면적은 **토지대장 공부면적**(`lndpclAr`)을 우선 사용하며 토지이음과 일치한다.
+  조회 실패 시에만 지적도 경계의 측지 계산값으로 폴백한다(출처 `area_source`).
 - 지목 판정은 **절차 필요성 플래그**까지다. 전용 가능 여부 자체는 농업진흥지역 지정,
   보전산지 구분, 경사도 같은 공간 조건에 달려 있어 별도 레이어 조회가 필요하다.
 
@@ -519,6 +527,7 @@ cd frontend && npm run dev
 ### E. 공간 규제 연계
 - 산지구분(전국 106만 폴리곤 SQLite), 1:5,000 임상도(338만 폴리곤),
   농업진흥지역(WFS), 건축물대장(건축HUB API), 도로 접도(연속지적도): 연계
+- 도시계획도로: VWorld WFS `lt_c_upisuq151` 접함 geometry·집행여부(미집행=미개설)
 - 재해위험지구: VWorld WFS `lt_c_up201` 전국 실시간 중첩
 - 생태·자연도·별도관리지역: 국립생태원 2026 정기고시 로컬 SQLite RTree
 

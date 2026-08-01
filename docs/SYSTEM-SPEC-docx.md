@@ -258,7 +258,13 @@ altitude = clamp(√면적 × 2, 60, 700)   [지면 위 높이, m]
 정면으로 보면 낮은 건물도 가느다란 탑처럼 보인다.
 
 **불허 필지에는 건물을 그리지 않는다** (`verdict != "not_allowed"`). 지을 수 없는 곳에 건물을
-표시하면 가능한 것으로 읽힌다.
+표시하면 가능한 것으로 읽힌다. 단 `possible_models`('다른 건물?')에서 그 지역에 지을 수 있는
+용도(allowed/conditional)가 있으면 그 용도로 재진단해 매스를 만들어 3D로 표시한다(원본 불허
+판정은 보존).
+
+**3D 높이 치수** — 가로·세로 치수선에 더해 두 선이 만나는 모서리에서 `height_m` 만큼 수직
+높이선(노랑)을 세워 3축(가로·세로·높이)을 완성한다. 후속 오버레이(`overlay_command`)도
+도로접촉·건축선·배수로에 더해 치수(가로·세로·높이)·면적(대지·건축)을 요청 시 다시 그린다.
 
 **용도지역 조각 색상** — 지적편집도 관례(주거 노랑 / 상업 분홍 / 공업 보라 / 녹지 초록 /
 관리 연두, 21개 지역 정의). 단, 걸친 지역들이 같은 색 계열이면(자연녹지·생산녹지 등 색상환
@@ -312,10 +318,12 @@ Gemini는 `extra_content.google.thought_signature` 동반을 요구하며, 누�
 |---|---|---|
 | `vworld` | `geocode(address)` | 주소 → 좌표 (ROAD → PARCEL 순차) |
 | | `search_addresses(query, size=8)` | 주소 자동완성 후보 |
-| | `get_parcel(lon, lat)` | 점 → 필지(PNU·지번·지목·면적·경계) |
+| | `get_parcel(lon, lat)` | 점 → 필지(PNU·지번·지목·면적·경계). 면적은 공부면적 우선(기하면적 폴백) |
+| | `get_ledger_area_m2(pnu)` | 토지대장 공부면적 `lndpclAr`(NED 토지특성 `getLandCharacteristics`) |
 | | `get_parcels_bbox(w,s,e,n)` | 범위 내 지적선 목록(2D 모드용) |
 | | `get_land_use(lon, lat)` | 점 → 용도지역·지구 (4개 레이어) |
-| | `get_zone_shares(geometry)` | **필지 폴리곤 → 용도지역별 면적 안분** |
+| | `get_zone_shares(geometry)` | **필지 폴리곤 → 용도지역별 면적 안분** (공부면적에 스케일) |
+| | `get_planned_roads(geometry)` | 접하는 도시계획시설 도로(`lt_c_upisuq151`) — 규격·집행여부(미집행=미개설) |
 | | `outer_rings(geometry)` | Polygon/MultiPolygon → 외곽 링 통일 |
 | | `geodesic_area_m2(geometry)` | 측지 면적 계산(pyproj Geod) |
 | `zoning` | `lookup_zoning_rules(zone, use, districts, jurisdiction)` | 허용 판정 + 밀도 상한 |
@@ -342,6 +350,8 @@ Gemini는 `extra_content.google.thought_signature` 동반을 요구하며, 누�
 | `get_parcels_bbox` | data | `LP_PA_CBND_BUBUN`, `BOX(...)`, size 1000 |
 | `get_land_use` | data | 용도지역 4개 레이어, `POINT`, geometry=false |
 | `get_zone_shares` | data | 용도지역 4개 레이어, `BOX`(필지 외접), geometry=true |
+| `get_ledger_area_m2` | ned/data | `getLandCharacteristics`(토지특성), `pnu`, `lndpclAr` 공부면적 |
+| `get_planned_roads` | data | `lt_c_upisuq151`(도시계획 도로), `BOX`(필지 외접), 집행여부 `exc_nam` |
 
 **필지 반환 필드**: `pnu`, `jibun`, `jimok`, `area_m2`, `area_source`, `jiga_won_per_m2`, `geometry`
 
@@ -351,7 +361,7 @@ Gemini는 `extra_content.google.thought_signature` 동반을 요구하며, 누�
 |---|---|
 | `service=data` 는 등록 도메인 검증. 백엔드 호출은 Referer가 없어 `INCORRECT_KEY` | `domain` 파라미터로 `VWORLD_DOMAIN` 전송. **이 값은 접속 URL이 아니라 인증키 등록 서비스URL** |
 | 오류도 **HTTP 200** 으로 반환 | `response.status == "ERROR"` 직접 확인 |
-| 연속지적도에 **면적 필드 없음** | 경계에서 pyproj `Geod` 측지면적 계산 + `area_source` 로 출처 명시 (법적으로는 토지대장 면적 우선) |
+| 연속지적도에 **면적 필드 없음** | 법적 기준인 토지대장 공부면적(`get_ledger_area_m2`→`lndpclAr`)을 `area_m2` 로 우선 사용, 실패 시 경계 pyproj `Geod` 측지면적으로 폴백 + `area_source` 로 출처 명시. 걸침 조각 면적도 공부면적에 안분 |
 | 지목이 지번 끝에 한글로 붙고 띄어쓰기 불규칙 (`'737 대'`, `'100-10 도'`, `'1유'`) | 공백 분리가 아닌 **끝 한글 추출** 정규식 |
 | 용도지역 레이어가 4종으로 분리 | `UQ111`(도시) `UQ112`(관리) `UQ113`(농림) `UQ114`(자연환경보전) **전수 조회**. 과거 UQ112가 비도시 전체를 포함한다고 오인해 농림지역 조회가 실패한 이력 |
 | 필지 폴리곤을 `geomFilter` 에 직접 넣으면 URL 한도 초과 | 서버에는 **외접 BOX**로 후보만 요청, 정밀 교차는 shapely로 로컬 계산 |
@@ -563,6 +573,8 @@ lonBackOff = backOff · sin(heading) / (111320 · cos(lat))
 | `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GEMINI_API_KEY` … | — | provider별 키 |
 | `VWORLD_KEY` | — | 미설정 시 mock 모드 |
 | `VWORLD_DOMAIN` | `http://localhost:5173` | **인증키 등록 서비스URL**(접속 URL 아님) |
+| `DATA_GO_KR_SERVICE_KEY` | — | 공공데이터포털 키. 건축물대장 표제부 + 토지소유정보 공용 |
+| `JUSO_CONFM_KEY` | — | 행안부 juso.go.kr 도로명주소 승인키. 건축물대장 PNU 0건 시 건물 대표지번 주소 폴백 |
 | `APP_TOKEN` | — | `/api/chat` 보호. 외부 노출 시 필수 |
 | `ALLOWED_ORIGINS` | `http://localhost:5173` | CORS |
 | `VITE_APP_TOKEN` | — | 프론트 전송 토큰(`APP_TOKEN` 과 일치 필요) |
@@ -611,7 +623,8 @@ cd frontend && npm run dev -- --host 0.0.0.0 --port 5173
 
 - 산출값은 **밀도 규제만 반영한 이론값**이다. 일조권 사선제한, 정북방향 이격거리, 대지 안의 공지,
   도로 후퇴선, 주차대수 산정은 반영되지 않았다.
-- 면적은 **지적도 경계의 측지 계산값**이며 토지대장 공부면적과 다를 수 있다(법적으로는 대장 우선).
+- 면적은 **토지대장 공부면적**(`lndpclAr`)을 우선 사용하며 토지이음과 일치한다. 조회 실패 시에만
+  지적도 경계의 측지 계산값으로 폴백한다(출처 `area_source`).
 - 지목 판정은 **절차 필요성 플래그**까지다. 전용 가능 여부는 별도 레이어 조회가 필요하다.
 - 걸침 필지 비율은 **용도지역도(1:5,000 축척) 기준 추정치**이며 지적선과 수 m 어긋날 수 있다.
   경계가 판정을 좌우하는 필지는 **토지이용계획확인서의 지형도면 고시**가 최종 기준이다.
@@ -664,6 +677,7 @@ cd frontend && npm run dev -- --host 0.0.0.0 --port 5173
 ### E. 공간 규제 연계
 - 산지구분(전국 106만 폴리곤), 1:5,000 임상도(338만 폴리곤),
   농업진흥지역(WFS), 건축물대장(건축HUB API), 도로 접도(연속지적도): 연계
+- 도시계획도로: VWorld WFS `lt_c_upisuq151` 접함 geometry·집행여부(미집행=미개설)
 - 재해위험지구: VWorld WFS `lt_c_up201` 전국 실시간 중첩
 - 생태·자연도·별도관리지역: 국립생태원 2026 정기고시 로컬 SQLite RTree
 

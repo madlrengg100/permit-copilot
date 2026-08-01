@@ -175,13 +175,20 @@ extract_request(client, query)   # "테헤란로 152에 업무시설" → (주�
 - **3D(매스)** — 건축 가능 규모의 3D 입체(`extrude_mass`), 치수선(`show_dimensions`),
   용도별 건물 모델(`show_housing_model`: 주택/공장/상가/창고). **실제 3D 렌더링은
   백엔드가 아니라 프론트 `lib/mapBridge.ts` 가 VWorld 3D(ws3d/Cesium)에서** 한다.
+  치수선은 가로·세로에 더해 두 치수선이 만나는 모서리에서 매스 지면 기준으로 `height_m`
+  만큼 **수직 높이선(노랑)** 을 세워 3축(가로·세로·높이)을 완성한다.
 - **선 오버레이** — `show_dimensions` 세그먼트로 특정 선만 얹는다. 도로 접촉선(마젠타),
   건축선·이격선(가능 판정일 때만), 우수·오수 '개념' 배수로(파랑) 또는 사유지 침범 경로
-  (빨강)를 `overlay_command`이 골라 그린다. 사용자가 선만 청하면(제미나이 의도 해석)
-  `build_lines_only_commands`가 카드·매스·팝업 없이 `clear_mass·fly_to·highlight_parcel`
-  + 요청 선만 낸다. `_may_show_building_dimensions`로 불가 필지엔 건물 치수선을 그리지 않는다.
-  침범 경로 라벨은 방류 목적지(구거/도로/하천, `encroachment.outlet`)와 통과 사유지 지목을
-  함께 표시하며, 침범 빨강과 겹치지 않게 그때 **건축선은 보라(#7E57C2)** 로 바뀐다.
+  (빨강), 그리고 치수(가로·세로·높이)·면적(대지·건축)을 `overlay_command`이 골라 그린다.
+  사용자가 선만 청하면(제미나이 의도 해석) `build_lines_only_commands`가 카드·매스·팝업
+  없이 `clear_mass·fly_to·highlight_parcel` + 요청 선만 낸다. `_may_show_building_dimensions`로
+  불가 필지엔 건물 치수선을 그리지 않는다. 침범 경로 라벨은 방류 목적지(구거/도로/하천,
+  `encroachment.outlet`)와 통과 사유지 지목을 함께 표시하며, 침범 빨강과 겹치지 않게 그때
+  **건축선은 보라(#7E57C2)** 로 바뀐다.
+- **불허 요청용도의 매스 재생성** — 요청 용도가 불허(`verdict=not_allowed`)면 매스를 세우지
+  않지만, `possible_models`('다른 건물?')에서 그 지역에 지을 수 있는 용도(allowed/conditional)가
+  있으면 그 용도로 재진단해 매스를 만들어 3D로 표시한다(매스는 용도 무관 = 건폐율·용적률 봉투,
+  원본 불허 판정은 보존).
 
 > 별표1의 4번째 에이전트 — `agents/area_recommender.py` (지역추천): "○○ 비도시
 > 지역에서 농막 지을 데 찾아줘" 류 탐색형 질의를 처리한다.
@@ -215,7 +222,7 @@ side = √면적 ;  altitude = clamp(side × 2, 60, 700)   # 지면 위 높이
 
 | 모듈 | 역할 |
 |---|---|
-| `vworld.py` | 지오코딩 / 필지 / 용도지역 / bbox 필지목록 (VWorld) |
+| `vworld.py` | 지오코딩 / 필지 / 용도지역 / bbox 필지목록 (VWorld). `get_ledger_area_m2`(토지대장 공부면적 `lndpclAr`) · `get_planned_roads`(도시계획 도로 `lt_c_upisuq151`, 집행여부) 포함 |
 | `landuse.py` | 용도지역·지구 상세 조회 |
 | `zoning.py` | 용도별 허용 판정 `USE_MATRIX`(10개 용도) + 조례 밀도 상한 |
 | `ordinance.py` | 건폐율/용적률 조례·법정 상한 `resolve_limits` (약 200개 관할) |
@@ -224,14 +231,14 @@ side = √면적 ;  altitude = clamp(side × 2, 60, 700)   # 지면 위 높이
 | `legal_conflicts.py` | 명시적 금지·예외 미확정·독립 법률 누적 적용 평가 |
 | `setback_rules.py` | 대지 안의 공지(이격) 조회 (119개 지자체 별표) |
 | `site_constraints.py` | 이격·정북일조·주차 반영 개념 건축 가능 영역 |
-| `road_access.py` | 도로 접도(연속지적도 지목 '도로' 인접) + 우수·오수 배수 방류처·가상 배수로·사유지 침범 경로 사전검토 |
+| `road_access.py` | 도로 접도(연속지적도 지목 '도로' 인접, 접촉 길이 vs 접도 최소 2m) + 도시계획도로 접함 격상(`PLANNED_ROAD_ABUTS`) + 우수·오수 배수 방류처·가상 배수로·사유지 침범 경로 사전검토 |
 | `land_ownership.py` | 필지 소유구분(국유·공유·사유) — 국토교통부 토지소유정보 API. 배수로 사유지 침범 판정 근거 |
 | `jimok.py` | 지목 → 전용허가 필요성 (농지법/산지관리법) |
 | `land_conversion.py` | 농지·산지 전용 규제 판정 |
 | `regulatory_screen.py` | 재해·환경·국가유산 스크리닝 |
 | `local_spatial.py` | 대용량 로컬 벡터 SQLite RTree 조회 (산지 106만 폴리곤) |
 | `ogc.py` | OGC WFS/WMS 범용 클라이언트 + 필지 중첩 |
-| `building_register.py` | 건축물대장 표제부 (국토부 건축HUB API) |
+| `building_register.py` | 건축물대장 표제부 (국토부 건축HUB API). PNU로 0건이면 juso.go.kr 도로명주소로 건물 대표지번을 얻어 재조회(대단지·구축 아파트 검출) |
 | `permit_requirements.py` | 인허가 단계·서류·부서 산출 |
 | `conversion_charges.py` / `development_charge.py` | 농지보전부담금·개발부담금 참고액 |
 | `massing.py` | 밀도 → 건축면적·연면적·층수·높이 |
@@ -249,9 +256,11 @@ side = √면적 ;  altitude = clamp(side × 2, 60, 700)   # 지면 위 높이
   `VWORLD_DOMAIN` 을 `domain=` 으로 함께 보내야 통과한다. (지오코더는 검증하지 않는다)
   → **이 값은 브라우저 접속 URL이 아니라 인증키에 등록한 서비스URL이어야 한다.**
 - **오류도 HTTP 200으로 온다.** `response.status == "ERROR"` 를 직접 확인해야 한다.
-- **연속지적도에는 면적 필드가 없다.** 경계 폴리곤에서 pyproj `Geod` 로 측지면적을 계산한다.
-  공부(토지대장) 면적과 소폭 다를 수 있고 법적으로는 대장 면적이 우선이라,
-  `area_source` 로 출처를 밝힌다.
+- **연속지적도에는 면적 필드가 없다.** 법적 기준인 공부면적을 우선 쓴다 — `get_ledger_area_m2`
+  가 NED 토지특성(`getLandCharacteristics`)의 `lndpclAr`(토지대장 등록면적)을 조회해 `area_m2`
+  로 삼고, 실패하면 경계 폴리곤에서 pyproj `Geod` 로 측지면적을 계산해 폴백한다. 어느 쪽을
+  썼는지는 `area_source` 로 밝힌다. 걸침 조각 면적도 이 공부면적에 안분해 조각 합이 전체면적과
+  맞고 토지이음과 일치한다(지도용 geometry 는 미변경).
 - **지목은 지번 끝에 한글로 붙어 오고 띄어쓰기가 일정하지 않다** (`'737 대'`, `'100-10 도'`, `'1유'`).
   공백 분리가 아니라 끝에 오는 한글을 뽑는다(`_trailing_hangul`).
 - **용도지역 레이어는 도시/비도시가 분리되어 있다.** `LT_C_UQ111`(도시) 하나만 조회하면
@@ -493,6 +502,7 @@ _meta.sources[]                    조례명 · 조례번호 · 시행일 · 조
 | `VWORLD_KEY` | — | 없으면 mock 모드로 동작 |
 | `VWORLD_DOMAIN` | `http://localhost:5173` | **인증키에 등록한 서비스URL** (접속 URL 아님) |
 | `DATA_GO_KR_SERVICE_KEY` | — | 공공데이터포털 키. 건축물대장 표제부 + 토지소유정보 공용 |
+| `JUSO_CONFM_KEY` | — | 행안부 juso.go.kr 도로명주소 승인키. 건축물대장 PNU 0건 시 건물 대표지번 주소 폴백 |
 | `LAND_OWNERSHIP_API_URL` | 토지소유정보 기본 엔드포인트 | 소유구분 조회 URL. 활용신청 상세와 다르면 덮어씀. 미설정·조회불가 시 지목 proxy 폴백 |
 | `APP_TOKEN` | — | `/api/chat` 보호. 외부 노출 시 필수 |
 | `ALLOWED_ORIGINS` | `http://localhost:5173` | CORS |
@@ -614,7 +624,8 @@ cd frontend && npm run dev
 | 산지구분(보전/임업용산지) | 로컬 SQLite RTree(106만 폴리곤, 전국) | ✅ enabled |
 | 농업진흥지역 | VWorld WFS 실시간 | ✅ enabled |
 | 건축물대장 표제부 | 국토부 건축HUB API(전국 실시간) | ✅ |
-| 도로 접도 | 연속지적도 지목 '도로' 인접 판정 | ✅ |
+| 도로 접도 | 연속지적도 지목 '도로' 인접 판정 (접촉 길이 vs 접도 최소 2m) | ✅ |
+| 도시계획도로 | VWorld WFS `lt_c_upisuq151`, 접함 geometry·집행여부(미집행=미개설) | ✅ |
 | 재해위험지구 | VWorld WFS `lt_c_up201`, 전국 실시간 교차 계산 | ✅ enabled |
 | 생태·자연도 | 국립생태원 2026 정기고시 GDB → 로컬 SQLite RTree | ✅ enabled |
 | 생태·자연도 별도관리지역 | 같은 정기고시 GDB → 로컬 SQLite RTree | ✅ enabled |
