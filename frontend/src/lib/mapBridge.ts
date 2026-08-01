@@ -1287,10 +1287,11 @@ export class MapBridge {
           position: ws3d.common.Cartesian3.fromDegrees(hlon, hlat, base + seg.height_m / 2),
           label: {
             text: seg.label,
-            font: "bold 13px 'Malgun Gothic', sans-serif",
-            fillColor: ws3d.common.Color.WHITE,
+            // 가로·세로 치수 라벨과 동일: 색 없으면 검정 글자/노랑 배경.
+            font: isCustom ? "bold 13px 'Malgun Gothic', sans-serif" : "12px 'Malgun Gothic', sans-serif",
+            fillColor: isCustom ? ws3d.common.Color.WHITE : ws3d.common.Color.BLACK,
             showBackground: true,
-            backgroundColor: segColor.withAlpha(0.95),
+            backgroundColor: isCustom ? segColor.withAlpha(0.95) : yellow.withAlpha(0.92),
             disableDepthTestDistance: Number.POSITIVE_INFINITY,
           },
         });

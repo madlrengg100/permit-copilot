@@ -264,8 +264,7 @@ def _build_dimensions(
                     f"높이 약 {_mass_top:,.1f}m"
                     + (f" · {_floors}층" if _floors else "")
                 ),
-                "color": "#00C853",  # 초록 = 높이축(가로/세로 노랑과 구분)
-                "width": 4,
+                # 색 지정 없음 → 가로·세로와 같은 노랑(3축 동일색).
             }
         )
 
