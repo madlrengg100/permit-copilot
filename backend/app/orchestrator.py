@@ -603,22 +603,32 @@ def _query_evidence(diagnosis: dict | None, query: str) -> str:
         if values:
             parts.append("진단상 " + "·".join(values) + "입니다.")
     if re.search(r"도로|접도|맹지|진입로|도로폭|접촉", query) and road:
-        summary = road.get("summary") or road.get("reason")
+        # status 는 내부 코드(CADASTRAL_CONTACT 등)라 사용자 문구에 노출하지 않는다.
+        # 한국어 서술(summary/message/label)만 쓴다.
+        summary = road.get("summary") or road.get("message") or road.get("reason")
         if summary:
             parts.append(str(summary).rstrip(" .") + ".")
-        elif road.get("status"):
-            parts.append(f"지적도 도로 접촉 판정은 {road.get('status')}입니다.")
+        elif road.get("label"):
+            parts.append(f"도로 접촉은 {road['label']}으로 확인됩니다.")
     if re.search(r"이격|후퇴|건축선|정북|일조", query) and site:
-        values = []
-        for label, key in (
-            ("전면 건축선 이격", "front_setback_m"),
-            ("인접 대지경계 이격", "adjacent_setback_m"),
-            ("정북 일조 이격", "north_setback_m"),
-        ):
-            if site.get(key) is not None:
-                values.append(f"{label} {site[key]}m")
-        if values:
-            parts.append("계산값은 " + "·".join(values) + "입니다.")
+        pairs = [
+            (label, site.get(key))
+            for label, key in (
+                ("전면 건축선 이격", "front_setback_m"),
+                ("인접 대지경계 이격", "adjacent_setback_m"),
+                ("정북 일조 이격", "north_setback_m"),
+            )
+            if site.get(key) is not None
+        ]
+        if pairs and all(float(v) == 0 for _, v in pairs):
+            parts.append(
+                "전면 건축선·인접 대지경계·정북 일조 이격은 모두 0m로, 이 용도·규모에서는 "
+                "별도 후퇴선이 적용되지 않습니다(정확한 값은 현황측량으로 확정)."
+            )
+        elif pairs:
+            parts.append(
+                "계산상 " + "·".join(f"{label} {v}m" for label, v in pairs) + "입니다."
+            )
     if re.search(r"주차|주차대수|주차면적", query):
         parking = site.get("parking") or {}
         if parking.get("estimated") and parking.get("spaces") is not None:
