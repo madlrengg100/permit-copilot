@@ -10,10 +10,14 @@ mock 모드면 조용히 빈 목록을 돌려준다.
 
 from __future__ import annotations
 
+import logging
+
 import httpx
 
 from ..config import USE_MOCK, VWORLD_DOMAIN, VWORLD_KEY
 from ..cache import async_ttl_cache
+
+logger = logging.getLogger(__name__)
 
 _ENDPOINT = "https://api.vworld.kr/ned/data/getLandUseAttr"
 
@@ -105,6 +109,7 @@ async def get_landuse_designations(pnu: str) -> dict:
             response.raise_for_status()
             data = response.json()
     except Exception as exc:
+        logger.debug("토지이용계획(getLandUseAttr) 조회 실패", exc_info=True)
         return {
             "status": "UNAVAILABLE",
             "source": "VWorld NED 토지이용계획정보",

@@ -11,6 +11,7 @@ VWORLD_KEY 가 없으면 목 데이터를 돌려주므로 키 없이도 파이�
 from __future__ import annotations
 
 import asyncio
+import logging
 import re
 
 import httpx
@@ -25,6 +26,8 @@ from ..config import (
     VWORLD_KEY,
 )
 from ..cache import async_ttl_cache
+
+logger = logging.getLogger(__name__)
 
 
 class VWorldError(RuntimeError):
@@ -137,6 +140,7 @@ async def get_individual_land_price(pnu: str) -> dict | None:
         }
     except Exception:
         # 공시지가 부가 조회 실패가 필지·건축 진단 전체를 막아서는 안 된다.
+        logger.debug("개별공시지가 조회 실패", exc_info=True)
         return None
 
 
@@ -178,6 +182,7 @@ async def get_ledger_area_m2(pnu: str) -> float | None:
         )
         return _area(latest) if latest else None
     except Exception:
+        logger.debug("토지대장 공부면적(토지특성) 조회 실패", exc_info=True)
         return None
 
 
@@ -210,6 +215,7 @@ async def geocode(address: str) -> dict:
                 },
             )
         except Exception:
+            logger.debug("지오코딩 %s 조회 실패", addr_type, exc_info=True)
             return None
         resp = data.get("response", {})
         if resp.get("status") == "OK":
@@ -673,6 +679,7 @@ async def get_zone_shares(geometry: dict | None) -> list[dict]:
     try:
         parcel = shape(geometry).buffer(0)  # buffer(0): 자기교차 등 오류 기하 보정
     except Exception:
+        logger.warning("용도지역 걸침: 필지 기하 파싱 실패", exc_info=True)
         return []
     if parcel.is_empty:
         return []
@@ -717,6 +724,7 @@ async def get_zone_shares(geometry: dict | None) -> list[dict]:
             try:
                 inter = shape(f["geometry"]).buffer(0).intersection(parcel)
             except Exception:
+                logger.debug("용도지역 조각 교차 계산 실패(스킵)", exc_info=True)
                 continue
             if inter.is_empty or inter.area == 0:
                 continue
@@ -753,6 +761,7 @@ async def get_planned_roads(geometry: dict | None) -> list[dict]:
     try:
         parcel = shape(geometry).buffer(0)
     except Exception:
+        logger.warning("도시계획도로: 필지 기하 파싱 실패", exc_info=True)
         return []
     minx, miny, maxx, maxy = parcel.bounds
     pad = 0.0005
@@ -784,6 +793,7 @@ async def get_planned_roads(geometry: dict | None) -> list[dict]:
         try:
             geom = shape(f["geometry"]).buffer(0)
         except Exception:
+            logger.debug("도시계획도로 조각 기하 파싱 실패(스킵)", exc_info=True)
             continue
         # 경계 오차를 감안해 접하거나 매우 근접한 도로만(맞닿음 = 접도 후보).
         if not parcel.intersects(geom) and parcel.distance(geom) > 1e-5:

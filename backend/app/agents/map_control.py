@@ -14,11 +14,14 @@ LLM 을 쓰지 않는 결정적 변환기 — 진단이 이미 판단을 끝냈�
 
 from __future__ import annotations
 
+import logging
 import math
 
 from shapely.geometry import shape
 
 from ..tools.footprint import inset_for_area
+
+logger = logging.getLogger(__name__)
 
 # 판정 결과 -> 매스 색상 (지도에서 허가 가능성이 한눈에 보이도록)
 VERDICT_COLOR = {
@@ -227,6 +230,7 @@ def _build_dimensions(
             pcen = shape(geometry).representative_point()
             plon, plat = pcen.x, pcen.y
         except Exception:
+            logger.debug("라벨 위치 계산 실패, 중심점으로 폴백", exc_info=True)
             cen = _centroid(geometry)
             plon, plat = (cen if cen else (0, 0))
         labels.append(
@@ -314,6 +318,7 @@ def _build_dimensions(
                 key=lambda k: (edges[k][0] - rmx) ** 2 + (edges[k][1] - rmy) ** 2,
             )
     except Exception:
+        logger.debug("전면 경계 판정 실패, 남측(S)으로 폴백", exc_info=True)
         front_edge = "S"
 
     # 필지 경계 점들 — 이격 눈금을 '실제 경계점'에서 건축선까지 잇는 데 쓴다.
@@ -322,6 +327,7 @@ def _build_dimensions(
         _poly = _pg if _pg.geom_type == "Polygon" else max(_pg.geoms, key=lambda g: g.area)
         ring_pts = [(float(x), float(y)) for x, y in _poly.exterior.coords]
     except Exception:
+        logger.debug("필지 경계점 추출 실패", exc_info=True)
         ring_pts = []
 
     # 이격거리 = '인접대지경계선(지적선) → 건축선' 사이 거리.
@@ -344,6 +350,7 @@ def _build_dimensions(
             poly = inner if inner.geom_type == "Polygon" else max(inner.geoms, key=lambda g: g.area)
             return [[float(x), float(y)] for x, y in poly.exterior.coords]
         except Exception:
+            logger.debug("건축선(이격 오프셋) 계산 실패", exc_info=True)
             return None
 
     # 건축선(경계 형상을 따라 이격만큼 안쪽) — 전면·인접 이격 중 큰 값으로 한 줄.

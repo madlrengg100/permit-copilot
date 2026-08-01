@@ -2160,6 +2160,7 @@ class Orchestrator:
                 )
                 text = _strip_internal_field_names(" ".join(natural.texts).strip())
             except Exception:
+                logger.debug("자연어 답변 생성 실패, 결정적 폴백", exc_info=True)
                 text = ""
             if not text:
                 address = facts.get("address") or "선택한 필지"
@@ -2599,6 +2600,7 @@ class Orchestrator:
                         )
                     )
                 except Exception:
+                    logger.debug("같은 필지 판정 비교 실패", exc_info=True)
                     same_parcel = (
                         False
                         if starts_new_parcel
@@ -2791,7 +2793,7 @@ class Orchestrator:
                 text = _ensure_query_evidence(text, diagnosis, user_query)
                 return _ensure_collected_forest_evidence(text, diagnosis)
         except Exception:
-            pass
+            logger.debug("단일 용도 검토의견 LLM 실패, 결정적 폴백", exc_info=True)
 
         conversion = diagnosis.get("land_conversion") or {}
         conversion_status = conversion.get("status")
@@ -3169,7 +3171,7 @@ class Orchestrator:
                     relevant=forest_relevant,
                 )
         except Exception:
-            pass
+            logger.debug("검토의견 LLM 실패, 결정적 폴백", exc_info=True)
         verdict = {
             "allowed": "건축 가능한 판정입니다",
             "conditional": "현재 조건부 가능합니다",
@@ -3251,6 +3253,7 @@ class Orchestrator:
             text = _ensure_collected_forest_evidence(text, diagnosis)
             return _limit_review_length(text)
         except Exception:
+            logger.debug("단일용도 검토의견 LLM 생성 실패", exc_info=True)
             return ""
 
     async def _all_uses_verdict_judgment_with_llm(self, user_query: str) -> str:
@@ -3314,6 +3317,7 @@ class Orchestrator:
             text = _strip_internal_field_names(" ".join(response.texts).strip())
             return _limit_review_length(text, max_sentences=3)
         except Exception:
+            logger.debug("전체용도 검토의견 LLM 생성 실패", exc_info=True)
             return ""
 
     def _render_event(self) -> dict:

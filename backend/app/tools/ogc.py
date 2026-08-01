@@ -7,6 +7,7 @@ WFS는 판정에 사용할 벡터 객체를 가져오고, WMS는 화면 표시�
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 from dataclasses import dataclass, field
@@ -20,6 +21,8 @@ from shapely.geometry import mapping, shape
 from shapely.ops import transform
 
 from .vworld import geodesic_area_m2
+
+logger = logging.getLogger(__name__)
 
 
 class OGCError(RuntimeError):
@@ -260,6 +263,7 @@ def calculate_overlaps(
         try:
             intersection = parcel.intersection(shape(feature["geometry"]).buffer(0))
         except Exception:
+            logger.debug("규제 레이어 교차 계산 실패(스킵)", exc_info=True)
             continue
         if intersection.is_empty:
             continue

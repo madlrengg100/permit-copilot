@@ -15,9 +15,12 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import re
 
 from ..tools import vworld
+
+logger = logging.getLogger(__name__)
 
 # 비도시(도시지역 외) 성격의 용도지역. 관리·농림·자연환경보전이 핵심이고,
 # 녹지지역은 도시지역이지만 사실상 비시가화라 함께 후보로 본다.
@@ -93,6 +96,7 @@ async def recommend_areas(
             center = await vworld.geocode(cand)
             break
         except Exception:
+            logger.debug("지역 중심 지오코딩 실패: %s", cand, exc_info=True)
             continue
     if not center:
         return {
@@ -116,6 +120,7 @@ async def recommend_areas(
         try:
             g = shape(p["geometry"]).buffer(0)
         except Exception:
+            logger.debug("용도지역 폴리곤 기하 파싱 실패(스킵)", exc_info=True)
             continue
         if not g.is_empty:
             zone_shapes.append((g, p["zone"]))
@@ -193,6 +198,7 @@ async def recommend_areas(
             try:
                 rp = shape(f["geometry"]).representative_point()
             except Exception:
+                logger.debug("후보 필지 대표점 계산 실패(스킵)", exc_info=True)
                 continue
             if not prepared.contains(rp):
                 continue

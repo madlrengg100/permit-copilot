@@ -121,6 +121,7 @@ def _encroachment_route(parcel, candidates: list, target_pnu: str, inverse) -> d
         try:
             geom = _metric(item["geometry"])
         except Exception:
+            logger.debug("배수 후보 필지 기하 변환 실패(스킵)", exc_info=True)
             continue
         jm = item.get("jimok")
         if jm in _PUBLIC_DRAIN_JIMOK:
@@ -136,6 +137,7 @@ def _encroachment_route(parcel, candidates: list, target_pnu: str, inverse) -> d
         _, discharge = nearest_points(start, unary_union([o[0] for o in outlets]))
         route = LineString([(start.x, start.y), (discharge.x, discharge.y)])
     except Exception:
+        logger.debug("배수 경로(공공배수처 방향) 계산 실패", exc_info=True)
         return None
     if route.length < 0.5:  # 사실상 공공 배수처에 붙어 있으면 침범이 아니다
         return None
@@ -177,6 +179,7 @@ def _drainage_route(parcel, outlet_geometries: list, inverse) -> dict | None:
             return None
         return transform(inverse.transform, route).__geo_interface__
     except Exception:
+        logger.debug("최근접 배수처 경로 기하 계산 실패", exc_info=True)
         return None
 
 
@@ -269,13 +272,13 @@ async def assess(
                         parcel_hit["ownership"] = own["ownership"]  # "사유"/"국공유"
                         parcel_hit["ownership_detail"] = own.get("detail")
                 except Exception:
-                    pass
+                    logger.debug("통과필지 소유구분 조회 실패(사유 추정 유지)", exc_info=True)
                 try:
                     reg = await building_register.lookup(hit_pnu)
                     if reg.get("status") in {"FOUND", "CLEAR"}:
                         parcel_hit["has_building"] = bool(reg.get("has_buildings"))
                 except Exception:
-                    pass
+                    logger.debug("통과필지 건축물대장 조회 실패", exc_info=True)
             # 차단(침범) 여부 재계산: 소유구분이 국·공유면 통과 가능(차단 아님), 사유면 차단.
             # 소유구분 미상이면 지목 proxy(비공공 지목이라 사유로 간주)로 보수적으로 본다.
             enc["crosses_private"] = any(
