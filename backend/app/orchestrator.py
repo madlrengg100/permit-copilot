@@ -2465,6 +2465,14 @@ class Orchestrator:
         if continuation and self.diagnosis:
             interpreted = await self._interpret_followup(original_query)
             intent = interpreted.get("intent") or "followup_explanation"
+            # 되물어 확인 흐름: '가능한 건축물이 뭐야?'처럼 궁금해서 묻기만 하면 제미나이가
+            # answer 로 '보여드릴까요?'라고 되묻고 모델은 띄우지 않는다. 이 상태를 필지 대화
+            # 상태에 남겨(pending_offer), 다음 턴에 사용자가 긍정하면 제미나이가 그 맥락을 읽고
+            # possible_models 로 분류해 그때 모델을 띄운다. 표시가 시작되거나 화제가 바뀌면 해제.
+            if interpreted.get("offer_show_models") and intent != "possible_models":
+                self.update_conversation_context(pending_offer="show_models")
+            elif self.conversation_context().get("pending_offer"):
+                self.update_conversation_context(pending_offer="")
             # 제미나이가 '다른 주소로 가서 건축 가능한지 보라'고 판단하면(target_address),
             # 그 주소로 이동해 새로 진단한다(정규식 아닌 LLM 판단, 도로명도 처리).
             _target = str(interpreted.get("target_address") or "").strip()
@@ -3019,6 +3027,19 @@ class Orchestrator:
                             "지번이 뭐냐)엔 담지 않는다. 이동·재진단 의도일 때만. 아니면 빈 문자열."
                         ),
                     },
+                    "offer_show_models": {
+                        "type": "boolean",
+                        "description": (
+                            "사용자가 어떤 건축물·모델을 지을 수 있는지 '궁금해서 묻지만' "
+                            "지도에 표시하라고 '명시적으로 요청하지는 않은' 경우 true. "
+                            "예: '가능한 건축물이 뭐야?', '여기 어떤 건물 지을 수 있어?'. "
+                            "이때 intent 는 possible_models 가 아니라 followup_explanation 으로 두고, "
+                            "answer 에 '가능한 건축물 모델을 지도에 보여드릴까요?'처럼 자연스럽게 "
+                            "되물어라(모델은 아직 띄우지 않는다). 사용자가 이 되물음에 긍정하면 "
+                            "그때 intent=possible_models 로 분류한다. '보여줘/표시해/모델 켜'처럼 "
+                            "이미 표시를 명령했으면 되묻지 말고 바로 possible_models."
+                        ),
+                    },
                 },
                 "required": ["intent", "subject", "answer"],
             },
@@ -3029,7 +3050,14 @@ class Orchestrator:
                     "너는 같은 PNU의 후속 질문을 해석한다. 반드시 "
                     "return_followup_interpretation 도구를 한 번 호출하라. 단어 하나로 "
                     "판정하지 말고 현재 필지별 대화 상태와 이전 질문을 함께 읽어라. "
-                    "다른 건축물·다른 용도·대체 모델의 조회나 선택을 원하면 possible_models, "
+                    "다른 건축물·다른 용도·대체 모델의 표시·조회·선택을 '명시적으로' "
+                    "요청하면(보여줘/표시해/모델 켜/목록 보여줘) possible_models. 다만 "
+                    "사용자가 어떤 건축물이 가능한지 '궁금해서 묻기만' 하고 표시를 명령하진 "
+                    "않았으면(예: '가능한 건축물이 뭐야?', '어떤 건물 지을 수 있어?') 바로 "
+                    "띄우지 말고 offer_show_models=true 로 두고 answer 에서 '가능한 건축물 "
+                    "모델을 지도에 보여드릴까요?'처럼 되물어라(intent 는 followup_explanation). "
+                    "그리고 대화 상태 pending_offer 가 'show_models' 인데 사용자가 그 되물음에 "
+                    "긍정하면(응/네/그래/보여줘/좋아 등) intent=possible_models 로 분류하라. "
                     "새로운 특정 건축물 용도의 건축 가능 여부를 다시 계산해야 하면 "
                     "specific_use_feasibility, 용어의 뜻·개념을 묻는다면 term_definition, "
                     "현재 필지의 수치·규제·중첩 사실을 묻는다면 parcel_fact, 인허가 절차를 "

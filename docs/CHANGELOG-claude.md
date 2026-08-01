@@ -6,6 +6,18 @@
 
 ## 2026-08-01
 
+### 가능 모델 '되물어 확인(offer)' 자연어 흐름
+- 요구: '가능한 건축물이 뭐야?'처럼 궁금해서 묻기만 하면 제미나이가 '가능한 모델을
+  지도에 보여드릴까요?'라고 되묻고, 사용자가 화답하면 그때 모델을 띄우는 대화형 흐름.
+- 구현: 후속 해석 도구에 `offer_show_models`(bool) 필드 추가. 탐색적 질문이면 제미나이가
+  offer_show_models=true + answer 로 되묻고 intent=followup_explanation(모델 미표시).
+  이 상태를 PNU별 `conversation_context.pending_offer="show_models"`로 저장 →
+  compact(context)로 다음 턴 제미나이에 전달. 사용자가 긍정하면 제미나이가 맥락 읽어
+  intent=possible_models 로 분류해 모델 표시. 표시 시작·화제 전환 시 pending_offer 해제.
+- 판단·긍정 인식은 모두 제미나이(정규식 아님). 모델 목록 단일 원본
+  `_model_options_for_diagnosis` 불변. '보여줘/표시해/모델 켜'는 되묻지 않고 즉시 표시.
+  CONVERSATION-STATE.md '가능 모델 규칙'에 흐름 명시. 106 테스트 통과.
+
 ### '가능 모델 보여줘'가 이전 매스 복원으로 새던 문제 (라우팅 가드)
 - `_is_building_restore_request` 가 '모델…보여'를 잡아 '**가능** 모델 보여줘'까지 복원
   요청(show_building_shape)으로 오인 → 직전 단일용도가 불허라 매스가 없으면 단독주택
