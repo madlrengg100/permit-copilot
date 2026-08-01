@@ -251,19 +251,21 @@ def _build_dimensions(
             }
         )
 
-    # 높이 — 가로·세로처럼 건물 높이도 보이게. 매스 동측 변 중간 높이에 라벨을 띄운다
-    # (label 은 지형 상대 height 라 매스 옆면에 붙는다). 층수도 함께.
+    # 높이 — 가로·세로 치수선이 만나는 모서리(남서)에서 수직으로 올려 3축을 이룬다.
+    # 프론트가 height_m 을 보고 그 모서리에서 매스와 같은 기준으로 수직선을 그린다.
     if _mass_top > 0:
         _floors = mass.get("floors")
-        labels.append(
+        _corner = [minlon - pad_lon, minlat - pad_lat]
+        segments.append(
             {
-                "lon": maxlon,
-                "lat": mid_lat,
-                "height": _mass_top / 2,
-                "text": (
+                "positions": [_corner, _corner],
+                "height_m": round(_mass_top, 1),
+                "label": (
                     f"높이 약 {_mass_top:,.1f}m"
                     + (f" · {_floors}층" if _floors else "")
                 ),
+                "color": "#00C853",  # 초록 = 높이축(가로/세로 노랑과 구분)
+                "width": 4,
             }
         )
 

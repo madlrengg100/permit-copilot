@@ -95,7 +95,7 @@ export type MapCommand =
   | {
       /** 검은 박스 대신 지도에 직접 얹는 치수선·면적 라벨 */
       type: "show_dimensions";
-      segments: Array<{ positions: number[][]; label: string; color?: string; width?: number; onTop?: boolean }>;
+      segments: Array<{ positions: number[][]; label: string; color?: string; width?: number; onTop?: boolean; height_m?: number }>;
       labels: Array<{ lon: number; lat: number; text: string; height?: number; offset?: boolean }>;
     }
   | {
@@ -1260,6 +1260,44 @@ export class MapBridge {
         ? ws3d.common.Color.fromCssColorString(seg.color)
         : yellow;
       const isCustom = Boolean(seg.color);
+
+      // 높이 치수선 — height_m 이 있으면 모서리(positions[0])에서 매스와 같은 기준
+      // (지면+0.5m)으로 수직으로 올린다. 가로·세로가 만나는 모서리에 세워 3축을 이룬다.
+      if (seg.height_m && seg.height_m > 0) {
+        const [hlon, hlat] = seg.positions[0];
+        const base = this.terrainHeight(hlon, hlat) + 0.5; // 매스 baseAboveGround 와 일치
+        const top = base + seg.height_m;
+        const vlineId = `map-dim-vline-${Date.now()}-${rid()}`;
+        this.viewer.entities.add({
+          id: vlineId,
+          polyline: {
+            positions: [
+              ws3d.common.Cartesian3.fromDegrees(hlon, hlat, base),
+              ws3d.common.Cartesian3.fromDegrees(hlon, hlat, top),
+            ],
+            width: seg.width ?? 4,
+            material: segColor,
+            depthFailMaterial: segColor,
+          },
+        });
+        this.dimensionIds.push(vlineId);
+        const vlabelId = `map-dim-vlabel-${Date.now()}-${rid()}`;
+        this.viewer.entities.add({
+          id: vlabelId,
+          position: ws3d.common.Cartesian3.fromDegrees(hlon, hlat, base + seg.height_m / 2),
+          label: {
+            text: seg.label,
+            font: "bold 13px 'Malgun Gothic', sans-serif",
+            fillColor: ws3d.common.Color.WHITE,
+            showBackground: true,
+            backgroundColor: segColor.withAlpha(0.95),
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          },
+        });
+        this.dimensionIds.push(vlabelId);
+        continue;
+      }
+
       const lineId = `map-dim-line-${Date.now()}-${rid()}`;
       const flat = seg.positions.flatMap(([lon, lat]) => [lon, lat]);
       const linePoly: any = {
