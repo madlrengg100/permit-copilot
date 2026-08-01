@@ -1324,10 +1324,10 @@ export class MapBridge {
         position: ws3d.common.Cartesian3.fromDegrees(midLon, midLat, 1),
         label: {
           text: seg.label,
-          font: isCustom ? "bold 13px 'Malgun Gothic', sans-serif" : "12px 'Malgun Gothic', sans-serif",
+          font: isCustom ? "bold 13px 'Malgun Gothic', sans-serif" : "bold 13px 'Malgun Gothic', sans-serif",
           fillColor: isCustom ? ws3d.common.Color.WHITE : ws3d.common.Color.BLACK,
           showBackground: true,
-          backgroundColor: isCustom ? segColor.withAlpha(0.95) : yellow.withAlpha(0.92),
+          backgroundColor: isCustom ? segColor.withAlpha(0.95) : yellow.withAlpha(0.98),
           // 치수선 라벨(가로/세로)은 살짝 위로 올려, 같은 지면의 '도로 접촉'
           // 라벨과 겹치지 않게 한다.
           pixelOffset: new ws3d.common.Cartesian2(0, -20),
