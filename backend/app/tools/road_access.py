@@ -47,17 +47,24 @@ def _metric(geometry: dict):
     return transform(TO_METERS.transform, shape(geometry).buffer(0))
 
 
-def _estimated_width_m(road) -> float | None:
-    """도로 지적 필지 최소회전사각형의 짧은 변(참고치)."""
+def _road_rect_dims(road) -> tuple[float | None, float | None]:
+    """도로 지적필지 최소회전사각형의 (긴 변=연장, 짧은 변=폭) 참고치(m).
+
+    곧은 도로는 (연장, 실제 폭)에 가깝지만, 굽거나 가지친 도로 필지는 최소사각형이
+    큰 사각형이 돼 '폭'이 의미를 잃는다. 그래서 화면에는 '지적 폭'이 아니라
+    '도로 필지 규모(연장·면적)'로 정직하게 표기한다.
+    """
     if road.is_empty:
-        return None
+        return None, None
     coords = list(road.minimum_rotated_rectangle.exterior.coords)
     lengths = [
         ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
         for (x1, y1), (x2, y2) in zip(coords, coords[1:])
     ]
     positive = [value for value in lengths if value > 0.05]
-    return round(min(positive), 1) if positive else None
+    if not positive:
+        return None, None
+    return round(max(positive), 1), round(min(positive), 1)
 
 
 # 우수·오수를 방류할 수 있는 공공 배수처의 지목(단자·정식명 둘 다).
@@ -208,6 +215,7 @@ async def assess(
     road_geometries = []
     drainage_geometries = []  # 인접 구거·하천(방류처) 형상 — 가상 배수로 경로 산출용
     adjacent_nonroads = []
+    _inverse = Transformer.from_crs("EPSG:5179", "EPSG:4326", always_xy=True)
     for item in candidates:
         if item.get("pnu") == pnu:
             continue
@@ -228,18 +236,22 @@ async def assess(
             continue
         road = candidate
         road_geometries.append(road)
+        _length, _width = _road_rect_dims(road)
         roads.append({
             "pnu": item.get("pnu", ""),
             "address": item.get("address", ""),
             "contact_length_m": round(contact, 1),
-            "cadastral_width_estimate_m": _estimated_width_m(road),
+            "cadastral_length_m": _length,        # 연장(긴 변) — 화면 '도로 필지 규모'
+            "cadastral_width_estimate_m": _width,  # 짧은 변 — 내부 후퇴폭 판정용(참고)
+            "cadastral_area_m2": round(road.area, 1),
+            # 도로 필지 자체를 3D에 그리도록 WGS84 형상을 함께 넘긴다.
+            "road_parcel_geometry": transform(_inverse.transform, road).__geo_interface__,
         })
 
     roads.sort(key=lambda item: -item["contact_length_m"])
     adjacent_nonroads.sort(key=lambda item: -item["contact_length_m"])
 
     # 배수 사전검토 + 가장 가까운 방류처까지 '개념' 배수로 경로(있으면). 두 반환에서 공용.
-    _inverse = Transformer.from_crs("EPSG:5179", "EPSG:4326", always_xy=True)
     drainage_info = _drainage(roads, adjacent_nonroads)
     _route = _drainage_route(parcel, road_geometries + drainage_geometries, _inverse)
     if _route:

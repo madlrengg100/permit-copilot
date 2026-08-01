@@ -429,6 +429,36 @@ def _build_dimensions(
             }
         )
 
+    # 도로 필지 자체 — 접촉이 0.8m라도 '어떤 도로 필지'에 닿는지 눈으로 보이게 필지
+    # 외곽선을 호박색으로 그린다('지적 폭' 수치 대신 실제 형상·규모를 확인용).
+    for i, r in enumerate(roads):
+        rp = r.get("road_parcel_geometry")
+        if not isinstance(rp, dict):
+            continue
+        if rp.get("type") == "Polygon":
+            rings = [rp.get("coordinates", [None])[0]]
+        elif rp.get("type") == "MultiPolygon":
+            rings = [poly[0] for poly in rp.get("coordinates", []) if poly]
+        else:
+            rings = []
+        length = r.get("cadastral_length_m")
+        for j, ring in enumerate(rings):
+            if not ring or len(ring) < 2:
+                continue
+            segments.append(
+                {
+                    "positions": [[float(p[0]), float(p[1])] for p in ring],
+                    "label": (
+                        f"도로 필지 · 연장 약 {length:g}m"
+                        if length and i == 0 and j == 0
+                        else ""
+                    ),
+                    "color": "#FFB300",  # 호박색 = 접한 도로 지적필지 외곽
+                    "width": 3,
+                    "onTop": False,  # 접촉선(자주)·지적선 아래로
+                }
+            )
+
     # 우수·오수 '개념' 배수로 — 가장 가까운 공공 배수처(도로측구·구거·하천)까지.
     # 사전검토일 뿐이라 파랑으로 얇게 그리고 '개념·현장확인' 라벨을 붙인다.
     # 실제 경로·방류지점은 설계사무소 현장확인·현황측량으로 확정한다.

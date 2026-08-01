@@ -403,7 +403,7 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
         stopAll();
         try { vw?.NavigationZoom?.erase?.(); } catch { /* 지울 그래픽 없음 */ }
         measuringRef.current = false;
-        setLocMsg("측정 표시를 지웠습니다.");
+        setLocMsg("");  // 측정 해제는 조용히 — 안내 문구를 띄우지 않는다.
       }
     } catch (error) {
       setLocMsg(

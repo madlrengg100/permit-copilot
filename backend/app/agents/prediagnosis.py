@@ -558,8 +558,16 @@ def format_diagnosis_answer(d: dict) -> str:
         out.append(f"- {ra['label']}: {ra.get('message', '')}")
         road = (ra.get("roads") or [{}])[0]
         if road.get("contact_length_m") is not None:
-            width = road.get("cadastral_width_estimate_m")
-            extra = f" · 지적 폭 참고 {width}m" if width else ""
+            # '지적 폭'은 굽은/가지친 도로 필지에서 무의미하므로, 도로 필지 규모
+            # (연장·면적)로 정직하게 표기한다. 실제 형상은 3D 지도에서 확인.
+            length = road.get("cadastral_length_m")
+            area = road.get("cadastral_area_m2")
+            size = []
+            if length:
+                size.append(f"연장 약 {length}m")
+            if area:
+                size.append(f"면적 약 {area:,.0f}㎡")
+            extra = f" · 도로 필지 규모 {' · '.join(size)}" if size else ""
             out.append(f"- 접촉 길이 약 {road['contact_length_m']}m{extra}")
 
     # 재해·환경·국가유산
