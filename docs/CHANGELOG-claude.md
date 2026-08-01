@@ -6,6 +6,16 @@
 
 ## 2026-08-01
 
+### offer 되물음이 '뭐야' 질문에서 우회되던 버그 (개념 fast-path 제외)
+- 후속 질문은 run() 1330~1346 에서 user_query 에 좌표가 주입된다(`경도 … 위도 …`).
+  그래서 '가능한 건축물이 뭐야?'도 coordinate_match 가 참이 되고 '뭐야'가 _concept_q 에
+  걸려 개념 fast-path(2434)로 빠져 결정적 용도목록만 답 → 되물어 확인(offer) 흐름이
+  아예 안 탔다(측정: 11ms, followup_llm 로그 없음).
+- 수정: 개념 fast-path 조건에 `and not _asks_possible_use_list(original_query)` 추가(좌표
+  주입 전 원문 기준). 가능-용도 목록 질문은 _interpret_followup(제미나이)로 흘려보내
+  offer 되물음이 뜨게. '용적률/이격거리/후퇴가 뭐야'류 정의 질문은 _asks_possible_use_list
+  가 False 라 그대로 개념 답변. 106 테스트 통과.
+
 ### 가능 모델 '되물어 확인(offer)' 자연어 흐름
 - 요구: '가능한 건축물이 뭐야?'처럼 궁금해서 묻기만 하면 제미나이가 '가능한 모델을
   지도에 보여드릴까요?'라고 되묻고, 사용자가 화답하면 그때 모델을 띄우는 대화형 흐름.

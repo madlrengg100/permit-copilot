@@ -2431,7 +2431,16 @@ class Orchestrator:
             r"건물\s*(?:지|올|세))",
             user_query,
         )
-        if coordinate_match and _concept_q and not _build_intent:
+        # '가능한 건축물/모델이 뭐야?'처럼 지을 수 있는 용도 목록을 묻는 질문은
+        # 개념·정의 질문이 아니다. 여기서 결정적 목록으로 답하면 되물어 확인(offer)
+        # 흐름을 우회하므로, 그런 질문은 아래 _interpret_followup(제미나이)로 흘려보낸다.
+        # 판단은 좌표가 주입되기 전 원문(original_query) 기준.
+        if (
+            coordinate_match
+            and _concept_q
+            and not _build_intent
+            and not _asks_possible_use_list(original_query)
+        ):
             if self.diagnosis and _same_parcel_coordinate(coordinate_match, self.diagnosis):
                 # 이미 진단된 같은 필지 → 재진단 없이 바로 자연어로 해석해 답한다.
                 yield {
