@@ -240,8 +240,12 @@ TOOLS: list[dict] = [
             "직전 진단 필지의 특정 선을 지도에 다시 그려 보여준다. 카메라·3D 매스는 그대로 두고 "
             "선만 얹는다. 사용자가 도로 접촉·진입로·접도를 묻거나('도로 접촉 있어?', '진입로 있어?', "
             "'근접 도로와 접촉해?', '길 낼 수 있어?') 보여달라고 하면 kinds=[\"road\"] 로, "
-            "'건축선 그려줘/보여줘'는 [\"building_line\"], '우수·오수 배수로/방류 어디로'는 [\"drainage\"] "
-            "로 호출한다. 호출한 뒤에는 표시된 선의 값을 근거로 자연어 한두 문장 답도 함께 한다. "
+            "'건축선 그려줘/보여줘'는 [\"building_line\"], '우수·오수 배수로/방류 어디로'는 [\"drainage\"], "
+            "'가로·세로·높이/치수/건물 규모(가로 세로 높이) 보여줘'는 [\"dimensions\"], "
+            "'대지면적·건축면적 보여줘'는 [\"area\"] 로 호출한다. 여러 개를 한꺼번에 "
+            "보여달라면 kinds 에 함께 담는다(예: '가로 세로 높이 대지면적 건축면적 도로접촉 "
+            "배수로 다 보여줘' → [\"dimensions\",\"area\",\"road\",\"drainage\"]). "
+            "호출한 뒤에는 표시된 선의 값을 근거로 자연어 한두 문장 답도 함께 한다. "
             "건축선·이격선은 이격 값이 있고 건축 가능(가능/조건부) 판정일 때만 그려진다."
         ),
         "input_schema": {
@@ -251,11 +255,12 @@ TOOLS: list[dict] = [
                     "type": "array",
                     "items": {
                         "type": "string",
-                        "enum": ["road", "building_line", "drainage"],
+                        "enum": ["road", "building_line", "drainage", "dimensions", "area"],
                     },
                     "description": (
                         "road=도로 접촉선(진입로·접도), building_line=건축선·이격선, "
-                        "drainage=우수 배수로"
+                        "drainage=우수 배수로, dimensions=필지 가로·세로+건물 높이 3축 치수, "
+                        "area=대지면적·건축면적 라벨"
                     ),
                 },
             },
@@ -1428,11 +1433,12 @@ class Orchestrator:
             }
             return
 
-        # 바닥면적·평면·윤곽 등 일상적인 표현을 정확한 '건축면적 윤곽' 표시로
-        # 통일한다. 단독으로 말한 "면적만 보여줘"도 지도 표시 명령으로 인식한다.
+        # '건축면적만/바닥면적만/평면만 보여줘'(입체 숨기고 평면 윤곽만)는 표시 토글이라
+        # 결정적으로 처리한다. '~만'(오직 그것만)일 때만 잡아, '가로 세로 대지면적 건축면적
+        # 다 보여줘' 같은 다중 치수/면적 요청은 아래 치수/면적 오버레이로 흘려보낸다.
         if re.search(
-            r"(?:건축면적|건물(?:바닥|면적|평면)|바닥면적|바닥윤곽|"
-            r"평면윤곽|평면만|^면적만).*(?:켜|보여|표시|남겨|만|해줘|해죠)",
+            r"(?:건축면적|건물(?:바닥|면적|평면)|바닥면적|바닥윤곽|평면윤곽|평면|면적)"
+            r"\s*만.*(?:켜|보여|표시|남겨|해줘|해죠)",
             compact_query,
             re.IGNORECASE,
         ):
@@ -1451,6 +1457,7 @@ class Orchestrator:
                 "data": {"text": "입체 건물을 숨기고 건축면적 윤곽만 표시했습니다."},
             }
             return
+
 
         # 상세 창문·외벽 모델을 세우기 전의 단순 형상은 진단 시 계산한 LOD1
         # 매스를 그대로 복원한다. 후속 자연어 질문을 종합 진단으로 오인하지 않는다.
@@ -2486,7 +2493,7 @@ class Orchestrator:
                 # 정한다 — 키워드 매칭이 아니라 의도로 판단한다. 가능 판정일 때만 건축선·이격.
                 _line_kinds = [
                     k for k in (interpreted.get("map_lines") or [])
-                    if k in {"road", "building_line", "drainage"}
+                    if k in {"road", "building_line", "drainage", "dimensions", "area"}
                 ]
                 if _line_kinds:
                     from .agents.map_control import overlay_command
@@ -2954,14 +2961,21 @@ class Orchestrator:
                         "type": "array",
                         "items": {
                             "type": "string",
-                            "enum": ["road", "building_line", "drainage"],
+                            "enum": [
+                                "road", "building_line", "drainage",
+                                "dimensions", "area",
+                            ],
                         },
                         "description": (
-                            "사용자가 지도에서 '보고 싶어 하는 선'이 있으면 그 종류를 담는다. "
+                            "사용자가 지도에서 '보고 싶어 하는 선/치수/면적'이 있으면 그 종류를 담는다. "
                             "접한 도로·진입로·접도·맹지 여부를 묻거나 그 선을 보고자 하면 road, "
                             "건축선·이격·대지 안의 공지·후퇴선을 보고자 하면 building_line, "
-                            "우수·오수 배수 방향·방류처·배수로를 보고자 하면 drainage. "
-                            "단어가 아니라 의도로 판단하고, 선을 보려는 뜻이 없으면 빈 배열."
+                            "우수·오수 배수 방향·방류처·배수로를 보고자 하면 drainage, "
+                            "필지 가로·세로·건물 높이(치수·규모)를 보고자 하면 dimensions, "
+                            "대지면적·건축면적을 보고자 하면 area. 여러 개면 함께 담는다"
+                            "(예: '가로 세로 높이 대지·건축면적 도로접촉 배수로 다 보여줘' → "
+                            "[dimensions, area, road, drainage]). "
+                            "단어가 아니라 의도로 판단하고, 보려는 뜻이 없으면 빈 배열."
                         ),
                     },
                     "target_address": {

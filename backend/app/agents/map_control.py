@@ -504,6 +504,8 @@ _OVERLAY_LABEL_KINDS = {
     "road": ("도로 접촉",),
     "building_line": ("건축선", "전면이격", "정북일조", "인접이격"),
     "drainage": ("우수 방류",),
+    "dimensions": ("가로", "세로", "높이"),  # 필지 가로·세로 + 건물 높이 3축 치수
+    "area": ("대지면적", "건축면적"),  # 면적 라벨(세그먼트 아닌 labels 에 있음)
 }
 
 
@@ -560,9 +562,14 @@ def overlay_command(diagnosis: dict, kinds) -> dict | None:
         s for s in dims.get("segments", [])
         if any(p in s.get("label", "") for p in wanted)
     ]
-    if not segs:
+    # 대지면적·건축면적은 세그먼트가 아니라 labels 에 있으므로 함께 필터한다.
+    labs = [
+        lab for lab in dims.get("labels", [])
+        if any(p in lab.get("text", "") for p in wanted)
+    ]
+    if not segs and not labs:
         return None
-    return {"type": "show_dimensions", "segments": segs, "labels": []}
+    return {"type": "show_dimensions", "segments": segs, "labels": labs}
 
 
 def build_map_commands(diagnosis: dict) -> list[dict]:
