@@ -429,19 +429,19 @@ def _build_dimensions(
             }
         )
 
-    # 도로 필지 자체 — 접촉이 0.8m라도 '어떤 도로 필지'에 닿는지 눈으로 보이게 필지
-    # 외곽선을 호박색으로 그린다('지적 폭' 수치 대신 실제 형상·규모를 확인용).
-    for i, r in enumerate(roads):
-        rp = r.get("road_parcel_geometry")
-        if not isinstance(rp, dict):
-            continue
+    # 접한 도로 필지 — 여러 도로에 닿을 수 있으나 외곽선을 다 그리면 지저분하므로,
+    # '주 도로'(접촉이 가장 긴 roads[0]) 하나만 호박색 외곽으로 그린다. 접촉이 0.8m라도
+    # '어떤 도로 필지'에 닿는지 눈으로 확인용('지적 폭' 수치 대신 실제 형상·규모).
+    main_road = roads[0] if roads else None
+    rp = main_road.get("road_parcel_geometry") if main_road else None
+    if isinstance(rp, dict):
         if rp.get("type") == "Polygon":
             rings = [rp.get("coordinates", [None])[0]]
         elif rp.get("type") == "MultiPolygon":
             rings = [poly[0] for poly in rp.get("coordinates", []) if poly]
         else:
             rings = []
-        length = r.get("cadastral_length_m")
+        length = main_road.get("cadastral_length_m")
         for j, ring in enumerate(rings):
             if not ring or len(ring) < 2:
                 continue
@@ -449,11 +449,9 @@ def _build_dimensions(
                 {
                     "positions": [[float(p[0]), float(p[1])] for p in ring],
                     "label": (
-                        f"도로 필지 · 연장 약 {length:g}m"
-                        if length and i == 0 and j == 0
-                        else ""
+                        f"도로 필지 · 연장 약 {length:g}m" if length and j == 0 else ""
                     ),
-                    "color": "#FFB300",  # 호박색 = 접한 도로 지적필지 외곽
+                    "color": "#FFB300",  # 호박색 = 접한 주 도로 지적필지 외곽
                     "width": 3,
                     "onTop": False,  # 접촉선(자주)·지적선 아래로
                 }
