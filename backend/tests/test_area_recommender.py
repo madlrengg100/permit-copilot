@@ -584,6 +584,34 @@ class PossibleUsesFollowupTest(unittest.IsolatedAsyncioTestCase):
             [{"type": "show_building_shape"}],
         )
 
+    async def test_locate_phrase_moves_instead_of_diagnosing(self):
+        # '고읍동 128-2 찾을 수 있어'는 종합진단이 아니라 그 필지로 이동해야 한다.
+        # 반대로 '지을 수 있어'(건축 가능)는 이동으로 새면 안 된다.
+        from unittest.mock import AsyncMock
+
+        orch = Orchestrator(client=None)
+        self.assertTrue(orch._requests_move_phrase("고읍동 128-2 찾을 수 있어"))
+        self.assertTrue(orch._requests_move_phrase("고읍동 128-2 어디야"))
+        self.assertFalse(orch._requests_move_phrase("고읍동 128-2에 창고 지을 수 있어"))
+
+        orch._run_tool = AsyncMock(return_value=({"ok": True}, []))
+        tools = [
+            event["data"]["tool"]
+            async for event in orch.ask("경기도 양주시 고읍동 128-2 찾을 수 있어")
+            if event["event"] == "tool_start"
+        ]
+        self.assertIn("move_to_parcel", tools)
+        self.assertNotIn("prediagnose", tools)
+
+    async def test_teaching_statement_is_not_swallowed_as_concept(self):
+        # '~하라는 뜻이야' 같은 교육 문장은 개념 정의 질문이 아니다.
+        from app.orchestrator import _is_teaching_statement
+
+        self.assertTrue(_is_teaching_statement("띄워봐라고 하면 이동하라는 뜻이야"))
+        self.assertTrue(_is_teaching_statement("수치선 꺼도 되게 해"))
+        self.assertFalse(_is_teaching_statement("용적률이 뭐야?"))
+        self.assertFalse(_is_teaching_statement("이격거리가 뭐야?"))
+
     async def test_explicit_address_feasibility_variants_bypass_orchestrator_llm(self):
         # client=None에서도 tool-selection LLM으로 빠지지 않고 prediagnose에
         # 직접 진입해야 한다. 실제 공간조회는 이 단위 테스트에서 대체한다.

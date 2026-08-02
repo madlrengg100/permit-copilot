@@ -1108,6 +1108,23 @@ def _asks_possible_use_list(user_query: str) -> bool:
     )
 
 
+def _is_teaching_statement(query: str) -> bool:
+    """사용자가 '어떤 말은 이런 뜻/이렇게 처리하라'고 시스템에 가르치는 문장인지 본다.
+
+    '띄워봐라고 하면 이동하라는 뜻이야', '수치선 꺼도 되게 해', '~하면 응답해야지'처럼
+    표현의 의미·동작을 알려주는 문장은 개념 정의 질문이 아니므로, 결정적 개념 답변으로
+    삼키지 말고 제미나이 해석(학습 훅)으로 흘려보내야 한다.
+    """
+    compact = re.sub(r"\s+", "", query or "")
+    return bool(
+        re.search(
+            r"(?:라고|라는말|말하면|라고하면).*(?:뜻|의미|하라는|한다는)"
+            r"|되게\s*해|되게하|처리하도록|처리해야|응답해야|알아들|기억해|학습해",
+            compact,
+        )
+    )
+
+
 def _model_options_for_diagnosis(
     diagnosis: dict | None,
     *,
@@ -1197,6 +1214,9 @@ class Orchestrator:
         # 규칙이 못 잡는 표현을 학습해 다음부터는 빠른 경로로 바로 처리한다. 세션에
         # 저장돼 재시작·재접속에도 유지된다.
         self.control_glossary: dict[str, str] = {}
+        # 사용자가 가르친 '이동/찾기' 표현들(예: '찾을 수 있어'=지도 이동). 주소와 함께
+        # 쓰이면 진단이 아니라 그 필지로 이동한다. 세션에 저장돼 영속된다.
+        self.nav_glossary: list[str] = []
 
     def snapshot_state(self) -> dict:
         """타임아웃 재시도 전의 필지별 상담 상태를 복제한다."""
@@ -1213,6 +1233,7 @@ class Orchestrator:
             "_diag_shown_by_pnu": self._diag_shown_by_pnu,
             "_context_by_pnu": self._context_by_pnu,
             "control_glossary": self.control_glossary,
+            "nav_glossary": self.nav_glossary,
         })
 
     def restore_state(self, snapshot: dict) -> None:
@@ -1225,6 +1246,8 @@ class Orchestrator:
             self._context_by_pnu = {}
         if not hasattr(self, "control_glossary"):
             self.control_glossary = {}
+        if not hasattr(self, "nav_glossary"):
+            self.nav_glossary = []
 
     def _active_pnu(self) -> str:
         return (
@@ -1272,6 +1295,21 @@ class Orchestrator:
                 last_control_target=target,
                 last_control_shown=bool(show),
             )
+
+    def _requests_move_phrase(self, text: str) -> bool:
+        """'지도에서 찾아 이동' 뜻의 표현인지(표준 + 학습된 표현) 판단한다.
+
+        주소와 함께 쓰이고 건축·모델 요청이 아닐 때만 이동으로 처리하므로, 여기서는
+        찾기/이동 어감만 넓게 본다. 학습사전(nav_glossary)의 표현도 함께 인정한다.
+        """
+        compact = re.sub(r"\s+", "", text or "")
+        if re.search(
+            r"이동|가줘|찾아줘|보여줘|찾을수있|찾아봐|찾아볼|어디있|어디에있|어디야|"
+            r"어디니|위치보여|위치알려|데려가|가보자|가자",
+            compact,
+        ):
+            return True
+        return any(term and term in compact for term in self.nav_glossary)
 
     def _control_result(self, target: str, show: bool) -> tuple[dict | None, str]:
         """대상 제어의 지도명령과 한국어 안내 문구를 함께 만든다.
@@ -1894,7 +1932,7 @@ class Orchestrator:
         )
         if (
             parcel_move_match
-            and re.search(r"(이동|가\s*줘|찾아\s*줘|보여\s*줘)", user_query)
+            and self._requests_move_phrase(user_query)
             and not re.search(r"(건축|지을|짓|가능|진단|검토)", user_query)
             # '단독주택 건물 보여줘'처럼 특정 모델/건물 표시 요청은 주소 이동이 아니다.
             and not requests_specific_model
@@ -2514,6 +2552,7 @@ class Orchestrator:
             and _concept_q
             and not _build_intent
             and not _asks_possible_use_list(original_query)
+            and not _is_teaching_statement(original_query)
         ):
             if self.diagnosis and _same_parcel_coordinate(coordinate_match, self.diagnosis):
                 # 이미 진단된 같은 필지 → 재진단 없이 바로 자연어로 해석해 답한다.
@@ -2591,6 +2630,20 @@ class Orchestrator:
                     self._record_control(_c_target, _c_show)
                 yield {"event": "message", "data": {"text": _msg + _learned}}
                 self.messages.append({"role": "assistant", "content": _msg + _learned})
+                self._selection_changed = False
+                return
+            # 사용자가 '이런 말은 이동하라는 뜻'이라고 가르치면 이동 표현으로 학습한다.
+            # 다음부터 그 표현이 주소와 함께 오면 진단이 아니라 그 필지로 이동한다.
+            _nav_learn = str(interpreted.get("learn_nav_term") or "").strip()
+            if _nav_learn:
+                _nav_key = re.sub(r"\s+", "", _nav_learn)
+                if _nav_key and _nav_key not in self.nav_glossary:
+                    self.nav_glossary.append(_nav_key)
+                _nav_msg = (
+                    f"앞으로 '{_nav_learn}'라고 하시면 지도에서 찾아 이동하겠습니다."
+                )
+                yield {"event": "message", "data": {"text": _nav_msg}}
+                self.messages.append({"role": "assistant", "content": _nav_msg})
                 self._selection_changed = False
                 return
             # 제미나이가 '다른 주소로 가서 건축 가능한지 보라'고 판단하면(target_address),
@@ -3196,6 +3249,15 @@ class Orchestrator:
                             },
                         },
                     },
+                    "learn_nav_term": {
+                        "type": "string",
+                        "description": (
+                            "사용자가 '어떤 말로 하면 지도에서 찾아 이동하라는 뜻'이라고 알려주면 "
+                            "(예: '찾을 수 있어라고 하면 이동하라는 뜻이야', '가보자고 하면 그리 가줘') "
+                            "그 표현을 담아라. 다음부터 그 표현이 주소와 함께 오면 진단이 아니라 "
+                            "그 필지로 이동하도록 학습한다. 이동 학습 지시가 아니면 빈 문자열."
+                        ),
+                    },
                 },
                 "required": ["intent", "subject", "answer"],
             },
@@ -3223,6 +3285,8 @@ class Orchestrator:
                     "지워', '지적선 안 보이게')은 control 에 action·target 으로 의미를 담아라. "
                     "규칙에 없던 새 표현이면 learn_term 에 사용자가 쓴 그 말을 담아, 다음부터 "
                     "같은 대상으로 바로 처리하도록 학습시킨다. 표시 제어가 아니면 control 은 비운다. "
+                    "사용자가 '어떤 말로 하면 지도에서 찾아 이동하라는 뜻'이라고 알려주면 그 표현을 "
+                    "learn_nav_term 에 담아 이동 표현으로 학습시킨다. "
                     "answer에는 최신 진단 데이터에 근거해 질문에 직접 답하라. 사전적 의미 "
                     "질문은 뜻을 먼저 설명한 뒤 이 필지에서의 의미를 연결하라. possible_models는 "
                     "허용·조건부 용도를 간결히 검토하되 모델 버튼 문구를 직접 만들지 마라. "
