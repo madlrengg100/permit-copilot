@@ -1321,6 +1321,71 @@ class Orchestrator:
         verb = "다시 켰습니다" if show else "껐습니다"
         return cmd, f"{label} 표시를 {verb}."
 
+    async def _recommend_areas_events(
+        self, region: str, use: str
+    ) -> tuple[list[dict], dict]:
+        """지역+조건으로 후보 필지 리스트를 만들어 (이벤트들, 요약)을 돌려준다.
+
+        메인 도구 루프와 후속(제미나이 라우팅) 양쪽이 같은 결과를 내도록 하는 단일
+        원본이다. 후보는 VWorld 용도지역 공간스캔 + 지목 필터로 뽑고, 각 항목은
+        눌러서 그 지점으로 이동·개별 진단하도록 지번 주소를 담는다.
+        """
+        from .agents.area_recommender import recommend_areas as _run
+
+        use = (use or "").strip()
+        rec = await _run(region, use, query=getattr(self, "_last_query", ""))
+        self.recommendations = rec
+
+        items = rec.get("items") or []
+        options = []
+        for it in items:
+            detail = f"{it['zone']} · 지목 {it['jimok'] or '—'}"
+            if it.get("area_m2"):
+                detail += f" · {it['area_m2']:,.0f}㎡"
+            options.append({
+                "label": it["address"],
+                "detail": detail,
+                # 클릭 시 그 지번으로 개별 진단을 실행하도록 프론트가 해석한다.
+                "action": f"diagnose:{use or '건물'}::{it['address']}",
+            })
+        header = (
+            f"**{rec.get('matched') or region}** 주변 비도시 지역 후보 {len(items)}곳입니다. "
+            f"항목을 누르면 그 지점으로 이동해 진단합니다.\n\n> {rec.get('note', '')}"
+        )
+        events: list[dict] = [
+            {"event": "message", "data": {"text": header, "options": options}}
+        ]
+        center = rec.get("center")
+        if center:
+            events.append({
+                "event": "map_commands",
+                "data": {"commands": [{
+                    "type": "fly_to",
+                    "lon": center["lon"],
+                    "lat": center["lat"],
+                    "altitude": 12000,
+                    "tilt": 35,
+                    "heading": 0,
+                }]},
+            })
+        summary = {
+            "region": region,
+            "count": len(items),
+            "recommendation_shown": True,
+            "note": (
+                (
+                    "조건과 행정구역이 일치하는 후보를 찾지 못했다. 후보를 찾았다고 말하지 말고, "
+                    "검색 범위를 넓히거나 인접 동을 지정해 달라고 한 줄로 안내하라."
+                )
+                if not items else
+                (
+                    "후보 리스트는 시스템이 이미 클릭 가능한 형태로 표시했다. "
+                    "리스트를 텍스트로 다시 나열하지 마라. 필요하면 한 줄 안내만 덧붙여라."
+                )
+            ),
+        }
+        return events, summary
+
     def set_selected_parcel(
         self,
         *,
@@ -2667,6 +2732,30 @@ class Orchestrator:
                     yield {"event": "error", "data": {"tool": "prediagnose", "message": str(exc)}}
                 self._selection_changed = False
                 return
+            # 제미나이가 '지역+조건으로 후보 필지 리스트를 뽑아라'(recommend_region)로
+            # 판단하면, 그 지역의 비도시 용도지역을 공간스캔해 후보 리스트를 만든다.
+            # '기능이 없다'고 회피하지 않는다(후속에서도 지역추천에 도달하게 하는 핵심).
+            # 환각 방지: 지역 이름 어간이 질문 원문에 실제로 있어야 한다.
+            _region = str(interpreted.get("recommend_region") or "").strip()
+            _region_core = re.sub(
+                r"(특별시|광역시|특별자치시|특별자치도|도|시|군|구)$", "",
+                _region.split()[-1],
+            ) if _region else ""
+            if (
+                _region
+                and _region_core
+                and _region_core in re.sub(r"\s+", "", original_query)
+            ):
+                _use = str(interpreted.get("recommend_use") or "").strip()
+                yield {"event": "tool_start", "data": {"tool": "recommend_areas"}}
+                try:
+                    _evs, _ = await self._recommend_areas_events(_region, _use)
+                    for _e in _evs:
+                        yield _e
+                except Exception as exc:
+                    yield {"event": "error", "data": {"tool": "recommend_areas", "message": str(exc)}}
+                self._selection_changed = False
+                return
             # 특정 건축물의 신규 가능 여부 검토만 아래 결정식 진단 경로로 보낸다.
             # 그 밖의 같은-PNU 질문은 제미나이가 현재 상태를 읽고 해석한 답으로
             # 끝내므로 종합진단이나 모델 카드가 임의로 다시 붙지 않는다.
@@ -3200,6 +3289,25 @@ class Orchestrator:
                             "지번이 뭐냐)엔 담지 않는다. 이동·재진단 의도일 때만. 아니면 빈 문자열."
                         ),
                     },
+                    "recommend_region": {
+                        "type": "string",
+                        "description": (
+                            "특정 필지 하나가 아니라 '○○(시·군) 주변/일대에 농막·창고 지을 "
+                            "만한 곳/필지 리스트 뽑아줘·찾아줘·추천해줘'처럼 지역+조건으로 "
+                            "후보지를 찾아달라는 탐색형 질의면, 그 대상 시·군·구를 담는다"
+                            "(예: '음성군', '충청북도 음성군', '양평'). 시스템이 그 지역의 "
+                            "비도시 용도지역을 공간스캔해 지번·지목과 함께 후보 필지 리스트를 "
+                            "만든다 — '기능이 없다'고 답하지 마라. 개별 필지 한 곳만 묻거나 "
+                            "이동이면 여기 담지 말고 target_address 를 쓴다. 아니면 빈 문자열."
+                        ),
+                    },
+                    "recommend_use": {
+                        "type": "string",
+                        "description": (
+                            "recommend_region 을 채웠을 때, 지으려는 시설을 담는다"
+                            "(예: '농막', '창고', '단독주택'). 없으면 빈 문자열."
+                        ),
+                    },
                     "offer_show_models": {
                         "type": "boolean",
                         "description": (
@@ -3280,6 +3388,10 @@ class Orchestrator:
                     "specific_use_feasibility, 용어의 뜻·개념을 묻는다면 term_definition, "
                     "현재 필지의 수치·규제·중첩 사실을 묻는다면 parcel_fact, 인허가 절차를 "
                     "묻는다면 permit_procedure, 나머지는 followup_explanation으로 분류하라. "
+                    "'○○(시·군) 주변/일대에 농막·창고 지을 만한 곳/필지 리스트 뽑아줘·찾아줘' "
+                    "처럼 지역+조건으로 후보지를 찾아달라는 탐색형이면 recommend_region 에 그 "
+                    "시·군을, recommend_use 에 시설을 담아라. 시스템이 그 지역을 공간스캔해 "
+                    "후보 필지 리스트를 만든다 — 절대 '그런 기능이 없다'고 답하지 마라. "
                     "표준적인 표시·숨김 지도 제어는 이 단계 전에 규칙으로 처리되지만, "
                     "규칙이 못 알아들은 제어 표현(동의어·구어·오타, 예: '수치선 꺼', '눈금 "
                     "지워', '지적선 안 보이게')은 control 에 action·target 으로 의미를 담아라. "
@@ -4389,76 +4501,11 @@ class Orchestrator:
             return {"ran": action}, events
 
         if name == "recommend_areas":
-            from .agents.area_recommender import recommend_areas
-
-            region = args.get("region", "")
-            use = (args.get("building_use") or "").strip()
-            rec = await recommend_areas(
-                region, use, query=getattr(self, "_last_query", "")
+            evs, summary = await self._recommend_areas_events(
+                args.get("region", ""), args.get("building_use") or ""
             )
-            self.recommendations = rec
-
-            items = rec.get("items") or []
-            options = []
-            for it in items:
-                use_label = use or "건물"
-                detail = f"{it['zone']} · 지목 {it['jimok'] or '—'}"
-                if it.get("area_m2"):
-                    detail += f" · {it['area_m2']:,.0f}㎡"
-                options.append(
-                    {
-                        "label": it["address"],
-                        "detail": detail,
-                        # 클릭 시 그 지번으로 개별 진단을 실행하도록 프론트가 해석한다.
-                        "action": f"diagnose:{use_label}::{it['address']}",
-                    }
-                )
-
-            header = (
-                f"**{rec.get('matched') or region}** 주변 비도시 지역 후보 {len(items)}곳입니다. "
-                f"항목을 누르면 그 지점으로 이동해 진단합니다.\n\n> {rec.get('note', '')}"
-            )
-            events.append(
-                {"event": "message", "data": {"text": header, "options": options}}
-            )
-
-            # 지도를 대상 지역 상공으로 이동해 후보 위치 감을 잡게 한다.
-            center = rec.get("center")
-            if center:
-                events.append(
-                    {
-                        "event": "map_commands",
-                        "data": {
-                            "commands": [
-                                {
-                                    "type": "fly_to",
-                                    "lon": center["lon"],
-                                    "lat": center["lat"],
-                                    "altitude": 12000,
-                                    "tilt": 35,
-                                    "heading": 0,
-                                }
-                            ]
-                        },
-                    }
-                )
-
-            return {
-                "region": region,
-                "count": len(items),
-                "recommendation_shown": True,
-                "note": (
-                    (
-                        "조건과 행정구역이 일치하는 후보를 찾지 못했다. 후보를 찾았다고 말하지 말고, "
-                        "검색 범위를 넓히거나 인접 동을 지정해 달라고 한 줄로 안내하라."
-                    )
-                    if not items else
-                    (
-                        "후보 리스트는 시스템이 이미 클릭 가능한 형태로 표시했다. "
-                        "리스트를 텍스트로 다시 나열하지 마라. 필요하면 한 줄 안내만 덧붙여라."
-                    )
-                ),
-            }, events
+            events.extend(evs)
+            return summary, events
 
         if name == "flag_verdict_restriction":
             cmd = {
