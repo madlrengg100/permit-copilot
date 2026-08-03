@@ -836,10 +836,16 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
             "zone": regulation.get("zone") or (land_use.get("zones") or [""])[0],
             "districts": land_use.get("districts", []),
             "jimok": (parcel or {}).get("jimok", ""),
+            # 팝업 '검토 용도' — 사용자가 특정 시설(움막·농막·태양광 등)을 콕 집어
+            # 물었으면 질의 해석 결과(requested_facility)를 그대로 보여준다. 없으면
+            # 포괄 질문은 시설물, 그 외는 판정용 표준 용도.
             "building_use": (
-                "시설물"
-                if (diagnosis.get("request") or {}).get("inferred")
-                else regulation.get("building_use", "")
+                ((diagnosis.get("request") or {}).get("requested_facility") or "").strip()
+                or (
+                    "시설물"
+                    if (diagnosis.get("request") or {}).get("inferred")
+                    else regulation.get("building_use", "")
+                )
             ),
             "site_area_m2": (parcel or {}).get("area_m2"),
             "jiga_won_per_m2": (parcel or {}).get("jiga_won_per_m2"),
