@@ -25,6 +25,11 @@ def _category(zone: str) -> str:
     return "기타"
 
 
+def minimum_area(zone: str) -> int:
+    """용도지역의 법정 최소 대지면적(㎡). 필지 분할 가능성 판단 등에 쓴다."""
+    return _categories()[_category(zone)]
+
+
 def check(zone: str, area_m2: float | None) -> dict | None:
     """대지면적이 용도지역 법정 최소 대지면적 미만이면 협소 판정을 돌려준다(아니면 None)."""
     if not area_m2:
