@@ -882,14 +882,26 @@ def _deterministic_request(query: str) -> dict | None:
     generic_building = _has_building_feasibility_intent(query)
     if not explicit_use and not generic_building:
         return None
-    # 표준 11용도가 아닌 '특정 시설'(움막·농막·태양광 설치 등)을 '○○ 지을/설치' 형태로
-    # 콕 집어 물었으면, 결정식 정규식으로 라벨을 뽑지 말고(문법 조각 오탐 위험) LLM
-    # (extract_request)이 문장을 해석해 requested_facility 를 정하게 넘긴다. '건물' 같은
-    # 일반 건축어나, 지을/설치가 없는 일반 가능여부 질의는 그대로 결정식으로 처리한다.
-    if not explicit_use and re.search(r"([가-힣A-Za-z0-9]{2,12})\s*(?:을|를)?\s*(?:지을|설치)", query):
-        _obj = re.search(r"([가-힣A-Za-z0-9]{2,12})\s*(?:을|를)?\s*(?:지을|설치)", query).group(1)
-        if _obj not in {"건물", "건축물", "시설물"} and _obj not in BUILDING_USES:
-            return None
+    # 표준 11용도가 아닌 '특정 시설'(움막·농막·태양광·축사·버섯재배사 등)을 '○○ 짓/설치/
+    # 세우' 형태로 콕 집어 물었으면, 결정식으로 '시설물'로 뭉개지 말고 LLM(extract_request)이
+    # 문장을 해석해 requested_facility(검토 용도)를 정하게 넘긴다. 결정식 정규식으로 라벨을
+    # 직접 뽑지는 않는다(문법 조각 오탐 위험) — 판단은 LLM이 한다.
+    # 일반 건축어(건물)·위치/지시어(여기·집 등)·지을 동사 없는 일반 가능여부 질의는 그대로
+    # 결정식으로 처리해 속도를 지킨다(회귀 테스트의 포괄 질의가 여기 해당).
+    if not explicit_use:
+        _m = re.search(
+            r"([가-힣A-Za-z0-9]{2,12})\s*(?:을|를)?\s*"
+            r"(?:지을|지어|짓|설치|세우|세울|올릴|올려|들일|들여)",
+            query,
+        )
+        if _m:
+            _obj = re.sub(r"(에다|에서|에|으로|로|다)$", "", _m.group(1))
+            _generic = {
+                "건물", "건축물", "시설물", "여기", "거기", "이곳", "그곳",
+                "무엇", "무얼", "개발", "허가", "이곳에",
+            }
+            if _obj and _obj not in _generic and _obj not in BUILDING_USES:
+                return None
 
     parking = (
         "underground" if "지하주차" in query
