@@ -4146,9 +4146,9 @@ class Orchestrator:
                 events.append({
                     "event": "message",
                     "data": {"text": _pres.get("reason") or (
-                        f"{_no_model_facility}은(는) 지을 수 있으나 전용 3D 모델이 아직 "
-                        f"구현되어 있지 않습니다. 현재 구현된 다른 용도의 가능한 모델을 "
-                        f"보여드릴까요?"
+                        f"{_no_model_facility}은(는) 표준 건축물이 아니라(가설·특수 시설) "
+                        f"건폐율·용적률과 3D 모델 산정 대상이 아닙니다. 현재 구현된 다른 "
+                        f"용도의 가능한 건물 모델을 보여드릴까요?"
                     )},
                 })
                 self.update_conversation_context(pending_offer="show_models")

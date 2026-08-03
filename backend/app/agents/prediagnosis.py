@@ -1454,9 +1454,9 @@ async def run_prediagnosis(
             "show_building_dimensions": False,
             "no_building_model": _facility,
             "reason": (
-                f"{_facility}은(는) 지을 수 있으나 전용 3D 모델이 아직 구현되어 있지 "
-                f"않아 규모·매스를 표시하지 않습니다. 현재 구현된 다른 용도의 가능한 "
-                f"모델을 보여드릴까요?"
+                f"{_facility}은(는) 표준 건축물이 아니라(가설·특수 시설) 건폐율·용적률과 "
+                f"3D 모델 산정 대상이 아니어서 규모·매스를 표시하지 않습니다. 현재 구현된 "
+                f"다른 용도의 가능한 건물 모델을 보여드릴까요?"
             ),
         }
 
