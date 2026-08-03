@@ -364,7 +364,13 @@ async def chat(
                         ):
                             # 최초 진단 카드의 '검토 의견'은 무거운 LLM이라, 카드·지도를
                             # 먼저 흘려보낸 뒤 여기서 이어 계산·방출한다(체감 속도 개선).
+                            # 그 사이 6~8초 빈 구간이 멈춘 것처럼 보이지 않도록 '작성 중'
+                            # 진행 표시를 먼저 흘린다(프론트 TOOL_LABEL.judgment).
                             if event.get("event") == "pending_judgment":
+                                await queue.put((
+                                    "event",
+                                    {"event": "tool_start", "data": {"tool": "judgment"}},
+                                ))
                                 try:
                                     judgment_event = await orch.render_pending_judgment(
                                         str((event.get("data") or {}).get("query", ""))

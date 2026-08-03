@@ -48,6 +48,8 @@ const TOOL_LABEL: Record<string, string> = {
   prediagnose: "사전진단 에이전트 실행",
   render_on_map: "지도에 반영",
   restudy_massing: "건축 가능 규모 재산출",
+  // 카드·지도가 먼저 뜬 뒤 검토 의견(LLM)이 채워지기까지의 빈 구간 진행 표시.
+  judgment: "검토 의견 작성 중",
 };
 
 // 실무 표기: 면적은 '평(㎡)' 순서로. 1평 = 3.3058㎡.
