@@ -293,18 +293,13 @@ async def recommend_areas(
                 logger.debug("후보 기존건물 조회 실패(통과)", exc_info=True)
         return True
 
-    conversion_restricted = 0
-    checked: list[dict] = []
-    for i in range(0, len(cands), 8):  # 8개씩 병렬 검사, limit 채우면 중단
-        batch = cands[i:i + 8]
-        oks = await asyncio.gather(*[_buildable(c) for c in batch])
-        for c, ok in zip(batch, oks):
-            if ok:
-                checked.append(c)
-            else:
-                conversion_restricted += 1
-        if len(checked) >= limit:
-            break
+    # 상위 후보부터 한 번에 '전부 병렬로' 검사한다(8개씩 순차 배치는 지목 '대'가 많은
+    # 움막류에서 라운드가 쌓여 30초를 넘겼다). 무거운 조회를 한정하려 상위 limit*3 개만
+    # 검사하고, 그중 건축 가능한 것에서 limit 개를 뽑는다.
+    _pool = cands[: max(limit * 3, 8)]
+    oks = await asyncio.gather(*[_buildable(c) for c in _pool])
+    checked = [c for c, ok in zip(_pool, oks) if ok]
+    conversion_restricted = sum(1 for ok in oks if not ok)
     cands = checked
     items = cands[:limit]
     for it in items:
