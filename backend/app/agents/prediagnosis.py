@@ -721,11 +721,11 @@ def format_diagnosis_answer(d: dict) -> str:
     # 유의사항
     out.append("")
     out.append("## 유의사항")
+    # 매번 붙는 일반 면책은 한 줄로(길다는 피드백). 필지별 상황 불릿만 아래에 덧붙는다.
     out.append(
-        "- 법정 상한·조례 기준의 사전검토 추정값입니다. 지자체 조례·일조권 사선제한·"
-        "이격거리·주차대수 산정으로 실제 규모는 줄어들 수 있습니다."
+        "- 공공데이터·법령 기반 사전검토 추정값입니다(조례·일조·이격·주차 산정으로 실제 "
+        "규모는 줄 수 있음). 구체 인허가는 관할 행정청 확인이 필요합니다."
     )
-    out.append("- 공공데이터·법령 기반 추정이므로 구체 인허가는 관할 행정청 확인이 필요합니다.")
 
     # 기존 건축물 — 있으면 신축 시 철거·멸실이 선행되거나, 개발제한·보전구역에서는
     # 개축·재축만 허용되고 신축이 제한·불가할 수 있음을 짚는다(판정을 단정하지 않는다).
@@ -750,26 +750,27 @@ def format_diagnosis_answer(d: dict) -> str:
 
     # 우수·오수 배수 — 인접에 공공 배수처(도로·구거·하천)가 없으면 배수로가 사유지를
     # 지나야 할 수 있어, 토지사용승낙 또는 공유지 우회가 필요함을 짚는다.
+    # 단, 농막·움막·태양광 등 특수·가설 시설(no_building_model)은 오수·배수 요건이 사실상
+    # 없어 배수 유의사항을 붙이지 않는다(사용자 지적).
+    _is_special = bool(
+        (d.get("request") or {}).get("no_building_model")
+        or ((d.get("regulation") or {}).get("map_presentation") or {}).get("no_building_model")
+    )
     drainage = (d.get("road_access") or {}).get("drainage") or {}
-    if drainage.get("public_outlet") is False:
+    if drainage.get("public_outlet") is False and not _is_special:
         out.append(f"- {drainage.get('note')}")
-        # 가장 가까운 공공 배수처까지의 경로가 사유지를 지나는 경우, 건물 유무로 두
-        # 시나리오를 나눠 안내한다(지목 기준 사전검토·건물 유무는 건축물대장 참고).
+        # 배수로가 사유지를 지나는 경우의 상세 경고는 소유구분이 '사유'로 확인된 때만 낸다.
+        # 지목 기준 추정만으로는 지도에 확정 경로도 없어(사용자 지적) 특정 배수처·필지를
+        # 단정하지 않는다.
         enc = drainage.get("encroachment") or {}
-        if enc.get("crosses_private"):
-            blocking = [
-                h for h in (enc.get("crossed_parcels") or [])
-                if h.get("ownership") != "국공유"
-            ]
+        blocking = [
+            h for h in (enc.get("crossed_parcels") or [])
+            if h.get("ownership") != "국공유"
+        ] if enc.get("crosses_private") else []
+        confirmed = any(h.get("ownership") == "사유" for h in blocking)
+        if confirmed:
             jimoks = "·".join(dict.fromkeys(h.get("jimok", "") for h in blocking if h.get("jimok")))
-            confirmed = any(h.get("ownership") == "사유" for h in blocking)
             has_bldg = any(h.get("has_building") for h in blocking)
-            land = "사유지" if confirmed else "사유로 추정되는 필지(소유구분 확인 필요)"
-            basis = (
-                "토지특성정보 소유구분상 사유지로 확인됩니다"
-                if confirmed
-                else "지목 기준 사유 추정이며 소유구분은 토지특성정보·토지대장으로 확정해야 합니다"
-            )
             _outlet = enc.get("outlet") or {}
             dest = _outlet.get("jimok") or "공공 배수처"
             dest_addr = _outlet.get("address") or ""
@@ -778,15 +779,16 @@ def format_diagnosis_answer(d: dict) -> str:
                 if dest_addr
                 else f"가장 가까운 공공 배수처({dest})"
             )
+            basis = "토지특성정보 소유구분상 사유지로 확인됩니다"
             if has_bldg:
                 out.append(
-                    f"- {where}까지 배수로가 지목 '{jimoks}' {land}를 지나야 하고 "
+                    f"- {where}까지 배수로가 지목 '{jimoks}' 사유지를 지나야 하고 "
                     f"그 필지에 기존 건물이 있어(건축물대장 확인), 통과가 사실상 어렵습니다 — "
                     f"공유지(도로·구거)로 우회하는 경로를 우선 검토해야 합니다. {basis}."
                 )
             else:
                 out.append(
-                    f"- {where}까지 배수로가 지목 '{jimoks}' {land}를 지나야 합니다. "
+                    f"- {where}까지 배수로가 지목 '{jimoks}' 사유지를 지나야 합니다. "
                     f"사유지 통과는 토지사용승낙(동의)이 있어야 하며, {basis}. "
                     "지도의 빨간 경로는 방향을 짚는 개념선입니다(현황측량으로 확정)."
                 )
@@ -1272,8 +1274,15 @@ async def run_prediagnosis(
     if state["road_access"].get("status") in {"NO_CADASTRAL_ROAD", "UNAVAILABLE"}:
         # 도로 없음일 때만 도시계획 도로 레이어를 단독 조회한다(다른 VWorld 호출과
         # 동시 실행 시 레이트리밋 위험이 있어 gather 밖에서 부른다).
-        planned = await vworld.get_planned_roads(state["parcel"].get("geometry"))
-        if not planned:  # 레이어가 비면 토지이음 지정목록의 도로 '접함'으로 폴백
+        # VWorld 가 느리면 이 한 호출이 httpx 15초 한도까지 물려 진단 전체가 20초(LLM
+        # 클라이언트 한도)를 넘겨 타임아웃난다. 상한을 걸고 초과 시 아래 지정목록 폴백으로.
+        try:
+            planned = await asyncio.wait_for(
+                vworld.get_planned_roads(state["parcel"].get("geometry")), timeout=6.0
+            )
+        except asyncio.TimeoutError:
+            planned = []
+        if not planned:  # 레이어가 비면(또는 지연 상한 초과) 토지이음 지정목록의 도로 '접함'으로 폴백
             planned = [
                 {"name": r["name"], "executed": ""}
                 for r in (state["land_use"]["designation_lookup"].get("records") or [])
