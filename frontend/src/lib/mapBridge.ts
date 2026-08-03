@@ -90,6 +90,8 @@ export type MapCommand =
         share_pct: number | null;
         area_m2: number | null;
         color: string;
+        // 용도지구·구역 제약(개발제한·군사 등)은 심의·협의 사유를 note 로 실어 툴팁에 쓴다.
+        note?: string;
         geometry?: GeoJSONPolygon;
       }>;
     }

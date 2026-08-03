@@ -2288,7 +2288,12 @@ class Orchestrator:
                         return
                     lon, lat = float(exact[0]["lon"]), float(exact[0]["lat"])
                 parcel = await vworld.get_parcel(lon, lat)
-                ledger = await building_register.lookup(parcel.get("pnu", ""))
+                # 건축물대장은 토지 필지 PNU가 아니라 건물 대표지번(도로명)에 등록된 경우가
+                # 많다. 사용자가 물은 주소를 함께 넘겨 PNU 조회가 비면 도로명→대표지번으로
+                # 조인해 조회한다(_juso_loc). 안 넘기면 대장이 있어도 '없음'으로 나온다.
+                ledger = await building_register.lookup(
+                    parcel.get("pnu", ""), address=address_query
+                )
                 address = parcel.get("jibun") or "선택한 필지"
                 status = ledger.get("status")
                 if status == "FOUND":

@@ -111,6 +111,14 @@ def _restriction_color(label: str) -> str:
         return "#2E7D32"  # 초록(농지 전용 제한)
     if "보전산지" in s or "산지" in s:
         return "#5D4037"  # 갈색(산지 전용 제한)
+    if "개발제한" in s:
+        return "#C62828"  # 빨강(원칙적 건축 불가)
+    if "군사" in s or "비행안전" in s or "상수원" in s:
+        return "#283593"  # 남색(관계기관 협의 필수)
+    if "문화재" in s or "문화유산" in s:
+        return "#4E342E"  # 짙은 갈색(현상변경 허가)
+    if any(k in s for k in ("지구단위계획", "경관", "고도지구", "방화지구", "학교", "가축")):
+        return "#1565C0"  # 파랑(심의·별도 기준)
     return "#EF6C00"
 
 
@@ -737,6 +745,21 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
             label,
             {"label": label, "share_pct": None, "area_m2": None,
              "color": _restriction_color(label)},
+        )
+        constraint_shown = True
+
+    # 토지이용계획(getLandUseAttr)이 잡아낸 용도지구·구역 규제(개발제한·군사·경관·고도지구·
+    # 지구단위계획·문화재 등)도 같은 범례에 라벨로 얹는다. zoning._match_constraints 가
+    # 이미 만든 것(regulation.constraints)을 그대로 쓴다 — 여기서 새 규칙을 만들지 않는다.
+    # 면적 조각·지오메트리가 없어 share 없이 이름+심의/협의 성격만 색으로 구분한다.
+    for con in (regulation.get("constraints") or []):
+        label = str(con.get("name") or "").strip()
+        if not label:
+            continue
+        restriction_pieces.setdefault(
+            label,
+            {"label": label, "share_pct": None, "area_m2": None,
+             "note": con.get("note"), "color": _restriction_color(label)},
         )
         constraint_shown = True
 
