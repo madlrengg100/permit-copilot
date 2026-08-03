@@ -213,6 +213,7 @@ async def recommend_areas(
                 "jimok": f.get("jimok") or "",
                 "area_m2": round(vworld.geodesic_area_m2(f["geometry"]), 1),
                 "pnu": f.get("pnu", ""),
+                "geometry": f["geometry"],  # 전용 제한(보전산지 등) 후보 검증용
             })
         if len(cands) >= enough:
             break  # 충분히 모았으면 나머지 박스는 처리하지 않는다
@@ -242,9 +243,49 @@ async def recommend_areas(
         if farmland_facility_verdict(building_use, c["jimok"]) != "not_allowed"
     ]
     cands.sort(key=lambda c: -c["area_m2"])
-    items = cands[:limit]
 
-    if not items and restricted:
+    # 후보마다 '실제 공간 규제'를 진단과 같은 로직(land_conversion.assess)으로 확인해,
+    # 보전산지·농업진흥지역 전용 제한(RESTRICTED_REVIEW)처럼 그 시설이 건축 불가한
+    # 필지는 추천에서 뺀다 — 지목만 보고 추천해 '건축 불가'를 안내하던 누수를 막는다.
+    # 상위 후보부터 검사해 limit 개를 채우면 멈춘다(불필요한 공간조회 최소화).
+    from ..tools import jimok as jimok_tool, land_conversion
+
+    async def _buildable(cand: dict) -> bool:
+        try:
+            res = await land_conversion.assess(
+                cand["geometry"], jimok_tool.classify(cand["jimok"])
+            )
+        except Exception:
+            logger.debug("후보 전용 규제 검증 실패(보수적으로 제외)", exc_info=True)
+            return False
+        # 전용이 크게 제한(보전산지·농업진흥지역 등)돼 예외 입증 전엔 건축 불가인 필지 제외.
+        return res.get("status") != "RESTRICTED_REVIEW"
+
+    conversion_restricted = 0
+    checked: list[dict] = []
+    for i in range(0, len(cands), 8):  # 8개씩 병렬 검사, limit 채우면 중단
+        batch = cands[i:i + 8]
+        oks = await asyncio.gather(*[_buildable(c) for c in batch])
+        for c, ok in zip(batch, oks):
+            if ok:
+                checked.append(c)
+            else:
+                conversion_restricted += 1
+        if len(checked) >= limit:
+            break
+    cands = checked
+    items = cands[:limit]
+    for it in items:
+        it.pop("geometry", None)  # 무거운 폴리곤은 세션·응답에 남기지 않는다
+
+    if not items and conversion_restricted:
+        # 후보가 있었으나 보전산지·농업진흥지역 전용 제한으로 전부 건축 불가라 제외된 경우.
+        note = (
+            f"{center['matched_address']} 주변 비도시 후보는 보전산지·농업진흥지역 등 "
+            f"전용 제한이 중첩돼 {(building_use or '해당 시설')} 설치가 어렵습니다. "
+            "다른 시·군이나 구체적인 동·리를 지정해 다시 찾아보시겠어요?"
+        )
+    elif not items and restricted:
         # 후보가 있었으나 요청 시설이 그 필지(농지)에서 법령상 불가라 전부 제외된 경우.
         note = (
             f"{center['matched_address']} 주변 비도시 후보는 대부분 농지(전·답)여서 "
