@@ -415,6 +415,32 @@ async def get_parcel(lon: float, lat: float) -> dict:
         data.get("response", {}).get("result", {}).get("featureCollection", {}).get("features")
     )
     if not features:
+        # 좌표가 필지 경계선·도로에 살짝 걸치면 POINT 조회가 빈다. 작은 박스(±약 15m)로
+        # 다시 찾아 클릭 지점에서 '가장 가까운 필지'를 잡는다(경계·좌표 정밀도 오차 보정).
+        # 그래도 없으면(도로·하천 등 진짜 필지 없음) 실패로 둔다.
+        _m = 0.00015  # 위·경도 약 15m
+        box = await _get(
+            "data",
+            {
+                "service": "data",
+                "request": "GetFeature",
+                "version": "2.0",
+                "data": LAYER_PARCEL,
+                "geomFilter": f"BOX({lon - _m},{lat - _m},{lon + _m},{lat + _m})",
+                "geometry": "true",
+                "crs": "EPSG:4326",
+                "size": "10",
+            },
+        )
+        features = (
+            box.get("response", {}).get("result", {}).get("featureCollection", {}).get("features")
+        )
+        if features:
+            from shapely.geometry import shape, Point
+
+            _pt = Point(lon, lat)
+            features.sort(key=lambda ft: shape(ft["geometry"]).distance(_pt))
+    if not features:
         raise VWorldError("해당 좌표에서 필지를 찾지 못했습니다.")
 
     f = features[0]
