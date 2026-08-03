@@ -9,7 +9,9 @@ import httpx
 from ..config import DATA_GO_KR_SERVICE_KEY, JUSO_CONFM_KEY
 from ..cache import async_ttl_cache
 
-BASE_URL = "http://apis.data.go.kr/1613000/BldRgstHubService"
+# apis.data.go.kr 은 http 로는 TCP 연결만 받고 HTTP 응답을 주지 않아 15초 타임아웃으로
+# 조회가 실패한다(2026-08 확인). https 는 즉시 정상 응답하므로 https 로 호출한다.
+BASE_URL = "https://apis.data.go.kr/1613000/BldRgstHubService"
 JUSO_URL = "https://business.juso.go.kr/addrlink/addrLinkApi.do"
 
 

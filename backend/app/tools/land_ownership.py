@@ -22,7 +22,7 @@ LAND_OWNERSHIP_API_URL = os.getenv(
     "LAND_OWNERSHIP_API_URL",
     os.getenv(  # 구 변수명 호환
         "LAND_CHARACTERISTICS_API_URL",
-        "http://apis.data.go.kr/1611000/nsdi/LandOwnershipService/attr/getLandOwnership",
+        "https://apis.data.go.kr/1611000/nsdi/LandOwnershipService/attr/getLandOwnership",
     ),
 )
 

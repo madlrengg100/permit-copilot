@@ -118,7 +118,7 @@ LANDUSE_KEY = os.getenv("LANDUSE_KEY", "").strip()
 # 엔드포인트는 서비스 버전에 따라 다를 수 있어 환경변수로도 바꿀 수 있게 둔다.
 LANDUSE_BASE = os.getenv(
     "LANDUSE_BASE",
-    "http://apis.data.go.kr/1611000/nsdi/LandUseService/attr/getLandUseAttr",
+    "https://apis.data.go.kr/1611000/nsdi/LandUseService/attr/getLandUseAttr",
 )
 
 # 층고 가정 (연면적 -> 층수 환산 및 3D 매스 높이)

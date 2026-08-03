@@ -6,6 +6,18 @@
 
 ## 2026-08-01
 
+### 건축물대장·토지이용·토지소유 조회 복구 + 콜드 17.7s→4s (http→https)
+- 증상: 건축물대장 조회가 '조회 실패(UNAVAILABLE)'로 빠지고, 종합진단 콜드가 ~18초.
+- 원인: 공공데이터포털 `apis.data.go.kr` 이 **http 로는 TCP 연결만 받고 HTTP 응답을
+  주지 않아**(2026-08 확인) 15초 타임아웃으로 조회가 통째로 실패. https 는 0.1초 정상 응답.
+  기존건물(멸실 후 재건축 판단)·도로명주소(juso) 폴백이 이 때문에 누수돼 있었다.
+- 수정: apis.data.go.kr 호출 3곳을 https 로 — building_register.BASE_URL(건축물대장),
+  config LANDUSE(토지이용계획 getLandUseAttr), land_ownership(토지소유 getLandOwnership).
+  검증: 한내로 62→juso 폴백→FOUND 10동 공동주택, 세종대로 110→FOUND 2동 업무시설.
+  콜드 total_ms 17.7s→~4s(15초 타임아웃 제거). 회귀 방지 테스트 추가(소스에 http://
+  apis.data.go.kr 금지). 나머지 런타임 호스트(VWorld·law.go.kr·juso·Gemini) 응답 정상 확인.
+
+
 ### 이동('찾을 수 있어') 의도 인식 + 학습
 - 버그: '고읍동 128-2 찾을 수 있어'가 이동이 아니라 종합진단으로 갔다. 결정적 이동
   핸들러(move_to_parcel)의 트리거가 '이동|가줘|찾아줘|보여줘'뿐이라 '찾을 수 있어'를
