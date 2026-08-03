@@ -3956,6 +3956,43 @@ class Orchestrator:
                 )
             if not judgment:
                 judgment = _all_uses_verdict_judgment(diagnosis)
+        # 사용자가 특정 시설(농막·움막·태양광 등)을 물었으면, 일반 용도 나열 전에 '그 시설이
+        # 이 필지에서 되는지'부터 검토 의견 맨 앞에 결정적으로 밝힌다 — 제미나이가 요청 시설은
+        # 빼고 '단독주택 등' 일반론만 말하는 성의 없는 답을 막는다. 실질 배치 불가는 아래에서
+        # 따로 앞세우므로 여기서는 그 경우가 아닐 때만 붙인다.
+        _reg = diagnosis.get("regulation") or {}
+        _pres = _reg.get("map_presentation") or {}
+        _facility = (
+            req.get("requested_facility") or _pres.get("no_building_model") or ""
+        ).strip()
+        if (
+            _facility
+            and not diagnosis.get("placement_restricted")
+            and _facility[:4] not in judgment[:40]
+        ):
+            _v = _pres.get("verdict") or _reg.get("verdict")
+            if _v == "not_allowed":
+                _flead = f"물어보신 {_facility}은(는) 이 필지에서는 설치(건축)할 수 없습니다."
+                if _reg.get("reason"):
+                    _flead += f" {_reg['reason']}"
+            elif _v in {"allowed", "conditional"}:
+                _cond = "조건부로 " if _v == "conditional" else ""
+                _flead = f"물어보신 {_facility}은(는) 이 필지에서 {_cond}설치(건축)할 수 있습니다."
+            else:
+                _flead = f"물어보신 {_facility}은(는) 이 필지에서 별도 확인이 필요합니다."
+            judgment = f"{_flead}\n\n{judgment}".strip()
+
+        # 지적도상 맹지(도로 접함 없음)면 건축법 제44조 접도 요건 미충족으로 건축이 제한되므로,
+        # 그 규제와 확인 경로(도로대장·현황측량, 건축·도로 담당 부서)를 짚는다. 도로에 접해
+        # 있으면(맹지 아님) 굳이 언급하지 않는다. 제미나이가 이미 맹지를 말했으면 중복 안 붙인다.
+        _road = diagnosis.get("road_access") or {}
+        if _road.get("status") in {"NO_CADASTRAL_ROAD", "NO_ROAD"} and "맹지" not in judgment:
+            judgment = judgment.rstrip() + (
+                " 또한 이 필지는 지적도상 도로에 접해 있지 않은 맹지 상태여서, 건축법 제44조의 "
+                "접도 요건을 충족하지 못하면 건축이 제한됩니다. 지정도로·현황도로·통행권 인정 "
+                "여부를 관할 건축·도로 담당 부서의 도로대장 확인과 현황측량으로 먼저 확정해야 합니다."
+            )
+
         # 실질 배치 불가(협소·기존건물)면 그 사유를 검토 의견 맨 앞에 결정적으로 둔다.
         # LLM 문단이 '조건부'로 시작해도 배지(실질 배치 불가)와 어긋나지 않게 보장하는
         # 안전장치다(제미나이가 프롬프트 지시를 안 따를 때 대비). 이미 배치 불가로
