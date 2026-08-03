@@ -817,6 +817,21 @@ export default function App() {
                   pnu,
                   key: current?.key ?? Date.now(),
                 }));
+                // 다른 필지처럼 어떤 필지를 눌렀는지 주소는 확인해 준다. 단 이미 분석
+                // 중인 필지이므로 '무슨 건물' 초기화 문구는 붙이지 않는다(상태 유지).
+                const shownAddress = address || selectedLocation?.address || "";
+                if (shownAddress) {
+                  const note = `**${shownAddress}** 필지입니다. (현재 분석 중인 필지)`;
+                  setMessages((current) => [
+                    ...current.filter(
+                      (message) => !(
+                        message.role === "status"
+                        && message.text.includes("현재 분석 중인 필지")
+                      ),
+                    ),
+                    { role: "status", text: note },
+                  ]);
+                }
                 return;
               }
               // 지도에서 다른 필지를 고르는 즉시 이전 필지 모델 버튼을 비활성화한다.
