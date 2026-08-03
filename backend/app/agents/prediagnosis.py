@@ -1319,6 +1319,9 @@ async def run_prediagnosis(
         building_use=req["building_use"],
         districts=state["land_use"]["districts"],
         jurisdiction=jurisdiction,
+        # 검토 용도(농막·축사 등)를 넘겨 시설 특정 제약(가축사육제한구역 등)을
+        # 그 시설일 때만 걸리게 한다. 비어 있으면 building_use 로 대체.
+        facility=str(req.get("requested_facility") or "").strip(),
     )
     reg = zoning.apply_straddling_limits(reg, zone_shares, jurisdiction)
     state["regulation"] = reg

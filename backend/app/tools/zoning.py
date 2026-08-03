@@ -41,6 +41,9 @@ _CONSTRAINT_KEYWORDS: list[tuple[str, str]] = [
     ("문화재", "현상변경 허가 및 문화재청(국가유산청) 협의 필요"),
     ("문화유산", "현상변경 허가 및 국가유산청 협의 필요"),
     ("문화유산보호", "현상변경 허가 및 국가유산청 협의 필요"),
+    # 지정문화유산 주변 보존지역 — 건설공사 시 현상변경 허가·영향검토가 필요하다
+    # (문화재보호법 제13조/국가유산기본법). '문화재'로 안 잡히는 별도 명칭이라 명시.
+    ("역사문화환경", "지정문화유산 역사문화환경 보존지역 — 건설공사 시 현상변경 허가 및 국가유산청(지자체) 영향검토 필요"),
     ("학교", "정화구역이면 숙박·유흥시설 등 금지시설 존재 — 교육환경 확인 필요"),
     ("상수원보호", "건축·행위 제한. 상수원보호구역 규제 확인 필요"),
     ("군사", "군사기지·시설보호구역이면 국방부(관할 부대) 협의 필요"),
@@ -49,16 +52,39 @@ _CONSTRAINT_KEYWORDS: list[tuple[str, str]] = [
 ]
 
 
-def _match_constraints(districts: list[str]) -> list[dict]:
-    """지역지구명 목록 -> 심의·제한 노트. 같은 노트는 한 번만."""
+# 특정 시설에만 걸리는 제약 — 검토 용도가 아래 부류가 아니면 그 지구는 이 필지의
+# 건축 제약이 아니다. 예: 가축사육제한구역은 축사·축산시설에만, 교육환경보호(학교정화)
+# 구역의 금지시설 제한은 숙박·유흥 등에만 걸린다. 일반 건축물(농막·단독주택 등)엔 무관.
+_FACILITY_SCOPED: dict[str, tuple[str, ...]] = {
+    "가축사육제한": (
+        "축사", "축산", "가축", "우사", "돈사", "계사", "양계", "양돈",
+        "사육", "축분", "퇴비", "젖소", "종축", "부화",
+    ),
+    "학교": (
+        "숙박", "여관", "호텔", "모텔", "유흥", "단란", "위험물", "노래연습장",
+        "당구장", "게임", "피시방", "PC", "만화", "담배", "폐기물", "장례",
+    ),
+}
+
+
+def _match_constraints(districts: list[str], facility: str = "") -> list[dict]:
+    """지역지구명 목록 -> 심의·제한 노트. 같은 노트는 한 번만.
+
+    facility(검토 용도)가 주어지면 시설 특정 제약(_FACILITY_SCOPED)은 그 시설에
+    해당할 때만 남긴다 — 축산이 아닌 농막에 가축사육제한구역을 걸지 않기 위함."""
+    fac = facility or ""
     out: list[dict] = []
     used_notes: set[str] = set()
     for d in districts:
         for kw, note in _CONSTRAINT_KEYWORDS:
-            if kw in d and note not in used_notes:
-                out.append({"name": d, "note": note})
-                used_notes.add(note)
-                break
+            if kw not in d or note in used_notes:
+                continue
+            scope = _FACILITY_SCOPED.get(kw)
+            if scope and not any(s in fac for s in scope):
+                break  # 이 시설엔 해당 없는 지구 — 제약으로 세지 않는다
+            out.append({"name": d, "note": note})
+            used_notes.add(note)
+            break
     return out
 
 
@@ -85,6 +111,7 @@ def lookup_zoning_rules(
     building_use: str,
     districts: list[str] | None = None,
     jurisdiction: str | None = None,
+    facility: str = "",
 ) -> dict:
     """용도지역 + 건축물 용도 -> 허용 여부와 밀도 상한.
 
@@ -148,7 +175,7 @@ def lookup_zoning_rules(
         verdict = "not_allowed"
         reason = f"{zone}에서 {building_use}은(는) 건축할 수 없는 용도입니다."
 
-    constraints = _match_constraints(districts)
+    constraints = _match_constraints(districts, facility or building_use)
     if constraints and verdict in ("allowed", "conditional"):
         verdict = "conditional"
 
