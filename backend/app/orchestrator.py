@@ -1399,6 +1399,22 @@ class Orchestrator:
 
         use = (use or "").strip()
         rec = await _run(region, use, query=getattr(self, "_last_query", ""))
+        # 리·동처럼 좁은 지역엔 비도시 농지 표본이 없어 후보가 0일 수 있다. 그러면
+        # 가장 세부 행정토큰을 하나씩 떼어 상위(면·읍→시·군)로 넓혀 다시 찾는다 —
+        # 사용자가 넓게 다시 묻지 않아도 되게. 어느 범위에서 찾았는지는 안내에 남긴다.
+        _parts = region.split()
+        while not (rec.get("items")) and len(_parts) > 1:
+            _parts = _parts[:-1]
+            _broader = " ".join(_parts)
+            _rec2 = await _run(_broader, use, query=getattr(self, "_last_query", ""))
+            if _rec2.get("items"):
+                _rec2["note"] = (
+                    f"'{region}'에는 조건에 맞는 후보가 없어 상위 지역 '{_broader}' "
+                    f"범위로 넓혀 찾았습니다. " + (_rec2.get("note") or "")
+                )
+                rec = _rec2
+                break
+            rec = _rec2
         self.recommendations = rec
 
         items = rec.get("items") or []
