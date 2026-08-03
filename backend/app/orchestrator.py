@@ -27,6 +27,7 @@ from .agents.prediagnosis import (
     _has_building_feasibility_intent,
     run_prediagnosis,
 )
+from .config import LLM_MODEL_HEAVY
 from .llm import append_tool_results
 from .tools import building_register, massing, site_constraints, vworld
 
@@ -3849,7 +3850,11 @@ class Orchestrator:
                     }
                 ],
                 tools=[],
-                max_tokens=280,
+                # flash 는 thinking 이 기본 ON 이라 토큰을 함께 먹는다. thinking + 답변이
+                # 모두 들어가도록 한도를 넉넉히 준다(답변은 _limit_review_length 로 별도 제한).
+                max_tokens=2400,
+                model=LLM_MODEL_HEAVY,  # 검토 의견은 판독·추론이 무거워 상위(flash) 모델
+                reasoning_effort="low",  # thinking 최소화로 지연 제어(6~8s)
             )
             text = _strip_internal_field_names(" ".join(response.texts).strip())
             text = _ensure_query_evidence(text, diagnosis, user_query)
@@ -3942,7 +3947,11 @@ class Orchestrator:
                     }
                 ],
                 tools=[],
-                max_tokens=520,
+                # flash 는 thinking 이 기본 ON 이라 토큰을 함께 먹는다. thinking + 답변이
+                # 모두 들어가도록 한도를 넉넉히 준다(답변은 _limit_review_length 로 별도 제한).
+                max_tokens=3000,
+                model=LLM_MODEL_HEAVY,  # 검토 의견은 판독·추론이 무거워 상위(flash) 모델
+                reasoning_effort="low",  # thinking 최소화로 지연 제어(6~8s)
             )
             text = _strip_internal_field_names(" ".join(response.texts).strip())
             return _limit_review_length(text, max_sentences=4)
@@ -3971,7 +3980,7 @@ class Orchestrator:
         if names_specific_use:
             try:
                 judgment = await asyncio.wait_for(
-                    self._verdict_judgment(query), timeout=8.0
+                    self._verdict_judgment(query), timeout=14.0
                 )
             except asyncio.TimeoutError:
                 logger.warning(
@@ -3982,7 +3991,7 @@ class Orchestrator:
         else:
             try:
                 judgment = await asyncio.wait_for(
-                    self._all_uses_verdict_judgment_with_llm(query), timeout=8.0
+                    self._all_uses_verdict_judgment_with_llm(query), timeout=14.0
                 )
             except asyncio.TimeoutError:
                 logger.warning(

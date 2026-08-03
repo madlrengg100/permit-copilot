@@ -6,6 +6,24 @@
 
 ## 2026-08-03
 
+### 검토 의견만 상위 모델(flash) 선택 적용 — 원론적 답변 해소(무료 티어)
+- 배경: flash-lite 는 라우팅·추출엔 충분하나 여러 규제를 읽어 인과·해결방법으로 엮는
+  검토 의견에서 지시를 흘리고 일반론으로 뭉갰다. 전량 상위 모델은 값싼 고빈도 호출까지
+  느려지므로, '판독·추론이 무거운' 검토 의견 호출만 상위 모델을 쓰도록 분리.
+- 구현: complete() 에 per-call model·reasoning_effort override 추가(llm.py, anthropic·openai
+  양쪽). config.LLM_MODEL_HEAVY 신설 — gemini 무료 티어에선 flash-lite→gemini-flash-latest
+  (역시 무료)로, 다른 provider 는 LLM_MODEL 그대로. env(LLM_MODEL_HEAVY)로 재정의 가능.
+  검토 의견 두 호출(_verdict_judgment·_all_uses_..._with_llm)만 model=HEAVY 적용.
+- flash 튜닝: gemini 2.5 flash 는 thinking 이 기본 ON 이라 max_tokens 안에서 thinking 이
+  토큰을 먹어 답변이 잘렸다. reasoning_effort='low'(none 은 gemini 400)로 thinking 최소화,
+  max_tokens 2400/3000 로 여유 확보, 검토 의견 wait_for 8→14s 로 상향(카드 뒤 지연 방출이라
+  수용 가능). 라우팅·추출 등 나머지 호출은 flash-lite·기존 예산 그대로.
+- 검증: 창대리 647 농막 2.3s — 가설건축물 축조신고·유역환경청 오수처리계획·20㎡ 농업목적을
+  규제별 구체 방법으로. 음성 읍내리 단독주택 4.5s — 농지법 제34조·국토계획법 제56조·건축법
+  제11조 조문과 이격 수치·경관심의·부서별 절차. 광주 퇴촌(개발제한+상수원+생태1등급+맹지)은
+  규제별 해소 순서 제시. 부수효과: 농막을 농지전용이 아닌 가설건축물 축조신고로 정확히 판독.
+  110 테스트 통과.
+
 ### 특수시설 건폐율·용적률 표시 + 수질보전 규제 인식 + 검토의견 방법 구체화(전국)
 - 건폐율·용적률: 특수·가설 시설(농막·움막·태양광 등 no_building_model)도 용도지역
   건폐율·용적률 상한은 필지 기준값이라 팝업에 표시하도록 했다. 프론트에서 이 값이 매스

@@ -65,6 +65,14 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "") or (
 if _preset and not os.getenv("LLM_MODEL"):
     LLM_MODEL = _preset["model"]
 
+# 검토 의견처럼 여러 규제 데이터를 읽어 인과·해결방법으로 엮는 '판독·추론' 호출만
+# 한 단계 위 모델을 쓴다(라우팅·추출·분류 같은 값싼 호출은 LLM_MODEL 유지 → 비용·지연 최소).
+# gemini 무료 티어에선 flash-lite → flash(gemini-flash-latest, 역시 무료)로 올린다.
+# 다른 provider 는 LLM_MODEL 그대로. env(LLM_MODEL_HEAVY)로 재정의 가능.
+LLM_MODEL_HEAVY = os.getenv("LLM_MODEL_HEAVY", "").strip() or (
+    "gemini-flash-latest" if LLM_BASE_NAME == "gemini" else LLM_MODEL
+)
+
 # --- VWorld ---
 # https://www.vworld.kr 에서 발급. 도메인 등록 필요(로컬은 localhost).
 VWORLD_KEY = os.getenv("VWORLD_KEY", "")
