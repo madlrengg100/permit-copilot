@@ -1126,14 +1126,16 @@ function ResultPanel({
           <dl className="result-grid">
             <dt>대지면적</dt>
             <dd>{fmtArea(panel.site_area_m2)}</dd>
+            {/* 건폐율·용적률 상한은 용도지역·필지 속성이라 특수·가설 시설(매스 없음)에도
+                항상 표시한다. 매스에서 나오는 건축면적/연면적/층수만 매스가 있을 때 표시. */}
+            <dt>건폐율 상한</dt>
+            <dd>{panel.bcr_max_pct != null ? `${panel.bcr_max_pct}%` : "—"}</dd>
+            <dt>용적률 상한</dt>
+            <dd>{panel.far_max_pct != null ? `${panel.far_max_pct}%` : "—"}</dd>
             {m && (
               <>
                 <dt>건축면적</dt>
                 <dd>{fmtArea(m.building_area_m2)}</dd>
-                <dt>건폐율 상한</dt>
-                <dd>{panel.bcr_max_pct != null ? `${panel.bcr_max_pct}%` : "—"}</dd>
-                <dt>용적률 상한</dt>
-                <dd>{panel.far_max_pct != null ? `${panel.far_max_pct}%` : "—"}</dd>
                 {m.exceeds_far_limit ? (
                   <>
                     <dt>요청 용적률</dt>
