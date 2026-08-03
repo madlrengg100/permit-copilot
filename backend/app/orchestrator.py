@@ -2831,8 +2831,12 @@ class Orchestrator:
                     _reg0 = self.diagnosis.get("regulation") or {}
                     _zuo0 = _reg0.get("zone_use_overview") or {}
                     _viable = list(_zuo0.get("allowed") or []) + list(_zuo0.get("conditional") or [])
+                    # 직전이 불허(매스 미계산)거나, 농막처럼 '지을 수는 있으나 전용 모델이
+                    # 없어 매스를 숨긴'(no_building_model) 경우, 지을 수 있는 실제 건축 용도로
+                    # 재진단해 제대로 된 매스를 만든다 — 그래야 대체 모델을 눌러 세울 수 있다.
+                    _no_model0 = (_reg0.get("map_presentation") or {}).get("no_building_model")
                     if (
-                        _reg0.get("verdict") == "not_allowed"
+                        (_reg0.get("verdict") == "not_allowed" or _no_model0)
                         and _viable
                         and not self.diagnosis.get("placement_restricted")
                     ):
