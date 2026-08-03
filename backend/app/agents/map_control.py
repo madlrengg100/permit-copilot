@@ -854,9 +854,13 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
             "legal_basis": regulation.get("legal_basis", ""),
             "constraints": regulation.get("constraints", []),
             "zone_use_overview": regulation.get("zone_use_overview", {}),
-            # 계산 자료는 진단 객체에 보존하되, 건축 불가 패널에는 가능 규모나
-            # 모델 생성의 근거로 노출하지 않는다.
-            "massing": mass if display_verdict != "not_allowed" else None,
+            # 계산 자료는 진단 객체에 보존하되, 건축 불가 패널이나 매스를 숨기는 표현
+            # (no_building_model 등 show_building_mass=False)에는 가능 규모를 노출하지 않는다.
+            "massing": (
+                mass
+                if display_verdict != "not_allowed" and show_building_mass
+                else None
+            ),
             "land_conversion": conversion,
             "existing_buildings": existing_buildings,
             "conversion_charge": conversion_charge,

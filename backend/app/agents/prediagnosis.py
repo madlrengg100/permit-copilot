@@ -33,6 +33,7 @@ from ..tools import (
     development_charge,
     law_open,
     legal_conflicts,
+    facility_rules,
     land_conversion,
     massing,
     ordinance,
@@ -81,6 +82,10 @@ inferred=true 로 표시한다. 여기서 시설물은 용도 미정이 아니�
 표준 용도로 정규화하되, 표준 11용도에 없으면 시설물). 전체 건축물을 뜻하면
 requested_facility 는 빈 문자열.
 
+그 특정 시설이 농막·움막·태양광 설비·비닐하우스·정자·컨테이너·축사처럼 일반 건물의
+3D 모델과 건폐율·용적률 규모 산정이 부적절한 가설·특수·농림·발전 시설이면
+no_building_model=true 로 표시한다(단독주택·상가·빌딩·창고 등 정상 건축물은 false).
+
 주소를 특정할 수 없으면 address 를 빈 문자열로 둔다."""
 
 EXTRACT_TOOL = [
@@ -102,6 +107,15 @@ EXTRACT_TOOL = [
                         "(예: '움막', '농막', '태양광 설치', '단독주택'). 건물 전반을 "
                         "뜻하거나 용도를 지정하지 않았으면 빈 문자열. building_use 는 판정용 "
                         "표준 용도로 정규화하되, 이 필드는 화면의 '검토 용도'로 그대로 쓴다."
+                    ),
+                },
+                "no_building_model": {
+                    "type": "boolean",
+                    "description": (
+                        "requested_facility 가 농막·움막·태양광 설비·비닐하우스·정자·컨테이너·"
+                        "축사처럼 '일반 건물 3D 모델과 건폐율·용적률 규모 산정이 부적절한' "
+                        "가설·특수·농림·발전 시설이면 true. 단독주택·상가·빌딩·창고·공장처럼 "
+                        "정상 건축물이면 false. requested_facility 가 비어 있으면 false."
                     ),
                 },
                 "inferred": {
@@ -922,6 +936,7 @@ def _deterministic_request(query: str) -> dict | None:
         "inferred": explicit_use is None,
         "parking_strategy": parking,
         "requested_facility": "",
+        "no_building_model": False,
     }
     if coordinate_match:
         req["lon"] = float(coordinate_match.group(1))
@@ -962,6 +977,7 @@ async def extract_request(client, query: str) -> dict:
             req.setdefault("inferred", True)
             req.setdefault("parking_strategy", "unspecified")
             req.setdefault("requested_facility", "")
+            req.setdefault("no_building_model", False)
             # 용도 미지정 일반 질문은 특정 건축물 용도로 바꾸지 않는다.
             has_explicit_use = any(
                 name in query for name in BUILDING_USES
@@ -1307,23 +1323,24 @@ async def run_prediagnosis(
     reg = zoning.apply_straddling_limits(reg, zone_shares, jurisdiction)
     state["regulation"] = reg
 
-    # 움막·농막은 표준 용도지역 판정표(11용도) 밖의 농지 가설건축물이다. 농지법이 허용
-    # 여부를 정한다: 농막은 신고 후 소규모(약 20㎡ 이하) 조건부 설치가 가능하지만, 움막은
-    # 농지법상 농지에 설치할 수 있는 시설이 아니어서 지목이 농지인 필지에는 불가하다.
-    # (수치·판정은 결정식으로만 — 요청 시설은 질의 해석 결과 requested_facility 로 안다.)
+    # 움막·농막은 표준 용도지역 판정표(11용도) 밖의 농지 가설건축물이다. 농지 위 허용
+    # 여부는 지역추천과 공유하는 단일 원본 결정식(facility_rules)이 정한다: 농막은 신고 후
+    # 소규모(약 20㎡ 이하) 조건부, 움막은 농지법상 농지에 설치할 수 없어 불가.
     _facility = str(req.get("requested_facility") or "").strip()
-    _is_farmland = (state.get("jimok_info") or {}).get("category") == "farmland"
-    if "움막" in _facility and _is_farmland:
+    _farm_verdict = facility_rules.farmland_facility_verdict(
+        _facility, state["parcel"].get("jimok")
+    )
+    if _farm_verdict == "not_allowed":
         reg["verdict"] = "not_allowed"
         reg["reason"] = (
-            "움막은 농지법상 농지에 설치할 수 있는 시설이 아니어서, 지목이 농지(전·답·"
-            "과수원)인 이 필지에는 설치할 수 없습니다. 농막은 신고 후 소규모 설치가 가능합니다."
+            f"{_facility}은(는) 농지법상 농지(전·답·과수원)에 설치할 수 있는 시설이 아니어서 "
+            "이 필지에는 설치할 수 없습니다. 농막은 신고 후 소규모 설치가 가능합니다."
         )
-    elif "농막" in _facility and _is_farmland:
+    elif _farm_verdict == "conditional":
         reg["verdict"] = "conditional"
         reg["reason"] = (
-            "농막은 농지에 지자체 신고 후 연면적 20㎡ 이하로 설치할 수 있는 가설건축물입니다. "
-            "농지전용 없이 가능하나 입지·신고 기준과 도로·배수 여건을 확인해야 합니다."
+            f"{_facility}은(는) 농지에 지자체 신고 후 연면적 20㎡ 이하로 설치할 수 있는 "
+            "가설건축물입니다. 농지전용 없이 가능하나 입지·신고 기준과 도로·배수 여건을 확인해야 합니다."
         )
 
     # 협소 필지 — 대지면적이 용도지역 법정 최소 대지면적(시행령 제80조) 미만이면
@@ -1416,6 +1433,31 @@ async def run_prediagnosis(
             "color": "#C62828",
             "show_building_mass": False,
             "show_building_dimensions": False,
+        }
+
+    # 농막·움막·태양광처럼 '지을 수는 있으나(조건부/가능) 전용 3D 모델이 아직 구현되지
+    # 않은' 특수·가설 시설(no_building_model)은, 용도지역 밀도로 매스·규모를 그리면
+    # 오해를 준다(농막은 20㎡). 매스·치수·규모는 감추되 판정(조건부/가능)은 유지하고,
+    # 현재 구현된 다른 용도 모델을 보여줄지 되묻도록 표시한다. 불가 판정에는 적용 안 함.
+    _facility = str(req.get("requested_facility") or "").strip()
+    if (
+        req.get("no_building_model")
+        and _facility
+        and reg.get("verdict") in {"allowed", "conditional"}
+        and not reg.get("map_presentation")
+    ):
+        reg["map_presentation"] = {
+            "verdict": reg.get("verdict"),
+            "label": "조건부 가능" if reg.get("verdict") == "conditional" else "가능",
+            "color": "#F9A825" if reg.get("verdict") == "conditional" else "#2E7D32",
+            "show_building_mass": False,
+            "show_building_dimensions": False,
+            "no_building_model": _facility,
+            "reason": (
+                f"{_facility}은(는) 지을 수 있으나 전용 3D 모델이 아직 구현되어 있지 "
+                f"않아 규모·매스를 표시하지 않습니다. 현재 구현된 다른 용도의 가능한 "
+                f"모델을 보여드릴까요?"
+            ),
         }
 
     # 용도지역상 가능한 용도라도 농지·산지 전용 제한 검토가 남으면

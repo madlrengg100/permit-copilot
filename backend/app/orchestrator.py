@@ -49,6 +49,25 @@ def _answer_system(instructions: str) -> str:
     return f"{ANSWER_STYLE_RULES}\n{instructions}"
 
 
+def _is_affirmation(query: str) -> bool:
+    """시스템 제안('보여드릴까요?')에 대한 긍정 화답인지 판단한다.
+
+    제안↔화답 한 쌍의 완결에만 쓴다(pending_offer 상태에서만 호출). 긍정 어감과
+    '보여줘' 류 표시 요청을 넓게 인정하되, 부정('아니/괜찮')은 제외한다.
+    """
+    compact = re.sub(r"\s+", "", query or "")
+    if re.search(r"아니|괜찮|됐|말|나중|싫", compact):
+        return False
+    return bool(
+        re.search(
+            r"^(네|넹|응|어|예|그래|좋아|좋아요|당연|ㅇㅇ|ok|오케이|오키|봐|보여|보자|해줘)"
+            r"|보여|보고싶|볼래|봐줘|부탁",
+            compact,
+            re.IGNORECASE,
+        )
+    )
+
+
 def _is_building_restore_request(query: str) -> bool:
     """사용자가 직접 건물 표시 복원을 요청한 경우만 참이다.
 
@@ -1570,8 +1589,13 @@ class Orchestrator:
         # 단, '가능/다른 모델 보여줘'처럼 대체 모델 목록을 묻는 뜻이면(=possible_models)
         # 이전 매스 복원이 아니라 LLM 후속 해석으로 넘겨 목록·매스를 새로 만든다.
         # '모델 켜/다시 켜/이전 모델 보여줘' 같은 순수 복원만 여기서 결정적으로 처리한다.
-        if _is_building_restore_request(original_query) and not _asks_possible_use_list(
-            original_query
+        # 단, 직전에 '다른 용도 모델을 보여드릴까요?'라고 물어 pending_offer 가 걸린
+        # 상태에서 '네/보여줘'는 복원이 아니라 그 제안에 대한 화답이므로, 후속 해석으로
+        # 넘겨 possible_models(대체 모델)로 처리한다.
+        if (
+            _is_building_restore_request(original_query)
+            and not _asks_possible_use_list(original_query)
+            and self.conversation_context().get("pending_offer") != "show_models"
         ):
             # '다시 켜/복원'은 방금 '끈' 대상을 되살린다. 치수선을 껐으면 치수선을,
             # 모델을 껐으면 모델을. 무엇을 껐는지는 필지 대화 상태(last_control)가 안다.
@@ -2652,6 +2676,17 @@ class Orchestrator:
         if continuation and self.diagnosis:
             interpreted = await self._interpret_followup(original_query)
             intent = interpreted.get("intent") or "followup_explanation"
+            # '다른 용도 모델을 보여드릴까요?' 제안(pending_offer)에 사용자가 긍정하면,
+            # 제미나이 분류가 흔들려도 결정적으로 possible_models 로 처리한다 — 제안↔화답은
+            # 한 쌍이라 이 상태에서의 긍정은 곧 '그 모델을 보여줘'다.
+            if (
+                self.conversation_context().get("pending_offer") == "show_models"
+                and _is_affirmation(original_query)
+            ):
+                intent = "possible_models"
+                # '보여줘'를 건물표시 제어(3D 다시 켜기)로 오인하지 않게 control 은 비운다.
+                interpreted["control"] = None
+                interpreted["map_lines"] = []
             # 되물어 확인 흐름: '가능한 건축물이 뭐야?'처럼 궁금해서 묻기만 하면 제미나이가
             # answer 로 '보여드릴까요?'라고 되묻고 모델은 띄우지 않는다. 이 상태를 필지 대화
             # 상태에 남겨(pending_offer), 다음 턴에 사용자가 긍정하면 제미나이가 그 맥락을 읽고
@@ -4008,20 +4043,37 @@ class Orchestrator:
             events.append(
                 {"event": "message", "data": {"text": card_text}}
             )
-            # 요청 용도의 전용 모델이 아직 없어도, 같은 필지에서 허용되는
-            # 용도 가운데 준비된 모델은 최초 진단 하단에 함께 제시한다.
-            model_options = _model_options_for_diagnosis(
-                self.diagnosis,
-                include_alternatives=True,
-            )
-            if model_options:
+            # 농막·움막·태양광처럼 '지을 수는 있으나(조건부/가능) 전용 3D 모델이 아직
+            # 구현되지 않은' 시설(no_building_model)은, 오해되는 매스·규모를 이미 감췄고
+            # 여기서는 그 사실을 안내하고 '현재 구현된 다른 용도 모델을 보여줄지' 되묻는다.
+            # 사용자가 긍정하면(pending_offer) 후속 해석이 possible_models 로 모델을 낸다.
+            _pres = (self.diagnosis.get("regulation") or {}).get("map_presentation") or {}
+            _no_model_facility = _pres.get("no_building_model")
+            if _no_model_facility:
                 events.append({
                     "event": "message",
-                    "data": {
-                        "text": "**가능 모델**\n허용되는 용도 중 준비된 모델만 보여드립니다.",
-                        "options": model_options,
-                    },
+                    "data": {"text": _pres.get("reason") or (
+                        f"{_no_model_facility}은(는) 지을 수 있으나 전용 3D 모델이 아직 "
+                        f"구현되어 있지 않습니다. 현재 구현된 다른 용도의 가능한 모델을 "
+                        f"보여드릴까요?"
+                    )},
                 })
+                self.update_conversation_context(pending_offer="show_models")
+            else:
+                # 요청 용도의 전용 모델이 아직 없어도, 같은 필지에서 허용되는
+                # 용도 가운데 준비된 모델은 최초 진단 하단에 함께 제시한다.
+                model_options = _model_options_for_diagnosis(
+                    self.diagnosis,
+                    include_alternatives=True,
+                )
+                if model_options:
+                    events.append({
+                        "event": "message",
+                        "data": {
+                            "text": "**가능 모델**\n허용되는 용도 중 준비된 모델만 보여드립니다.",
+                            "options": model_options,
+                        },
+                    })
             # 검토 의견은 뒤이어 방출 — 마커로 남기고 소비 지점이 render_pending_judgment 호출.
             events.append(
                 {"event": "pending_judgment", "data": {"query": query}}
