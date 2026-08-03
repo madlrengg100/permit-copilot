@@ -1026,20 +1026,13 @@ def _all_uses_verdict_judgment(diagnosis: dict | None) -> str:
         (regulation.get("map_presentation") or {}).get("verdict") == "not_allowed"
     ):
         existing = diagnosis.get("existing_buildings") or {}
-        # 필지 분할은 대지가 분할 후에도 각 필지가 최소 대지면적을 넘길 만큼(=2배 이상) 클
-        # 때만 실질 경로라, 그때만 함께 언급한다(필요할 때만 분할 언급).
-        from .tools import min_lot_area as _mla
-
-        _area0 = (diagnosis.get("parcel") or {}).get("area_m2")
-        _can_split0 = bool(_area0 and zone and _area0 >= 2 * _mla.minimum_area(zone))
-        if existing.get("has_buildings"):
-            cause = (
-                "기존 건축물 {}건이 있어 멸실·해체하거나 필지 분할로 빈 필지를 확보하지 않으면"
-                if _can_split0
-                else "기존 건축물 {}건이 있어 멸실·해체하지 않으면"
-            ).format(existing.get("count"))
-        else:
-            cause = "법정 최소 대지면적에 못 미치는 협소 대지라"
+        # 기존 건물이 있으면 멸실·해체가 해법이다(필지 분할 아님 — 분할해도 건물 남은 필지엔
+        # 신축 불가). 협소 대지면 배치 자체가 불가하다.
+        cause = (
+            f"기존 건축물 {existing.get('count')}건이 있어 멸실·해체하지 않으면"
+            if existing.get("has_buildings")
+            else "법정 최소 대지면적에 못 미치는 협소 대지라"
+        )
         return (
             f"{address} 필지는 {zone or '해당 용도지역'}으로 용도지역상으로는 "
             f"{possible_examples or '일부 용도'}가 조건부이나, {cause} 실질적으로 신축 "
@@ -4017,31 +4010,13 @@ class Orchestrator:
             existing = diagnosis.get("existing_buildings") or {}
             lot = diagnosis.get("min_lot_area") or {}
             if existing.get("has_buildings"):
-                # 필지 분할은 '대지가 분할 후에도 각 필지가 법정 최소 대지면적을 넘길 만큼'
-                # (=최소의 2배 이상) 클 때만 실질적 경로다. 그때만 분할을 함께 안내하고,
-                # 그렇지 않으면 멸실·해체만 언급한다(필요할 때만 분할 언급).
-                from .tools import min_lot_area as _mla
-
-                _zone = (diagnosis.get("regulation") or {}).get("zone") or (
-                    (diagnosis.get("land_use") or {}).get("zones") or [""]
-                )[0]
-                _area = (diagnosis.get("parcel") or {}).get("area_m2")
-                _can_split = bool(
-                    _area and _zone and _area >= 2 * _mla.minimum_area(_zone)
+                # 기존 건물이 있으면 신축하려면 그 건물을 '멸실·해체'해야 한다(실질 배치 불가).
+                # 필지 분할은 이 경우의 해법이 아니다(분할해도 기존 건물이 남은 필지엔 신축 불가).
+                lead = (
+                    f"이 필지에는 기존 건축물 {existing.get('count')}건이 확인되어, 기존 "
+                    "건물을 멸실·해체하지 않는 한 신축을 배치할 수 없습니다(실질 배치 불가). "
+                    "멸실 요건과 소유·권리관계는 건축 담당 부서에서 확인해야 합니다."
                 )
-                if _can_split:
-                    lead = (
-                        f"이 필지에는 기존 건축물 {existing.get('count')}건이 확인되어, 기존 "
-                        "건물을 멸실·해체하거나 필지를 분할해 빈 필지를 확보하지 않는 한 신축을 "
-                        "배치할 수 없습니다(실질 배치 불가). 어느 쪽이든 건축 담당 부서와 분할·멸실 "
-                        "요건을 확인해야 합니다."
-                    )
-                else:
-                    lead = (
-                        f"이 필지에는 기존 건축물 {existing.get('count')}건이 확인되어, 기존 "
-                        "건물을 멸실·해체하지 않는 한 신축을 배치할 수 없습니다(실질 배치 불가). "
-                        "멸실 요건은 건축 담당 부서에서 확인해야 합니다."
-                    )
             else:
                 lead = lot.get("note") or "이 필지는 실질적으로 신축 배치가 불가합니다."
             judgment = f"{lead}\n\n{judgment}".strip()
