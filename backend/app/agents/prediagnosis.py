@@ -75,6 +75,12 @@ inferred=true 로 표시한다. 여기서 시설물은 용도 미정이 아니�
 ("상가" -> 제1종근린생활시설, "빌딩"/"사무실" -> 업무시설, "물류창고" -> 창고시설,
  "아파트" -> 공동주택, "펜션"/"호텔" -> 숙박시설)
 
+질의 문장을 해석해 사용자가 '전체 건축물(무엇이든 지을 수 있나)'을 묻는지, 아니면
+'특정 시설(움막·농막·태양광 설치 등)'을 콕 집어 묻는지 판단한다. 특정 시설을 물었으면
+그 시설명을 requested_facility 에 사용자 표현 그대로 담는다(building_use 는 판정용
+표준 용도로 정규화하되, 표준 11용도에 없으면 시설물). 전체 건축물을 뜻하면
+requested_facility 는 빈 문자열.
+
 주소를 특정할 수 없으면 address 를 빈 문자열로 둔다."""
 
 EXTRACT_TOOL = [
@@ -88,6 +94,16 @@ EXTRACT_TOOL = [
                 "lon": {"type": "number", "description": "지도에서 선택한 경도"},
                 "lat": {"type": "number", "description": "지도에서 선택한 위도"},
                 "building_use": {"type": "string", "enum": BUILDING_USES},
+                "requested_facility": {
+                    "type": "string",
+                    "description": (
+                        "질의 문장을 해석해, 사용자가 '전체 건축물'이 아니라 '특정 시설'을 "
+                        "콕 집어 물었으면 그 시설명을 사용자 표현 그대로 담는다"
+                        "(예: '움막', '농막', '태양광 설치', '단독주택'). 건물 전반을 "
+                        "뜻하거나 용도를 지정하지 않았으면 빈 문자열. building_use 는 판정용 "
+                        "표준 용도로 정규화하되, 이 필드는 화면의 '검토 용도'로 그대로 쓴다."
+                    ),
+                },
                 "inferred": {
                     "type": "boolean",
                     "description": "용도를 질의에서 직접 읽지 않고 추론했으면 true",
@@ -331,6 +347,11 @@ def format_diagnosis_answer(d: dict) -> str:
     # 노출하면 오해를 준다 — '시설물'로 일반화해 표기한다.
     if (d.get("request") or {}).get("inferred"):
         use = "시설물"
+    # 사용자가 특정 시설(움막·농막·태양광 설치 등)을 콕 집어 물었으면, 질의 해석 결과
+    # (requested_facility)를 검토 용도로 그대로 보여준다 — '시설물'로 뭉개지 않는다.
+    _facility = ((d.get("request") or {}).get("requested_facility") or "").strip()
+    if _facility:
+        use = _facility
     out.append(f"- **검토 용도:** {use or '—'}")
     # 사용자가 말한 용도가 이 지역에서 불가면(예: 제1종전용주거의 일반 상가) 경고.
     ur = d.get("use_restriction")
@@ -861,6 +882,20 @@ def _deterministic_request(query: str) -> dict | None:
     generic_building = _has_building_feasibility_intent(query)
     if not explicit_use and not generic_building:
         return None
+    # 검토 용도 표기용: 사용자가 특정 시설을 콕 집어 물었으면(건축 동사 앞의 시설 명사)
+    # 질의 표현 그대로를 잡아 둔다. 표준 11용도·일반 건축어는 라벨로 쓰지 않는다.
+    # 판정은 이 라벨이 아니라 결정식 조건이 정한다(움막·농막 농지법 등).
+    _fac = re.search(
+        r"([가-힣A-Za-z0-9]{2,12})\s*(?:을|를)?\s*(?:지을|지어|짓|설치|세우|건축)",
+        query,
+    )
+    requested_facility = ""
+    if _fac:
+        _cand = _fac.group(1)
+        if _cand not in BUILDING_USES and _cand not in {
+            "건물", "건축물", "시설물", "여기", "거기", "이곳", "그곳", "이거", "무엇", "뭐",
+        }:
+            requested_facility = _cand
 
     parking = (
         "underground" if "지하주차" in query
@@ -880,6 +915,7 @@ def _deterministic_request(query: str) -> dict | None:
         "building_use": explicit_use or "시설물",
         "inferred": explicit_use is None,
         "parking_strategy": parking,
+        "requested_facility": requested_facility,
     }
     if coordinate_match:
         req["lon"] = float(coordinate_match.group(1))
@@ -919,6 +955,7 @@ async def extract_request(client, query: str) -> dict:
                 req["inferred"] = True
             req.setdefault("inferred", True)
             req.setdefault("parking_strategy", "unspecified")
+            req.setdefault("requested_facility", "")
             # 용도 미지정 일반 질문은 특정 건축물 용도로 바꾸지 않는다.
             has_explicit_use = any(
                 name in query for name in BUILDING_USES
@@ -1263,6 +1300,25 @@ async def run_prediagnosis(
     )
     reg = zoning.apply_straddling_limits(reg, zone_shares, jurisdiction)
     state["regulation"] = reg
+
+    # 움막·농막은 표준 용도지역 판정표(11용도) 밖의 농지 가설건축물이다. 농지법이 허용
+    # 여부를 정한다: 농막은 신고 후 소규모(약 20㎡ 이하) 조건부 설치가 가능하지만, 움막은
+    # 농지법상 농지에 설치할 수 있는 시설이 아니어서 지목이 농지인 필지에는 불가하다.
+    # (수치·판정은 결정식으로만 — 요청 시설은 질의 해석 결과 requested_facility 로 안다.)
+    _facility = str(req.get("requested_facility") or "").strip()
+    _is_farmland = (state.get("jimok_info") or {}).get("category") == "farmland"
+    if "움막" in _facility and _is_farmland:
+        reg["verdict"] = "not_allowed"
+        reg["reason"] = (
+            "움막은 농지법상 농지에 설치할 수 있는 시설이 아니어서, 지목이 농지(전·답·"
+            "과수원)인 이 필지에는 설치할 수 없습니다. 농막은 신고 후 소규모 설치가 가능합니다."
+        )
+    elif "농막" in _facility and _is_farmland:
+        reg["verdict"] = "conditional"
+        reg["reason"] = (
+            "농막은 농지에 지자체 신고 후 연면적 20㎡ 이하로 설치할 수 있는 가설건축물입니다. "
+            "농지전용 없이 가능하나 입지·신고 기준과 도로·배수 여건을 확인해야 합니다."
+        )
 
     # 협소 필지 — 대지면적이 용도지역 법정 최소 대지면적(시행령 제80조) 미만이면
     # 조건부 가능이라도 배치가 제한될 수 있음을 알린다(법령 값은 데이터파일에서).
