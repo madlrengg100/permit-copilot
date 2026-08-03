@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 import httpx
@@ -84,14 +85,28 @@ async def _query_title(loc: dict, timeout: float, source: str) -> dict:
         "pageNo": "1",
         "_type": "json",
     }
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        response = await client.get(f"{BASE_URL}/getBrTitleInfo", params=params)
-        response.raise_for_status()
-        data = response.json()
-    header = data.get("response", {}).get("header") or {}
-    if str(header.get("resultCode", "")) not in {"00", "0"}:
-        raise RuntimeError(header.get("resultMsg") or "건축물대장 API 오류")
-    return _result(data, source)
+    # 건축HUB 는 정상 필지에도 간헐적으로 503(Service Unavailable)·타임아웃을 낸다.
+    # 그때 '건물 없음'으로 오판하면 실질 배치 불가·추천 필터가 흔들리므로, 짧은 백오프로
+    # 최대 3회 재시도한다. 4xx(인증·잘못된 파라미터)는 재시도해도 소용없어 바로 올린다.
+    last_exc: Exception | None = None
+    for attempt in range(5):
+        try:
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                response = await client.get(f"{BASE_URL}/getBrTitleInfo", params=params)
+            if getattr(response, "status_code", 200) >= 500:
+                last_exc = RuntimeError(f"건축HUB {response.status_code}")
+                await asyncio.sleep(0.3)
+                continue
+            response.raise_for_status()
+            data = response.json()
+            header = data.get("response", {}).get("header") or {}
+            if str(header.get("resultCode", "")) not in {"00", "0"}:
+                raise RuntimeError(header.get("resultMsg") or "건축물대장 API 오류")
+            return _result(data, source)
+        except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError) as exc:
+            last_exc = exc
+            await asyncio.sleep(0.4 * (attempt + 1))
+    raise last_exc or RuntimeError("건축물대장 조회 실패")
 
 
 async def _juso_loc(address: str, timeout: float) -> dict | None:
