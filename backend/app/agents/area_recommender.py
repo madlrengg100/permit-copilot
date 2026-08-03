@@ -227,10 +227,31 @@ async def recommend_areas(
         ]
     else:
         cands = [c for c in cands if core in c["address"]]
+
+    # 요청 시설이 그 필지에서 법령상 불가면(예: 움막+농지) 후보에서 뺀다 — '다 안 되는
+    # 지역만 추천'하는 누수를 막는다. 판정은 진단과 동일한 결정식(facility_rules)을
+    # 재사용한다: 하드코딩 지목 목록이 아니라 실제 지목 분류 + 농지법.
+    from ..tools.facility_rules import farmland_facility_verdict
+
+    restricted = sum(
+        1 for c in cands
+        if farmland_facility_verdict(building_use, c["jimok"]) == "not_allowed"
+    )
+    cands = [
+        c for c in cands
+        if farmland_facility_verdict(building_use, c["jimok"]) != "not_allowed"
+    ]
     cands.sort(key=lambda c: -c["area_m2"])
     items = cands[:limit]
 
-    if not items:
+    if not items and restricted:
+        # 후보가 있었으나 요청 시설이 그 필지(농지)에서 법령상 불가라 전부 제외된 경우.
+        note = (
+            f"{center['matched_address']} 주변 비도시 후보는 대부분 농지(전·답)여서 "
+            f"{(building_use or '해당 시설')}은(는) 농지법상 설치할 수 없습니다. "
+            "농막(신고 후 20㎡)이나 다른 용도로 다시 찾아보시겠어요?"
+        )
+    elif not items:
         kind = "임야(산지)" if forest else ("농지(전·답·과수원)" if farm else "건축 가능 지목")
         note = (
             f"{center['matched_address']} 주변 비도시 용도지역 안에서 "
