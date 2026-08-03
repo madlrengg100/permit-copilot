@@ -86,8 +86,9 @@ export type MapCommand =
       note?: string;
       pieces: Array<{
         label: string;
-        share_pct: number;
-        area_m2: number;
+        // 맹지처럼 '면적 비율이 아닌 조건'인 제약은 share_pct·area_m2 가 null 이다.
+        share_pct: number | null;
+        area_m2: number | null;
         color: string;
         geometry?: GeoJSONPolygon;
       }>;

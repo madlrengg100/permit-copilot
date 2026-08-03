@@ -146,7 +146,7 @@ export default function App() {
   const [restrictionLegend, setRestrictionLegend] = useState<{
     title: string;
     note?: string;
-    pieces: Array<{ label: string; share_pct: number; area_m2: number; color: string }>;
+    pieces: Array<{ label: string; share_pct: number | null; area_m2: number | null; color: string }>;
   } | null>(null);
 
   useEffect(() => {
@@ -937,9 +937,11 @@ export default function App() {
               <div key={`${piece.label}-${piece.share_pct}`} className="zone-legend-row">
                 <span className="zone-legend-swatch" style={{ background: piece.color }} />
                 <span className="zone-legend-name">{piece.label}</span>
-                <span className="zone-legend-pct">
-                  {piece.share_pct}% · {Math.round(piece.area_m2).toLocaleString()}㎡
-                </span>
+                {piece.share_pct != null && (
+                  <span className="zone-legend-pct">
+                    {piece.share_pct}% · {Math.round(piece.area_m2 ?? 0).toLocaleString()}㎡
+                  </span>
+                )}
               </div>
             ))}
             <div className="zone-legend-note">

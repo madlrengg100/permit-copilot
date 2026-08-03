@@ -105,6 +105,12 @@ def _restriction_color(label: str) -> str:
         return "#6A1B9A"  # 보라
     if "재해" in s or "위험" in s:
         return "#AD1457"  # 자홍
+    if "맹지" in s or "도로 접촉 없음" in s:
+        return "#C62828"  # 빨강(접도 미충족 — 건축 불가 사유)
+    if "농업" in s:  # 농업보호구역·농업진흥지역
+        return "#2E7D32"  # 초록(농지 전용 제한)
+    if "보전산지" in s or "산지" in s:
+        return "#5D4037"  # 갈색(산지 전용 제한)
     return "#EF6C00"
 
 
@@ -703,12 +709,49 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
             )
             piece["share_pct"] = round(piece["share_pct"] + float(ov.get("share_pct") or 0), 1)
             piece["area_m2"] = round(piece["area_m2"] + float(ov.get("area_m2") or 0), 1)
+
+    # 건축 불가·제약 사유도 같은 범례에 함께 보여준다(용도지역 걸침·환경중첩처럼 한눈에):
+    # 농업보호구역/농업진흥지역·보전산지 중첩(전용 제한), 도로 접촉 없음(맹지). 데이터는
+    # 진단이 이미 만든 것(land_conversion·road_access)을 그대로 조각으로 옮길 뿐이다.
+    constraint_shown = False
+    for layer in (conversion.get("agriculture") or {}, conversion.get("forest") or {}):
+        for ov in (layer.get("overlaps") or []):
+            if float(ov.get("share_pct") or 0) <= 0:
+                continue
+            label = (
+                (ov.get("properties") or {}).get("uname")
+                or ov.get("name") or layer.get("title") or "전용 제한"
+            )
+            piece = restriction_pieces.setdefault(
+                label,
+                {"label": label, "share_pct": 0.0, "area_m2": 0.0,
+                 "color": _restriction_color(label)},
+            )
+            piece["share_pct"] = round(piece["share_pct"] + float(ov.get("share_pct") or 0), 1)
+            piece["area_m2"] = round(piece["area_m2"] + float(ov.get("area_m2") or 0), 1)
+            constraint_shown = True
+    # 맹지(도로 접촉 없음)는 면적 비율이 아닌 '조건'이라 share 없이 라벨만 낸다.
+    if road_access.get("status") in {"NO_CADASTRAL_ROAD", "NO_ROAD"}:
+        label = "도로 접촉 없음(맹지 가능성)"
+        restriction_pieces.setdefault(
+            label,
+            {"label": label, "share_pct": None, "area_m2": None,
+             "color": _restriction_color(label)},
+        )
+        constraint_shown = True
+
     if restriction_pieces:
         commands.append(
             {
                 "type": "show_restriction_pieces",
-                "title": "·".join(dict.fromkeys(restriction_titles)) + " 중첩",
-                "note": "환경·재해 중첩 (사전검토 참고용)",
+                "title": (
+                    "규제 중첩·건축 제약" if constraint_shown
+                    else "·".join(dict.fromkeys(restriction_titles)) + " 중첩"
+                ),
+                "note": (
+                    "건축 제약·규제 중첩 (사전검토 참고용)" if constraint_shown
+                    else "환경·재해 중첩 (사전검토 참고용)"
+                ),
                 "pieces": list(restriction_pieces.values()),
             }
         )
