@@ -882,20 +882,14 @@ def _deterministic_request(query: str) -> dict | None:
     generic_building = _has_building_feasibility_intent(query)
     if not explicit_use and not generic_building:
         return None
-    # 검토 용도 표기용: 사용자가 특정 시설을 콕 집어 물었으면(건축 동사 앞의 시설 명사)
-    # 질의 표현 그대로를 잡아 둔다. 표준 11용도·일반 건축어는 라벨로 쓰지 않는다.
-    # 판정은 이 라벨이 아니라 결정식 조건이 정한다(움막·농막 농지법 등).
-    _fac = re.search(
-        r"([가-힣A-Za-z0-9]{2,12})\s*(?:을|를)?\s*(?:지을|지어|짓|설치|세우|건축)",
-        query,
-    )
-    requested_facility = ""
-    if _fac:
-        _cand = _fac.group(1)
-        if _cand not in BUILDING_USES and _cand not in {
-            "건물", "건축물", "시설물", "여기", "거기", "이곳", "그곳", "이거", "무엇", "뭐",
-        }:
-            requested_facility = _cand
+    # 표준 11용도가 아닌 '특정 시설'(움막·농막·태양광 설치 등)을 '○○ 지을/설치' 형태로
+    # 콕 집어 물었으면, 결정식 정규식으로 라벨을 뽑지 말고(문법 조각 오탐 위험) LLM
+    # (extract_request)이 문장을 해석해 requested_facility 를 정하게 넘긴다. '건물' 같은
+    # 일반 건축어나, 지을/설치가 없는 일반 가능여부 질의는 그대로 결정식으로 처리한다.
+    if not explicit_use and re.search(r"([가-힣A-Za-z0-9]{2,12})\s*(?:을|를)?\s*(?:지을|설치)", query):
+        _obj = re.search(r"([가-힣A-Za-z0-9]{2,12})\s*(?:을|를)?\s*(?:지을|설치)", query).group(1)
+        if _obj not in {"건물", "건축물", "시설물"} and _obj not in BUILDING_USES:
+            return None
 
     parking = (
         "underground" if "지하주차" in query
@@ -915,7 +909,7 @@ def _deterministic_request(query: str) -> dict | None:
         "building_use": explicit_use or "시설물",
         "inferred": explicit_use is None,
         "parking_strategy": parking,
-        "requested_facility": requested_facility,
+        "requested_facility": "",
     }
     if coordinate_match:
         req["lon"] = float(coordinate_match.group(1))
