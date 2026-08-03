@@ -257,7 +257,12 @@ async def recommend_areas(
     # 보전산지·농업진흥지역 전용 제한(RESTRICTED_REVIEW)처럼 그 시설이 건축 불가한
     # 필지는 추천에서 뺀다 — 지목만 보고 추천해 '건축 불가'를 안내하던 누수를 막는다.
     # 상위 후보부터 검사해 limit 개를 채우면 멈춘다(불필요한 공간조회 최소화).
-    from ..tools import jimok as jimok_tool, land_conversion
+    from ..tools import (
+        jimok as jimok_tool,
+        land_conversion,
+        building_register,
+        min_lot_area,
+    )
 
     async def _buildable(cand: dict) -> bool:
         try:
@@ -268,7 +273,25 @@ async def recommend_areas(
             logger.debug("후보 전용 규제 검증 실패(보수적으로 제외)", exc_info=True)
             return False
         # 전용이 크게 제한(보전산지·농업진흥지역 등)돼 예외 입증 전엔 건축 불가인 필지 제외.
-        return res.get("status") != "RESTRICTED_REVIEW"
+        if res.get("status") == "RESTRICTED_REVIEW":
+            return False
+        # 협소 필지(용도지역 법정 최소 대지면적 미만)면 실질 배치 불가 → 제외.
+        if min_lot_area.check(cand.get("zone", ""), cand.get("area_m2")):
+            return False
+        # 기존 건축물이 있으면 멸실·폐가가 아닌 한 신축을 배치할 수 없다(실질 배치 불가).
+        # 지목 '대'는 대개 기존 건물이 있어 이를 걸러야 '클릭하니 실질 배치 불가'가 안 뜬다.
+        # 다만 전·답·과수원·임야처럼 본래 건물이 없는 지목은 대장을 조회할 필요가 없어
+        # 건너뛴다(불필요한 조회를 줄여 속도 확보). 조회 실패는 보수적으로 통과(개별 진단 확정).
+        if cand.get("jimok") in {"대", "잡종지", "공장용지", "창고용지", "학교용지", "종교용지"}:
+            try:
+                reg = await building_register.lookup(
+                    cand.get("pnu", ""), address=cand.get("address", "")
+                )
+                if (reg or {}).get("has_buildings"):
+                    return False
+            except Exception:
+                logger.debug("후보 기존건물 조회 실패(통과)", exc_info=True)
+        return True
 
     conversion_restricted = 0
     checked: list[dict] = []
@@ -328,6 +351,8 @@ async def recommend_areas(
 
     return {
         "region": region,
+        # 헤더엔 지오코딩된 첫 필지(예: '광탄리 1')가 아니라 사용자가 말한 지역명을 쓴다.
+        "searched_region": region,
         "matched": center["matched_address"],
         "center": {"lon": lon0, "lat": lat0},
         "farm_query": farm,

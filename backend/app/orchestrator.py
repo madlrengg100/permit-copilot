@@ -1430,7 +1430,7 @@ class Orchestrator:
                 "action": f"diagnose:{use or '건물'}::{it['address']}",
             })
         header = (
-            f"**{rec.get('matched') or region}** 주변 비도시 지역 후보 {len(items)}곳입니다. "
+            f"**{rec.get('searched_region') or region}** 일대 비도시 지역 후보 {len(items)}곳입니다. "
             f"항목을 누르면 그 지점으로 이동해 진단합니다.\n\n> {rec.get('note', '')}"
         )
         events: list[dict] = [
