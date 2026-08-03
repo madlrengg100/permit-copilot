@@ -195,6 +195,15 @@ async def recommend_areas(
         for f in feats:
             if f.get("jimok") not in target:
                 continue
+            # 요청한 행정구역(읍·면·동·리 포함) 안의 후보만 '수집 단계에서' 센다. 넓은
+            # 스캔(±11km)이라 다른 면·동 필지가 enough 정원을 먼저 채우면, 뒤늦은 지역
+            # 필터가 전부 걸러 '후보 0'이 되던 문제를 막는다(읍·면·동 단위 검색의 핵심).
+            _addr = f.get("address") or ""
+            if address_terms:
+                if not all(t in _addr for t in address_terms):
+                    continue
+            elif core and core not in _addr:
+                continue
             try:
                 rp = shape(f["geometry"]).representative_point()
             except Exception:
