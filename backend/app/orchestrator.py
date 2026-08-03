@@ -2735,17 +2735,25 @@ class Orchestrator:
             # 제미나이가 '지역+조건으로 후보 필지 리스트를 뽑아라'(recommend_region)로
             # 판단하면, 그 지역의 비도시 용도지역을 공간스캔해 후보 리스트를 만든다.
             # '기능이 없다'고 회피하지 않는다(후속에서도 지역추천에 도달하게 하는 핵심).
-            # 환각 방지: 지역 이름 어간이 질문 원문에 실제로 있어야 한다.
+            # 환각 방지: 지역 어간이 '질문 원문·최근 대화·현재 필지 주소' 어디든 실제로
+            # 있어야 한다. '다른 지역으로 농막 지을 곳'처럼 지역이 현재 필지 맥락에서
+            # 오거나, 짧은 화답('찾아줘')이라 이번 문장엔 지역이 없어도 실행되게 한다.
             _region = str(interpreted.get("recommend_region") or "").strip()
             _region_core = re.sub(
                 r"(특별시|광역시|특별자치시|특별자치도|도|시|군|구)$", "",
                 _region.split()[-1],
             ) if _region else ""
-            if (
-                _region
-                and _region_core
-                and _region_core in re.sub(r"\s+", "", original_query)
-            ):
+            _ground_text = re.sub(r"\s+", "", (
+                original_query
+                + " ".join(
+                    str(m.get("content") or "")
+                    for m in self.messages[-8:]
+                    if m.get("role") == "user"
+                )
+                + (((self.diagnosis or {}).get("location") or {}).get("matched_address") or "")
+                + (((self.diagnosis or {}).get("parcel") or {}).get("jibun") or "")
+            ))
+            if _region and _region_core and _region_core in _ground_text:
                 _use = str(interpreted.get("recommend_use") or "").strip()
                 yield {"event": "tool_start", "data": {"tool": "recommend_areas"}}
                 try:
@@ -3388,10 +3396,14 @@ class Orchestrator:
                     "specific_use_feasibility, 용어의 뜻·개념을 묻는다면 term_definition, "
                     "현재 필지의 수치·규제·중첩 사실을 묻는다면 parcel_fact, 인허가 절차를 "
                     "묻는다면 permit_procedure, 나머지는 followup_explanation으로 분류하라. "
-                    "'○○(시·군) 주변/일대에 농막·창고 지을 만한 곳/필지 리스트 뽑아줘·찾아줘' "
-                    "처럼 지역+조건으로 후보지를 찾아달라는 탐색형이면 recommend_region 에 그 "
-                    "시·군을, recommend_use 에 시설을 담아라. 시스템이 그 지역을 공간스캔해 "
-                    "후보 필지 리스트를 만든다 — 절대 '그런 기능이 없다'고 답하지 마라. "
+                    "'○○(시·군) 주변/일대에 농막·창고 지을 만한 곳/필지 리스트 뽑아줘·찾아줘', "
+                    "'다른 지역으로 농막 지을 곳 있어?', '이 근처에 지을 데 어디 있어?'처럼 "
+                    "지역+조건으로 후보지를 찾아달라는 탐색형이면 recommend_region 에 시·군을, "
+                    "recommend_use 에 시설을 담아 '바로 실행'한다 — 되묻지(‘찾아드릴까요?’) 말고 "
+                    "곧장 검색한다. 지역명을 사용자가 문장에 안 썼으면 현재 필지(진단) 주소의 "
+                    "시·군을 쓴다. 직전에 '찾아드릴까요?'라고 물었고 사용자가 '찾아줘/응/그래'로 "
+                    "화답하면 그때도 recommend_region 을 채워 실행한다. 시스템이 그 지역을 "
+                    "공간스캔해 후보 필지 리스트를 만든다 — 절대 '그런 기능이 없다'고 답하지 마라. "
                     "표준적인 표시·숨김 지도 제어는 이 단계 전에 규칙으로 처리되지만, "
                     "규칙이 못 알아들은 제어 표현(동의어·구어·오타, 예: '수치선 꺼', '눈금 "
                     "지워', '지적선 안 보이게')은 control 에 action·target 으로 의미를 담아라. "
