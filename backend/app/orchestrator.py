@@ -3138,6 +3138,20 @@ class Orchestrator:
                             "text": await self._natural_followup_answer(user_query)
                         },
                     }
+                    # 같은 필지에서 '○○ 지을 수 있어?'로 재진단했을 때, 그 용도가 가능하고
+                    # 준비된 모델이 있으면 최초 카드와 동일하게 모델 버튼을 함께 낸다. 팔로업은
+                    # 카드를 다시 안 띄우지만(emit_card=False) 모델 제시는 빠지면 안 된다.
+                    _fu_models = _model_options_for_diagnosis(
+                        self.diagnosis, include_alternatives=True
+                    )
+                    if _fu_models:
+                        yield {
+                            "event": "message",
+                            "data": {
+                                "text": "**가능 모델**\n허용되는 용도 중 준비된 모델만 보여드립니다.",
+                                "options": _fu_models,
+                            },
+                        }
                 # 새 필지 클릭 플래그는 '첫 진단' 한 번만 소비한다. 이후 같은 필지
                 # 후속 질문은 새 진단(카드)이 아니라 자연어 답변으로 가야 하므로,
                 # 진단을 한 번 돌렸으면 여기서 반드시 해제한다.
