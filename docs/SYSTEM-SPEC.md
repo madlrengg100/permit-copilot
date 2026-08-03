@@ -249,6 +249,13 @@ SDK 원문 오류를 조치 가능한 문장으로 변환한다. 판정 순서:
 `control_glossary`·이동 `nav_glossary`에 저장돼 세션 스냅샷으로 재시작·재접속에도 유지되고, 다음부터
 빠른 경로에서 LLM 없이 처리된다.
 
+**지역 필지추천의 후속 도달(`recommend_region`)** — "○○(시·군)에 농막·창고 지을 필지 리스트 뽑아줘"
+같은 지역+조건 탐색형 질의는 필지 진단 뒤 후속으로 물어도 제미나이가 `_interpret_followup`의
+`recommend_region`(+`recommend_use`)으로 라우팅해 그 지역 비도시 용도지역을 공간스캔한 후보 필지
+리스트(지번·지목, 클릭 시 개별 진단)를 반환한다 — '기능 없음'으로 회피하지 않는다(지역 어간이 질문
+원문에 있어야 실행). emit 단일 원본은 `_recommend_areas_events()`로 메인 도구루프와 후속이 공용한다.
+후보 필지는 공간스캔이 만들며 RAG(조례 벡터)는 근거 조문 검색용일 뿐 필지 DB가 아니다(역할 분리).
+
 ### 5.2 사전진단 에이전트
 
 **도구 루프를 쓰지 않는 이유** — 조회 순서가 고정(주소→좌표→필지→용도지역→규제→규모)이고
@@ -783,6 +790,13 @@ cd frontend && npm run dev -- --host 0.0.0.0 --port 5173
 | 생태·자연도 | 국립생태원 2026 정기고시 GDB → 로컬 SQLite RTree | ✅ enabled |
 | 생태·자연도 별도관리지역 | 같은 정기고시 GDB → 로컬 SQLite RTree | ✅ enabled |
 | 1:5,000 임상도 | 전국 SHP → 로컬 SQLite RTree, 갱신연도 속성 보존 | ✅ enabled |
+
+**공공데이터포털 http→https 복구 (2026-08)** — `apis.data.go.kr` 이 http로는 TCP 연결만 받고 HTTP
+응답을 주지 않아 15초 타임아웃으로 건축물대장 조회가 통째로 실패했다(기존 건물의 멸실 후 재건축 판단과
+도로명주소 juso 폴백까지 이 때문에 누수). 이 호스트를 쓰는 3곳(`building_register` 건축물대장, config
+LANDUSE 토지이용계획, `land_ownership` 토지소유)을 https로 바꿔 복구했고, 종합진단 콜드 지연이 약
+17.7초→4초로 줄었다.
+
 인허가 절차는 `permit_rules.json`의 정형 조건을 평가해 생성한다. 기존
 `permit_requirements.items[]` 계약을 유지하면서 `rule_id`,
 `legal_references`, `depends_on`과 `workflow_graph`를 추가하며, LLM은 이

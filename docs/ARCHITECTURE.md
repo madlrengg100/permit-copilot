@@ -149,6 +149,12 @@ LLM에게 주는 도구는 3개뿐이다:
 개념 답변 경로에서 빼 학습 훅으로 보낸다. 학습된 표현은 제어 `control_glossary`·이동 `nav_glossary`에
 저장돼 세션 스냅샷으로 재시작·재접속에도 유지되고, 다음부터 빠른 경로에서 LLM 없이 처리된다.
 
+**지역 필지추천의 후속 도달 (`recommend_region`)** — "○○(시·군)에 농막·창고 지을 필지 리스트
+뽑아줘" 같은 지역+조건 탐색형 질의는 필지 진단 뒤 후속으로 물어도 제미나이가 `_interpret_followup`의
+`recommend_region`(+`recommend_use`)으로 라우팅해 그 지역 비도시 용도지역을 공간스캔한 후보 필지
+리스트(지번·지목, 클릭 시 개별 진단)를 낸다 — '기능 없음'으로 회피하지 않는다(지역 어간이 질문 원문에
+있어야 실행). emit 단일 원본은 `_recommend_areas_events()`로, 메인 도구루프와 후속이 공용한다.
+
 ### 4.2 사전진단 에이전트 — 왜 도구 루프를 쓰지 않는가
 
 `app/agents/prediagnosis.py` 의 설계 노트가 근거를 담고 있다.
@@ -204,7 +210,9 @@ extract_request(client, query)   # "테헤란로 152에 업무시설" → (주�
   끈 대상(치수선을 껐으면 치수선)을 되살린다.
 
 > 별표1의 4번째 에이전트 — `agents/area_recommender.py` (지역추천): "○○ 비도시
-> 지역에서 농막 지을 데 찾아줘" 류 탐색형 질의를 처리한다.
+> 지역에서 농막 지을 데 찾아줘" 류 탐색형 질의를 처리한다. 메인 도구루프뿐 아니라
+> 필지 진단 뒤 후속(`_interpret_followup.recommend_region`)에서도 도달하며([4.1](#41-오케스트레이터-apporchestratorpy)),
+> 후보 필지는 공간스캔이 만들고 RAG(조례 벡터)는 근거 조문 검색용일 뿐 필지 DB가 아니다(역할 분리).
 
 `build_map_commands(diagnosis)` → 명령 배열:
 
@@ -257,6 +265,12 @@ side = √면적 ;  altitude = clamp(side × 2, 60, 700)   # 지면 위 높이
 | `massing.py` | 밀도 → 건축면적·연면적·층수·높이 |
 | `footprint.py` | 건축면적 형상 계산 |
 | `law_open.py` | 국가법령정보센터 현행 법령 검증 |
+
+**공공데이터포털 http→https 복구 (2026-08)** — `apis.data.go.kr` 이 http로는 TCP 연결만 받고
+HTTP 응답을 주지 않아 15초 타임아웃으로 건축물대장 조회가 통째로 실패했다(기존 건물의 멸실 후
+재건축 판단, 도로명주소 juso 폴백까지 이 때문에 누수). 이 호스트를 쓰는 3곳(`building_register`
+건축물대장, config LANDUSE 토지이용계획, `land_ownership` 토지소유)을 https로 바꿔 복구했고,
+종합진단 콜드 지연이 약 17.7초→4초로 줄었다.
 
 법률·조례 수집과 청킹의 입력·필터·메타데이터·TF-IDF 수식·관할 격리·LLM
 전달 구조는 [LEGAL-ORDINANCE-INDEX.md](LEGAL-ORDINANCE-INDEX.md)를 기준으로
