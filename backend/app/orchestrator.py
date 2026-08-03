@@ -49,6 +49,43 @@ def _answer_system(instructions: str) -> str:
     return f"{ANSWER_STYLE_RULES}\n{instructions}"
 
 
+def _region_search_request(query: str) -> tuple[str, str] | None:
+    """'○○시/군/구에 농막 지을 데 있어' 류 지역 탐색을 결정적으로 인식한다.
+
+    LLM 후속 분류가 흔들려도 지역 탐색은 확실히 잡히게 하는 안전망이다. 지역명·시설명은
+    모두 '사용자가 쓴 문장'에서 뽑는다 — 코드에 특정 지역을 박지 않는다. 구체 지번(동/리 +
+    번지)이 있으면 개별 필지 질의이므로 대상이 아니다. 매칭되면 (지역, 시설)을 돌려준다.
+    """
+    q = query or ""
+    if re.search(r"[가-힣]+(?:동|리|가)\s*(?:산\s*)?\d", q):
+        return None  # 구체 지번 → 개별 필지 질의(지역 탐색 아님)
+    region_m = re.search(
+        r"((?:[가-힣]{2,}(?:특별시|광역시|특별자치시|특별자치도|도)\s*)?"
+        r"[가-힣]{2,}(?:시|군|구))(?:에|에서|안|내|주변|일대|근처)?",
+        q,
+    )
+    search = re.search(
+        r"(?:지을|지어|설치할?|건축할?|들어설?)\s*(?:수\s*있는|만한)?\s*(?:데|곳|필지|자리|땅)"
+        r"|(?:찾아|추천|뽑아|리스트|알아봐)"
+        r"|(?:어디|어느\s*곳)[^.]{0,6}(?:지을|설치|건축)",
+        q,
+    )
+    if not region_m or not search:
+        return None
+    region = re.sub(r"(?:에|에서|안|내|주변|일대|근처)$", "", region_m.group(1)).strip()
+    fac_m = re.search(
+        r"([가-힣]{2,10})\s*(?:을|를)?\s*(?:지을|지어|설치|건축|짓|세우)", q
+    )
+    facility = ""
+    if (
+        fac_m
+        and fac_m.group(1) not in {"건물", "건축물", "시설물", "여기", "거기", "이곳", "농지"}
+        and not fac_m.group(1).endswith(("시", "군", "구", "도"))
+    ):
+        facility = fac_m.group(1)
+    return region, facility
+
+
 def _is_affirmation(query: str) -> bool:
     """시스템 제안('보여드릴까요?')에 대한 긍정 화답인지 판단한다.
 
@@ -1616,6 +1653,22 @@ class Orchestrator:
                 yield {"event": "map_commands", "data": {"commands": [_cmd]}}
                 self._record_control(restore_target, show=True)
             yield {"event": "message", "data": {"text": _msg}}
+            return
+
+        # 지역 탐색 안전망: '○○시/군/구에 농막 지을 데 있어'는 LLM 후속 분류가 흔들려도
+        # 결정적으로 recommend_areas 로 보낸다(엉뚱한 현재 필지 진단·무응답 방지). 지역·시설명은
+        # 사용자 문장에서 뽑고, 구체 지번이 있으면 대상이 아니라 개별 진단으로 흘려보낸다.
+        _rs = _region_search_request(original_query)
+        if _rs:
+            _rs_region, _rs_use = _rs
+            yield {"event": "tool_start", "data": {"tool": "recommend_areas"}}
+            try:
+                _rs_evs, _ = await self._recommend_areas_events(_rs_region, _rs_use)
+                for _e in _rs_evs:
+                    yield _e
+            except Exception as exc:
+                yield {"event": "error", "data": {"tool": "recommend_areas", "message": str(exc)}}
+            self._selection_changed = False
             return
 
         # '건축면적만/바닥면적만/평면만 보여줘'(입체 숨기고 평면 윤곽만)는 표시 토글이라
