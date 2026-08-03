@@ -1027,7 +1027,8 @@ def _all_uses_verdict_judgment(diagnosis: dict | None) -> str:
     ):
         existing = diagnosis.get("existing_buildings") or {}
         cause = (
-            f"기존 건축물 {existing.get('count')}건이 있어 멸실·해체를 선행하지 않으면"
+            f"기존 건축물 {existing.get('count')}건이 있어 멸실·해체하거나 필지 분할로 빈 "
+            "필지를 확보하지 않으면"
             if existing.get("has_buildings")
             else "법정 최소 대지면적에 못 미치는 협소 대지라"
         )
@@ -3881,13 +3882,16 @@ class Orchestrator:
                     "핵심 규제와 서로 다른 "
                     "법률의 요건은 하나가 다른 하나를 대신하지 않고 각각 충족해야 한다는 점과 "
                     "permit_requirements에 있는 관계기관 협의·필요한 심의·허가를 통해 조정·확인하는 "
-                    "경로만 설명하라. 셋째 문장에는 최종 허가를 위해 모두 충족할 조건만 요약하라. "
-                    "부서명·제출서류·조사서 목록은 쓰지 마라. 실제 데이터가 법적 충돌을 명시하지 않으면 '충돌한다'고 "
+                    "경로를 설명하라. 국민이 가장 궁금해하는 '누구에게(어느 담당 부서) 무엇을(어떤 "
+                    "허가·신고) 신청하고 어느 부서와 협의하며, 어떤 심의가 필요한지'를 permit_requirements "
+                    "데이터에서 읽어 구체적으로 짚어라(예: 농지 담당 부서의 농지전용허가·협의, 개발행위 "
+                    "담당 부서의 개발행위허가, 건축 담당 부서의 건축허가, 필요 시 심의). 셋째 문장에는 "
+                    "최종 허가를 위해 모두 충족할 조건만 요약하라. 다만 제출서류·조사서 목록은 후속 "
+                    "질문용이니 여기서 나열하지 마라. 실제 데이터가 법적 충돌을 명시하지 않으면 '충돌한다'고 "
                     "지어내지 말고 '요건이 함께 적용된다'고 표현하라. 상세 보고서에 이미 있는 "
                     "경사도·표고·임상도·접도·부담금 수치를 전부 반복하지 말고 결론을 좌우하는 "
                     "값만 인과관계에 사용하라. 부담금이 있으면 부과 가능성과 감면·면제 가능성을 "
-                    "한 문장 안에서 함께 설명하라. 조사서·제출서류·부서별 세부 업무는 사용자가 "
-                    "후속 질문할 때 답할 내용이므로 여기서는 나열하지 마라. '확인된 현황상', '등처럼', "
+                    "한 문장 안에서 함께 설명하라. '확인된 현황상', '등처럼', "
                     "regulatory_screen에 생태·자연도 1·2등급 또는 별도관리지역 "
                     "중첩이 있으면 조건부 판정의 원인으로 실제 등급과 중첩률을 읽고 "
                     "환경성 검토·관계기관 협의와 연결하라. 3등급은 참고정보로만 다루고 "
@@ -3903,15 +3907,19 @@ class Orchestrator:
                         "role": "user",
                         "content": (
                             f"사용자 질문: {user_query}\n"
+                            f"검토 용도: {((diagnosis.get('request') or {}).get('requested_facility') or (diagnosis.get('request') or {}).get('building_use') or '시설물')} "
+                            "— 이 값이 '시설물'이면 대표 가능 용도를 나열하고, 특정 시설(농막·움막·"
+                            "단독주택 등)로 분명하면 그 용도를 중심으로 신청·협의·부서·심의를 설명하고 "
+                            "다른 용도 나열은 최소화하라.\n"
                             f"구조화 진단 데이터: {compact(diagnosis)}"
                         ),
                     }
                 ],
                 tools=[],
-                max_tokens=450,
+                max_tokens=520,
             )
             text = _strip_internal_field_names(" ".join(response.texts).strip())
-            return _limit_review_length(text, max_sentences=3)
+            return _limit_review_length(text, max_sentences=4)
         except Exception:
             logger.debug("전체용도 검토의견 LLM 생성 실패", exc_info=True)
             return ""
@@ -4002,8 +4010,10 @@ class Orchestrator:
             lot = diagnosis.get("min_lot_area") or {}
             if existing.get("has_buildings"):
                 lead = (
-                    f"이 필지에는 기존 건축물 {existing.get('count')}건이 확인되어, "
-                    "멸실·해체를 선행하지 않으면 신축을 배치할 수 없습니다(실질 배치 불가)."
+                    f"이 필지에는 기존 건축물 {existing.get('count')}건이 확인되어, 기존 "
+                    "건물을 멸실·해체하거나, 대지가 법정 최소 대지면적의 2배 이상으로 충분하면 "
+                    "필지를 분할해 빈 필지를 확보하지 않는 한 신축을 배치할 수 없습니다"
+                    "(실질 배치 불가). 어느 쪽이든 건축 담당 부서와 분할·멸실 요건을 확인해야 합니다."
                 )
             else:
                 lead = lot.get("note") or "이 필지는 실질적으로 신축 배치가 불가합니다."
