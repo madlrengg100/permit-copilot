@@ -97,7 +97,8 @@ def _restriction_color(label: str) -> str:
     가부를 읽을 수 있게 통일한다: 빨강 = 원칙 건축 불가/강한 제한(허가·예외 확인 전에는
     막힘), 주황 = 조건부(협의·심의·허가로 가능), 회색 = 참고."""
     s = label or ""
-    RED, ORANGE, GRAY = "#C62828", "#EF6C00", "#9E9E9E"
+    # 판정 배지와 같은 신호등 색으로 통일한다(주황=조건부 #F9A825, 빨강=불가 #C62828).
+    RED, ORANGE, GRAY = "#C62828", "#F9A825", "#9E9E9E"
     if "3등급" in s:  # 생태·자연도 3등급은 참고정보
         return GRAY
     # 원칙 불가/강한 제한 — 개발제한, 맹지(접도 미충족), 보전산지·농업진흥(전용 제한),
@@ -769,12 +770,12 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
                 "color_key": (
                     [
                         {"color": "#C62828", "label": "원칙 불가"},
-                        {"color": "#EF6C00", "label": "조건부(협의·허가)"},
+                        {"color": "#F9A825", "label": "조건부(협의·허가)"},
                     ]
                     if constraint_shown
                     else [
                         {"color": "#C62828", "label": "1등급(보전 최상)"},
-                        {"color": "#EF6C00", "label": "2등급·조건부"},
+                        {"color": "#F9A825", "label": "2등급·조건부"},
                         {"color": "#9E9E9E", "label": "3등급 참고"},
                     ]
                 ),
