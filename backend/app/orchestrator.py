@@ -1877,10 +1877,17 @@ class Orchestrator:
         for key, term in layer_terms.items():
             if not re.search(term, user_query, re.I):
                 continue
+            # '우수 방류 치수선·도로 접촉 선만 보여줘'처럼 특정 오버레이 선을 청한 것이면
+            # dimensions 레이어를 토글하지 않는다 — 아래 '선만' 오버레이(build_lines_only_
+            # commands)·제미나이 map_lines 로 그 선만 그리게 흘려보낸다.
+            if key == "dimensions" and _requested_map_lines(original_query):
+                continue
             turn_off = bool(
                 re.search(
-                    rf"(?:{term}).*(꺼|끄|숨|닫|접|치워|없애|안\s*보이|off)|"
-                    rf"(꺼|끄|숨|닫|접|치워|없애|안\s*보이).*(?:{term})",
+                    # '접'은 '접기(fold)'만 뜻하게 한다. 바로 '접'만 두면 '도로 접촉'의
+                    # '접'이 끄기로 오매칭돼 SHOW 요청이 꺼지던 버그가 있었다.
+                    rf"(?:{term}).*(꺼|끄|숨|닫|접기|접어|접는|치워|없애|안\s*보이|off)|"
+                    rf"(꺼|끄|숨|닫|접기|접어|접는|치워|없애|안\s*보이).*(?:{term})",
                     user_query,
                     re.I,
                 )
