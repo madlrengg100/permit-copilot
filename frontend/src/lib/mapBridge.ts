@@ -108,7 +108,7 @@ export type MapCommand =
       // 분할선·분할 면적 라벨이면 true — 지속 레이어에 그려 이후 이격선 표시로도 안 지워진다.
       persist?: boolean;
       segments: Array<{ positions: number[][]; label: string; color?: string; width?: number; onTop?: boolean; height_m?: number }>;
-      labels: Array<{ lon: number; lat: number; text: string; height?: number; offset?: boolean }>;
+      labels: Array<{ lon: number; lat: number; text: string; height?: number; offset?: boolean; color?: string }>;
     }
   | {
       /** 자연어로 켠/끈 지도 레이어. 지정된 항목만 바꾼다(MapCanvas가 처리). */
@@ -1403,7 +1403,10 @@ export class MapBridge {
           font: "13px 'Malgun Gothic', sans-serif",
           fillColor: ws3d.common.Color.WHITE,
           showBackground: true,
-          backgroundColor: ws3d.common.Color.fromCssColorString("#0d1b2a").withAlpha(0.85),
+          // 라벨 박스 색을 해당 면 색으로 — 분할선 라벨처럼(빨강 박스). 색이 없으면 남색.
+          backgroundColor: lab.color
+            ? ws3d.common.Color.fromCssColorString(lab.color).withAlpha(0.95)
+            : ws3d.common.Color.fromCssColorString("#0d1b2a").withAlpha(0.85),
           // 접기 버튼 → (간격) → 건축면적 → (간격) → 대지면적 순으로 규칙적으로.
           // 버튼 바로 밑에 붙지 않게 건축면적을 충분히 내리고, 대지면적은 그보다
           // 42px 더 아래로.

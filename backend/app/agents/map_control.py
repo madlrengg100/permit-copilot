@@ -193,10 +193,12 @@ def road_setback_pieces(diagnosis: dict) -> tuple[list[dict], dict | None]:
         labels.append({
             "lon": rp.x, "lat": rp.y,
             "text": f"도로 편입 약 {area:,.0f}㎡",
+            "color": "#1565C0",  # 도로 편입 파랑(면 색과 동일)
         })
         labels.append({
             "lon": cm.x, "lat": cm.y,
             "text": f"후퇴 {setback:.1f}m",
+            "color": "#1565C0",  # 같은 도로 편입 건이라 같은 파랑
         })
     dims = None
     if labels or segments:
@@ -213,7 +215,11 @@ def division_dimensions(kept_zone: str, kept_geom: dict, kept_area: float,
     segments: list[dict] = []
     kept = shape(kept_geom).buffer(0)
     kc = kept.representative_point()
-    labels.append({"lon": kc.x, "lat": kc.y, "text": f"분할 대상 {kept_area:,.0f}㎡"})
+    # 라벨 배경색을 해당 면 색과 맞춘다 — 어느 면 얘긴지 색으로 바로 읽히게.
+    labels.append({
+        "lon": kc.x, "lat": kc.y, "text": f"분할 대상 {kept_area:,.0f}㎡",
+        "color": "#2E7D32",  # 분할 대상 초록
+    })
     for ex in excluded:
         if not ex.get("geometry"):
             continue
@@ -222,6 +228,7 @@ def division_dimensions(kept_zone: str, kept_geom: dict, kept_area: float,
         labels.append({
             "lon": ec.x, "lat": ec.y,
             "text": f"분할 제외 {float(ex.get('area_m2') or 0):,.0f}㎡",
+            "color": "#C62828",  # 분할 제외 빨강
         })
         try:
             _first = True
