@@ -1389,6 +1389,55 @@ class Orchestrator:
         verb = "다시 켰습니다" if show else "껐습니다"
         return cmd, f"{label} 표시를 {verb}."
 
+    def _division_scenario_answer(self) -> str:
+        """'분할해서 지어줘' 류 질문에 분할 성립 판정(land_division)으로 답하는 문단.
+        1단계: 정확한 분할선이 아니라 성립 여부·유효 대지면적·규모 추정·후속 인허가를
+        결정적으로 안내한다(사전검토)."""
+        d = self.diagnosis or {}
+        ld = d.get("land_division") or {}
+        reg = d.get("regulation") or {}
+        zone = ld.get("zone") or "이 용도지역"
+        area = ld.get("parcel_area_m2") or 0
+        min_area = ld.get("min_area_m2") or 0
+        followups = " → ".join(ld.get("followups") or ["개발행위허가", "건축허가"])
+
+        if ld.get("maenji"):
+            return (
+                f"이 필지는 지적도상 도로에 접하지 않은 맹지여서, 분할해도 각 필지가 접도 "
+                "요건(건축법 제44조, 도로 2m 이상)을 충족하지 못해 건축을 전제로 한 분할은 "
+                "성립하지 않습니다. 먼저 진입로(도로 지정·사용승낙·현황도로 인정 등)를 "
+                "확보해야 분할·건축을 검토할 수 있습니다."
+            )
+        methods = ld.get("methods") or []
+        if not methods:
+            return (
+                f"이 필지는 대지면적 약 {area:,.0f}㎡로, {zone} 법정 최소 대지면적"
+                f"({min_area}㎡)을 기준으로 나누면 건축 가능한 크기가 남지 않아 건축을 "
+                "전제로 한 분할은 성립하지 않습니다(협소). 합필·소규모 필지 예외 여부는 "
+                "관할 건축부서로 확인해야 합니다."
+            )
+        lines = [
+            f"분할 성립 가능성이 있습니다. {zone}·대지 약 {area:,.0f}㎡ 기준으로 검토할 "
+            "수 있는 방법은 다음과 같습니다."
+        ]
+        for m in methods:
+            lines.append(f"· {m.get('method')}: {m.get('note')}")
+        best = max(methods, key=lambda m: float(m.get("buildable_area_m2") or 0))
+        bcr = reg.get("bcr_max_pct")
+        far = reg.get("far_max_pct")
+        barea = float(best.get("buildable_area_m2") or 0)
+        if bcr and far and barea:
+            lines.append(
+                f"분할 후 유효 대지 약 {barea:,.0f}㎡에 건폐율 {float(bcr):g}%·용적률 "
+                f"{float(far):g}%를 적용하면 건축면적 약 {barea*float(bcr)/100:,.0f}㎡·"
+                f"연면적 약 {barea*float(far)/100:,.0f}㎡ 규모입니다(개념 추정)."
+            )
+        lines.append(
+            f"단, 분할은 끝이 아니라 시작입니다 — 분할한 대지에 {followups}가 이어져야 "
+            "실제로 지을 수 있고, 정확한 분할선·면적은 분할측량으로 확정해야 합니다."
+        )
+        return "\n".join(lines)
+
     async def _recommend_areas_events(
         self, region: str, use: str
     ) -> tuple[list[dict], dict]:
@@ -2850,6 +2899,14 @@ class Orchestrator:
                 self.messages.append({"role": "assistant", "content": _msg + _learned})
                 self._selection_changed = False
                 return
+            # 필지 분할 시나리오 — '분할해서 지어줘/분할하면 되나/분할 후 다시 확인'은
+            # 분할 성립 판정(land_division)으로 답한다(1단계: 성립 여부·유효면적·규모 추정).
+            if interpreted.get("assume_divided"):
+                _div_msg = self._division_scenario_answer()
+                yield {"event": "message", "data": {"text": _div_msg}}
+                self.messages.append({"role": "assistant", "content": _div_msg})
+                self._selection_changed = False
+                return
             # 사용자가 '이런 말은 이동하라는 뜻'이라고 가르치면 이동 표현으로 학습한다.
             # 다음부터 그 표현이 주소와 함께 오면 진단이 아니라 그 필지로 이동한다.
             _nav_learn = str(interpreted.get("learn_nav_term") or "").strip()
@@ -3544,6 +3601,17 @@ class Orchestrator:
                             "보여달라고 하면 true(예: '기존 건물 멸실됐다 치고 가능한 건물 보여줘', "
                             "'철거 가정하고 조건부 가능한 거 보여줘'). 이때 intent 는 possible_models. "
                             "멸실 가정이 아니거나, 협소 대지 등 건물 아닌 사유의 제한이면 false."
+                        ),
+                    },
+                    "assume_divided": {
+                        "type": "boolean",
+                        "description": (
+                            "사용자가 이 필지를 '분할(필지분할·토지분할)'한다고 가정하고 그 결과를 "
+                            "묻거나(분할하면 되나·분할 가능해?), 분할 후 건축을 다시 보라고 하면 true"
+                            "(예: '분할해서 지어줘', '분할 후 건축물 다시 올려줘', '분할하면 지을 수 "
+                            "있어?', '분할해서 다시 확인해줘'). 이때 intent 는 followup_explanation "
+                            "으로 두고 answer 는 비워도 된다(시스템이 분할 성립 판정으로 답한다). "
+                            "분할 얘기가 아니면 false."
                         ),
                     },
                     "control": {

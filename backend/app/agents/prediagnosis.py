@@ -1367,6 +1367,12 @@ async def run_prediagnosis(
         (state["existing_buildings"] or {}).get("has_buildings")
     )
 
+    # 필지 분할 성립 사전판정 — '분할해서 지을 수 있어?' 시나리오의 토대. 정확한 분할선이
+    # 아니라 성립 여부·유효 대지면적을 기존 데이터로 추정한다(결정적, 사전검토용).
+    from ..tools import land_division
+
+    state["land_division"] = land_division.assess(state)
+
     # 보전산지·공익용산지 또는 공원구역은 용도지역의 건폐율·용적률만으로
     # '조건부 가능'이라 할 수 없다. 법정 예외 허용시설인지 확인하기 전에는
     # 건축 가능 규모를 제시하지 않고 판단을 보류한다.
