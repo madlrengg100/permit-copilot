@@ -1300,29 +1300,26 @@ export class MapBridge {
         : yellow;
       const isCustom = Boolean(seg.color);
 
-      // 높이 치수선 — 지면 기준(RELATIVE_TO_GROUND)으로 그린다. 예전엔 terrainHeight
-      // (절대고도)로 그려, 지형 타일이 늦게 로드되면 getHeight 가 0 을 줘 선·라벨이 지하에
-      // 묻혀 안 보였다(면적 라벨은 지면 기준이라 보였다). 얇은 수직 기둥(extrudedHeight +
-      // heightReference RELATIVE_TO_GROUND)으로 그려 지형 로드 타이밍과 무관하게 보이게 한다.
+      // 높이 치수선 — 가로·세로와 같은 얇은 노란 선. 모서리에서 매스 높이만큼 수직으로.
+      // 라벨은 지면 기준(RELATIVE_TO_GROUND)이라 지형 타일 로드 타이밍과 무관하게 보인다.
       if (seg.height_m && seg.height_m > 0) {
         const [hlon, hlat] = seg.positions[0];
-        const dLon = 0.0000058; // ≈0.5m 폭의 얇은 수직 기둥으로 높이선을 대신
-        const dLat = 0.0000045;
-        const vboxId = `map-dim-vbox-${Date.now()}-${rid()}`;
+        const base = this.terrainHeight(hlon, hlat) + 0.5;
+        const top = base + seg.height_m;
+        const vlineId = `map-dim-vline-${Date.now()}-${rid()}`;
         this.viewer.entities.add({
-          id: vboxId,
-          polygon: {
-            hierarchy: ws3d.common.Cartesian3.fromDegreesArray([
-              hlon, hlat, hlon + dLon, hlat, hlon + dLon, hlat + dLat, hlon, hlat + dLat,
-            ]),
+          id: vlineId,
+          polyline: {
+            positions: [
+              ws3d.common.Cartesian3.fromDegrees(hlon, hlat, base),
+              ws3d.common.Cartesian3.fromDegrees(hlon, hlat, top),
+            ],
+            width: seg.width ?? 4,
             material: segColor,
-            height: 0.5,
-            heightReference: 2, // RELATIVE_TO_GROUND
-            extrudedHeight: seg.height_m + 0.5,
-            extrudedHeightReference: 2,
+            depthFailMaterial: segColor,
           },
         });
-        bucket.push(vboxId);
+        bucket.push(vlineId);
         const vlabelId = `map-dim-vlabel-${Date.now()}-${rid()}`;
         this.viewer.entities.add({
           id: vlabelId,
