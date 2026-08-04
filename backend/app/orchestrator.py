@@ -1884,10 +1884,13 @@ class Orchestrator:
         for key, term in layer_terms.items():
             if not re.search(term, user_query, re.I):
                 continue
-            # '우수 방류 치수선·도로 접촉 선만 보여줘'처럼 특정 오버레이 선을 청한 것이면
-            # dimensions 레이어를 토글하지 않는다 — 아래 '선만' 오버레이(build_lines_only_
-            # commands)·제미나이 map_lines 로 그 선만 그리게 흘려보낸다.
-            if key == "dimensions" and _requested_map_lines(original_query):
+            # 치수선은 '맞닿는 치수선 보여줘'·'우수방류 닿는 치수선'처럼 문맥상 '특정 선'을
+            # 뜻하는 SHOW 요청이면 전역 토글로 잡지 않고 제미나이 map_lines 로 보낸다(그 선만
+            # 그림). 끄기·바로 켜기 같은 명확한 전역 명령은 그대로 결정적으로 처리한다.
+            if key == "dimensions" and re.search(
+                r"(닿|맞닿|접하|연결|관련|방향|배수|우수|오수|도로|방류|건축선|이격)",
+                user_query,
+            ) and re.search(r"(보여|켜|표시|나타|그려|얹|올려)", user_query):
                 continue
             turn_off = bool(
                 re.search(
