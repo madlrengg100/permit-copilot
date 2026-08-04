@@ -1504,6 +1504,26 @@ class Orchestrator:
         reg["bcr_max_pct"] = limits["bcr_max_pct"]
         reg["far_max_pct"] = limits["far_max_pct"]
         reg.pop("weighted_limits", None)
+        # 단일 용도지역 근거로 교체 — 걸침 '면적 가중평균' 표기가 남지 않게.
+        reg["legal_basis"] = limits.get("source_label") or reg.get("legal_basis", "")
+        # 팝업의 부수 계산(농지보전부담금·개발부담금)도 분할 대지·건축면적으로 다시 계산한다.
+        try:
+            from .tools import conversion_charges
+            from .tools import development_charge as _dev_charge
+            if d.get("jimok_info") and d.get("land_conversion"):
+                d["conversion_charge"] = conversion_charges.estimate(
+                    jimok_category=(d.get("jimok_info") or {}).get("category", ""),
+                    conversion=d.get("land_conversion"),
+                    conversion_area_m2=mass.get("building_area_m2"),
+                    official_land_price_won_m2=(d.get("parcel") or {}).get("jiga_won_per_m2"),
+                )
+            d["development_charge"] = _dev_charge.assess(
+                requires_conversion=bool((d.get("jimok_info") or {}).get("requires_conversion")),
+                area_m2=area, zone=zone, jurisdiction=d.get("jurisdiction") or "",
+                address=(d.get("location") or {}).get("matched_address", ""),
+            )
+        except Exception:
+            logger.debug("분할 후 부담금 재계산 실패", exc_info=True)
         reg["map_presentation"] = {
             "verdict": "conditional", "label": "조건부 가능(분할 가정)",
             "color": "#F9A825", "show_building_mass": True,
@@ -1533,9 +1553,18 @@ class Orchestrator:
                     "geometry": s["geometry"], "area_m2": _sa,
                     "share_pct": round(_sa / _orig_area * 100, 1) if _orig_area else None,
                 })
+        _excluded = [s for s in _orig_shares if s.get("zone") != zone]
+        _overlay_cmds = []
         if len(_div_pieces) >= 2:
-            yield {"event": "map_commands",
-                   "data": {"commands": [{"type": "show_zone_pieces", "pieces": _div_pieces}]}}
+            _overlay_cmds.append({"type": "show_zone_pieces", "pieces": _div_pieces})
+        # 면에는 면적(㎡) 라벨을, 분할 경계선은 빨간 치수선으로 — '숫자가 보이게'.
+        if _excluded:
+            from .agents.map_control import division_dimensions
+            _overlay_cmds.append(
+                division_dimensions(zone, geometry, area, _excluded)
+            )
+        if _overlay_cmds:
+            yield {"event": "map_commands", "data": {"commands": _overlay_cmds}}
         _txt = (
             f"{zone} 부분 약 {area:,.0f}㎡로 분할했다고 가정하고 대지면적·건축 규모를 다시 "
             f"계산해 지도와 팝업에 반영했습니다(건폐율 {limits['bcr_max_pct']:g}%·용적률 "

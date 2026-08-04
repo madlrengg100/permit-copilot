@@ -92,6 +92,47 @@ def _piece_colors(zones: list[str]) -> list[str]:
     return out
 
 
+def _iter_linestrings(geom):
+    from shapely.geometry import GeometryCollection, LineString, MultiLineString
+    if geom is None or geom.is_empty:
+        return
+    if isinstance(geom, LineString):
+        yield geom
+    elif isinstance(geom, (MultiLineString, GeometryCollection)):
+        for part in geom.geoms:
+            yield from _iter_linestrings(part)
+
+
+def division_dimensions(kept_zone: str, kept_geom: dict, kept_area: float,
+                        excluded: list[dict]) -> dict:
+    """필지 분할을 '치수선처럼' 보이게 — 면(분할 대상·제외)에는 면적(㎡) 라벨을, 대상과
+    제외가 맞닿는 분할 경계선은 빨간 선으로 그리는 show_dimensions 명령을 만든다."""
+    labels: list[dict] = []
+    segments: list[dict] = []
+    kept = shape(kept_geom).buffer(0)
+    kc = kept.representative_point()
+    labels.append({"lon": kc.x, "lat": kc.y, "text": f"분할 대상 {kept_area:,.0f}㎡"})
+    for ex in excluded:
+        if not ex.get("geometry"):
+            continue
+        eg = shape(ex["geometry"]).buffer(0)
+        ec = eg.representative_point()
+        labels.append({
+            "lon": ec.x, "lat": ec.y,
+            "text": f"분할 제외 {float(ex.get('area_m2') or 0):,.0f}㎡",
+        })
+        try:
+            for ls in _iter_linestrings(kept.boundary.intersection(eg.boundary)):
+                if ls.length > 0:
+                    segments.append({
+                        "positions": [[float(x), float(y)] for x, y in ls.coords],
+                        "label": "분할선", "color": "#C62828", "width": 6, "onTop": True,
+                    })
+        except Exception:
+            logger.debug("분할 경계선 계산 실패", exc_info=True)
+    return {"type": "show_dimensions", "segments": segments, "labels": labels}
+
+
 def _restriction_color(label: str) -> str:
     """규제 범례 색 = '건축 가부 심각도'(규제 종류가 아니라). 사용자가 색만 보고
     가부를 읽을 수 있게 통일한다: 빨강 = 원칙 건축 불가/강한 제한(허가·예외 확인 전에는
