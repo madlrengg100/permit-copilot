@@ -84,6 +84,8 @@ export type MapCommand =
       type: "show_restriction_pieces";
       title: string;
       note?: string;
+      // 색이 무슨 뜻인지 알려주는 키(빨강=원칙 불가, 주황=조건부 등).
+      color_key?: Array<{ color: string; label: string }>;
       pieces: Array<{
         label: string;
         // 맹지처럼 '면적 비율이 아닌 조건'인 제약은 share_pct·area_m2 가 null 이다.

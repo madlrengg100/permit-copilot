@@ -93,33 +93,23 @@ def _piece_colors(zones: list[str]) -> list[str]:
 
 
 def _restriction_color(label: str) -> str:
-    """규제 중첩 범례 색 — 생태·자연도 등급/재해 유형별 관례색."""
+    """규제 범례 색 = '건축 가부 심각도'(규제 종류가 아니라). 사용자가 색만 보고
+    가부를 읽을 수 있게 통일한다: 빨강 = 원칙 건축 불가/강한 제한(허가·예외 확인 전에는
+    막힘), 주황 = 조건부(협의·심의·허가로 가능), 회색 = 참고."""
     s = label or ""
-    if "1등급" in s:
-        return "#C62828"  # 빨강(보전가치 최상)
-    if "2등급" in s:
-        return "#EF6C00"  # 주황
-    if "3등급" in s:
-        return "#9E9E9E"  # 회색(참고)
-    if "별도관리" in s:
-        return "#6A1B9A"  # 보라
-    if "재해" in s or "위험" in s:
-        return "#AD1457"  # 자홍
-    if "맹지" in s or "도로 접촉 없음" in s:
-        return "#C62828"  # 빨강(접도 미충족 — 건축 불가 사유)
-    if "농업" in s:  # 농업보호구역·농업진흥지역
-        return "#2E7D32"  # 초록(농지 전용 제한)
-    if "보전산지" in s or "산지" in s:
-        return "#5D4037"  # 갈색(산지 전용 제한)
-    if "개발제한" in s:
-        return "#C62828"  # 빨강(원칙적 건축 불가)
-    if "군사" in s or "비행안전" in s or "상수원" in s:
-        return "#283593"  # 남색(관계기관 협의 필수)
-    if "문화재" in s or "문화유산" in s:
-        return "#4E342E"  # 짙은 갈색(현상변경 허가)
-    if any(k in s for k in ("지구단위계획", "경관", "고도지구", "방화지구", "학교", "가축")):
-        return "#1565C0"  # 파랑(심의·별도 기준)
-    return "#EF6C00"
+    RED, ORANGE, GRAY = "#C62828", "#EF6C00", "#9E9E9E"
+    if "3등급" in s:  # 생태·자연도 3등급은 참고정보
+        return GRAY
+    # 원칙 불가/강한 제한 — 개발제한, 맹지(접도 미충족), 보전산지·농업진흥(전용 제한),
+    # 상수원보호, 생태 1등급, 재해위험지구.
+    if any(k in s for k in (
+        "개발제한", "맹지", "도로 접촉 없음", "보전산지", "상수원",
+        "농업진흥", "1등급", "재해", "위험",
+    )):
+        return RED
+    # 그 밖의 지정 규제(수질보전·배출시설제한·문화재·군사·경관·고도·지구단위·가축·
+    # 농업보호·특별대책·수변·별도관리·생태 2등급 등)는 협의·허가로 가능한 조건부.
+    return ORANGE
 
 
 def _view_altitude_m(area_m2: float) -> float:
@@ -772,8 +762,22 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
                     else "·".join(dict.fromkeys(restriction_titles)) + " 중첩"
                 ),
                 "note": (
-                    "건축 제약·규제 중첩 (사전검토 참고용)" if constraint_shown
+                    "지도에 영역으로 그려지지 않는, 이 필지에 지정된 규제입니다 (사전검토용)"
+                    if constraint_shown
                     else "환경·재해 중첩 (사전검토 참고용)"
+                ),
+                # 색이 무슨 뜻인지 범례에 키로 보여준다(색=건축 가부 심각도).
+                "color_key": (
+                    [
+                        {"color": "#C62828", "label": "원칙 불가"},
+                        {"color": "#EF6C00", "label": "조건부(협의·허가)"},
+                    ]
+                    if constraint_shown
+                    else [
+                        {"color": "#C62828", "label": "1등급(보전 최상)"},
+                        {"color": "#EF6C00", "label": "2등급·조건부"},
+                        {"color": "#9E9E9E", "label": "3등급 참고"},
+                    ]
                 ),
                 "pieces": list(restriction_pieces.values()),
             }

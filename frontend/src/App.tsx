@@ -148,6 +148,7 @@ export default function App() {
   const [restrictionLegend, setRestrictionLegend] = useState<{
     title: string;
     note?: string;
+    colorKey?: Array<{ color: string; label: string }>;
     pieces: Array<{ label: string; share_pct: number | null; area_m2: number | null; color: string; note?: string }>;
   } | null>(null);
 
@@ -527,6 +528,7 @@ export default function App() {
             setRestrictionLegend({
               title: rp.title,
               note: rp.note,
+              colorKey: rp.color_key,
               pieces: rp.pieces.map(({ label, share_pct, area_m2, color, note }) => ({
                 label, share_pct, area_m2, color, note,
               })),
@@ -935,6 +937,16 @@ export default function App() {
         {restrictionLegend && restrictionLegend.pieces.length > 0 && (
           <div className={`restriction-legend${zoneLegend?.length ? " with-zone" : ""}`}>
             <div className="zone-legend-title">{restrictionLegend.title}</div>
+            {restrictionLegend.colorKey && restrictionLegend.colorKey.length > 0 && (
+              <div className="zone-legend-note" style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "3px" }}>
+                {restrictionLegend.colorKey.map((k) => (
+                  <span key={k.label} style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                    <span className="zone-legend-swatch" style={{ background: k.color }} />
+                    {k.label}
+                  </span>
+                ))}
+              </div>
+            )}
             {restrictionLegend.pieces.map((piece) => (
               <div key={`${piece.label}-${piece.share_pct}`} className="zone-legend-row" title={piece.note}>
                 <span className="zone-legend-swatch" style={{ background: piece.color }} />
