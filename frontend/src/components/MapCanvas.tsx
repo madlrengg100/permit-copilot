@@ -595,14 +595,20 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
     }
 
     // 새 진단이 들어오면(fly_to 포함) 주제도 오버레이를 자동으로 갱신한다.
-    // 지형 상대 Entity가 자리 잡도록 잠깐 뒤에 그린다.
+    // 건물·필지·팝업(핵심 결과)이 먼저 뜨도록 주제도는 뒤로 미뤄 그린다. 지적도·
+    // 용도지역을 같은 시점에 동시에 그리면 네트워크·렌더가 겹쳐 결과 생성이 느려
+    // 보였다 — 시차(stagger)를 둬 용도지역 → (더 무거운) 지적도 순으로 뒤따라 그린다.
     const fly = pending.find((c) => c.type === "fly_to");
     if (fly && fly.type === "fly_to") {
       const { lon, lat } = fly;
+      // 용도지역 주제도: 결과가 자리 잡은 뒤.
       window.setTimeout(() => {
         if (zoningOn) void bridgeRef.current?.setZoningOverlay(true, lon, lat).catch(() => {});
+      }, 1800);
+      // 연속지적도(경계선 수백 개로 가장 무겁다): 맨 마지막에.
+      window.setTimeout(() => {
         if (cadastreOn) void bridgeRef.current?.setCadastreOverlay(true, lon, lat).catch(() => {});
-      }, 1500);
+      }, 3200);
       // 경사도는 같은 진단에 포함된 서버 DEM 셀을 즉시 다시 그린다.
       if (slopeOn) {
         const r = bridgeRef.current?.setSlopeGrid(true);
