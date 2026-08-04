@@ -954,10 +954,12 @@ export default function App() {
         {restrictionLegend && restrictionLegend.pieces.length > 0 && (
           <div className="restriction-legend">
             <div className="zone-legend-title">{restrictionLegend.title}</div>
+            {/* 색 키(원칙불가/조건부)는 테두리 있는 별도 네모박스로 감싸, 아래 규제
+                항목 줄과 확실히 구분한다(이건 '색이 뭘 뜻하는지' 설명이지 항목이 아니다). */}
             {restrictionLegend.colorKey && restrictionLegend.colorKey.length > 0 && (
-              <div className="zone-legend-note" style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "3px" }}>
+              <div className="legend-colorkey">
                 {restrictionLegend.colorKey.map((k) => (
-                  <span key={k.label} style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                  <span key={k.label} className="legend-colorkey-item">
                     <span className="zone-legend-swatch" style={{ background: k.color }} />
                     {k.label}
                   </span>
