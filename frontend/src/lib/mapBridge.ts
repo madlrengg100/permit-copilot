@@ -1300,37 +1300,41 @@ export class MapBridge {
         : yellow;
       const isCustom = Boolean(seg.color);
 
-      // 높이 치수선 — height_m 이 있으면 모서리(positions[0])에서 매스와 같은 기준
-      // (지면+0.5m)으로 수직으로 올린다. 가로·세로가 만나는 모서리에 세워 3축을 이룬다.
+      // 높이 치수선 — 지면 기준(RELATIVE_TO_GROUND)으로 그린다. 예전엔 terrainHeight
+      // (절대고도)로 그려, 지형 타일이 늦게 로드되면 getHeight 가 0 을 줘 선·라벨이 지하에
+      // 묻혀 안 보였다(면적 라벨은 지면 기준이라 보였다). 얇은 수직 기둥(extrudedHeight +
+      // heightReference RELATIVE_TO_GROUND)으로 그려 지형 로드 타이밍과 무관하게 보이게 한다.
       if (seg.height_m && seg.height_m > 0) {
         const [hlon, hlat] = seg.positions[0];
-        const base = this.terrainHeight(hlon, hlat) + 0.5; // 매스 baseAboveGround 와 일치
-        const top = base + seg.height_m;
-        const vlineId = `map-dim-vline-${Date.now()}-${rid()}`;
+        const dLon = 0.0000058; // ≈0.5m 폭의 얇은 수직 기둥으로 높이선을 대신
+        const dLat = 0.0000045;
+        const vboxId = `map-dim-vbox-${Date.now()}-${rid()}`;
         this.viewer.entities.add({
-          id: vlineId,
-          polyline: {
-            positions: [
-              ws3d.common.Cartesian3.fromDegrees(hlon, hlat, base),
-              ws3d.common.Cartesian3.fromDegrees(hlon, hlat, top),
-            ],
-            width: seg.width ?? 4,
+          id: vboxId,
+          polygon: {
+            hierarchy: ws3d.common.Cartesian3.fromDegreesArray([
+              hlon, hlat, hlon + dLon, hlat, hlon + dLon, hlat + dLat, hlon, hlat + dLat,
+            ]),
             material: segColor,
-            depthFailMaterial: segColor,
+            height: 0.5,
+            heightReference: 2, // RELATIVE_TO_GROUND
+            extrudedHeight: seg.height_m + 0.5,
+            extrudedHeightReference: 2,
           },
         });
-        bucket.push(vlineId);
+        bucket.push(vboxId);
         const vlabelId = `map-dim-vlabel-${Date.now()}-${rid()}`;
         this.viewer.entities.add({
           id: vlabelId,
-          position: ws3d.common.Cartesian3.fromDegrees(hlon, hlat, base + seg.height_m / 2),
+          // 지면에서 height_m/2 만큼 위(RELATIVE_TO_GROUND) — 지형 로드와 무관하게 보인다.
+          position: ws3d.common.Cartesian3.fromDegrees(hlon, hlat, seg.height_m / 2 + 0.5),
           label: {
             text: seg.label,
-            // 가로·세로 치수 라벨과 동일: 색 없으면 검정 글자/노랑 배경.
             font: isCustom ? "bold 13px 'Malgun Gothic', sans-serif" : "13px 'Malgun Gothic', sans-serif",
             fillColor: isCustom ? ws3d.common.Color.WHITE : ws3d.common.Color.BLACK,
             showBackground: true,
             backgroundColor: isCustom ? segColor.withAlpha(0.95) : yellow.withAlpha(0.98),
+            heightReference: relativeToGround,
             disableDepthTestDistance: Number.POSITIVE_INFINITY,
           },
         });
