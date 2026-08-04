@@ -710,6 +710,10 @@ export class MapBridge {
   // 세그먼트 라벨(가로·세로·도로접촉·건축선/이격) 겹침 방지용 앵커 + 카메라 리스너.
   private dimLabelAnchors: { id: string; lon: number; lat: number; w: number; h: number }[] = [];
   private dimLabelDisposer: (() => void) | null = null;
+  // 분할 오버레이(persist) 라벨 전용 겹침 방지 채널 — 분할선·분할 대상/제외·도로 편입·
+  // 후퇴 라벨을 서로 밀어내고, 정규 치수선 declutter 와 독립적으로 카메라를 따라간다.
+  private persistLabelAnchors: { id: string; lon: number; lat: number; w: number; h: number }[] = [];
+  private persistLabelDisposer: (() => void) | null = null;
   // 팝업 접기 시 숨겼다가 펼칠 때 다시 그리기 위해 마지막 치수 명령을 보관
   private lastDimensionsCommand: Extract<MapCommand, { type: "show_dimensions" }> | null = null;
   // 용도지역 주제도 오버레이
@@ -1170,6 +1174,9 @@ export class MapBridge {
   }
 
   private clearDivisionOverlay(): void {
+    this.persistLabelDisposer?.();
+    this.persistLabelDisposer = null;
+    this.persistLabelAnchors = [];
     this.removeAll(this.divisionOverlayIds);
   }
 
@@ -1370,18 +1377,15 @@ export class MapBridge {
           },
         });
         bucket.push(labelId);
-        // 겹침 방지 대상으로 등록(글자수로 대략적 폭 추정). 분할 오버레이 라벨은
-        // 정규 치수선 declutter 상태(dimLabelAnchors)에 섞지 않는다 — 이후 이격선이
-        // 그 배열을 비워도 분할 라벨은 그대로 남아야 한다.
-        if (!persist) {
-          this.dimLabelAnchors.push({
-            id: labelId,
-            lon: midLon,
-            lat: midLat,
-            w: seg.label.length * 9 + 14,
-            h: 22,
-          });
-        }
+        // 겹침 방지 대상으로 등록(글자수로 대략적 폭 추정). persist(분할) 라벨은 전용
+        // 채널에 넣어 정규 치수선과 독립적으로 서로 밀어낸다.
+        (persist ? this.persistLabelAnchors : this.dimLabelAnchors).push({
+          id: labelId,
+          lon: midLon,
+          lat: midLat,
+          w: seg.label.length * 9 + 14,
+          h: 22,
+        });
       }
       void mid;
     }
@@ -1419,11 +1423,19 @@ export class MapBridge {
         },
       });
       bucket.push(id);
+      // persist(분할) 면적 라벨(분할 대상/제외·도로 편입·후퇴)도 겹침 방지 대상에 넣어
+      // 서로·작은 면 위에서 겹치지 않게 한다. 정규 면적 라벨(건축/대지면적)은 고정
+      // 오프셋을 쓰므로 대상에서 제외한다(기존 동작 유지).
+      if (persist) {
+        this.persistLabelAnchors.push({
+          id, lon: lab.lon, lat: lab.lat, w: lab.text.length * 11 + 18, h: 22,
+        });
+      }
     }
     // 세그먼트 라벨(가로·세로·도로접촉·건축선/이격) 겹침 방지 — 카메라가 움직일
     // 때마다 화면좌표로 겹침을 검사해 라벨을 화면상에서 밀어낸다. 회전·줌아웃에도
     // 안 붙는다. 면적 라벨(건축/대지면적)은 대상에서 제외한다.
-    const declutter = () => {
+    const declutter = (anchorList: { id: string; lon: number; lat: number; w: number; h: number }[]) => {
       const C = (window as any).Cesium;
       const scene: any = this.viewer.scene;
       if (!C?.SceneTransforms || !scene?.camera) return;
@@ -1438,7 +1450,7 @@ export class MapBridge {
         [0, -22], [0, 22], [0, -48], [0, 48], [0, -74], [0, 74],
         [0, -100], [0, 100], [0, -126], [0, 126], [0, -152], [0, 152],
       ];
-      const anchors = this.dimLabelAnchors
+      const anchors = anchorList
         .map((a) => {
           const gh = this.terrainHeight(a.lon, a.lat);
           const world = C.Cartesian3.fromDegrees(a.lon, a.lat, gh + 1);
@@ -1465,11 +1477,16 @@ export class MapBridge {
         ent.label.pixelOffset = new C.Cartesian2(chosen[0], chosen[1]);
       }
     };
-    // 분할 오버레이는 정규 declutter 루프에 붙이지 않는다(disposer 를 덮어써
-    // 정규 치수선 재배치를 끊지 않도록). 라벨 수가 적어 겹침도 거의 없다.
-    if (!persist) {
-      declutter();
-      this.dimLabelDisposer = this.onCameraChange(declutter);
+    // persist(분할) 라벨은 전용 채널로, 정규 치수선과 독립적으로 겹침 방지·카메라 추적.
+    // 한 번의 분할 그리기에서 division_dimensions·도로편입 라벨이 나눠 들어오므로,
+    // 매번 누적된 persistLabelAnchors 전체로 다시 배치하고 리스너를 갱신한다.
+    if (persist) {
+      this.persistLabelDisposer?.();
+      declutter(this.persistLabelAnchors);
+      this.persistLabelDisposer = this.onCameraChange(() => declutter(this.persistLabelAnchors));
+    } else {
+      declutter(this.dimLabelAnchors);
+      this.dimLabelDisposer = this.onCameraChange(() => declutter(this.dimLabelAnchors));
     }
     this.viewer.scene?.requestRender?.();
     this.note(`✓ 치수선 ${cmd.segments.length}개 · 라벨 ${cmd.labels.length}개 표시`);

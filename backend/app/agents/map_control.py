@@ -180,16 +180,23 @@ def road_setback_pieces(diagnosis: dict) -> tuple[list[dict], dict | None]:
             g for g in getattr(strip, "geoms", []) if g.geom_type == "Polygon"
         ]
         for poly in polys:
+            # 색은 분할 제외(빨강)·분할 대상(초록)과 확실히 다른 파랑으로 — 같은 계열이
+            # 겹치면 구분이 안 됐다.
             pieces.append({
-                "zone": "도로 편입(후퇴)", "color": "#AD1457",
+                "zone": "도로 편입(후퇴)", "color": "#1565C0",
                 "geometry": mapping(poly), "area_m2": area, "share_pct": None,
             })
         rp = strip.representative_point()
-        # 후퇴폭은 라벨에 합친다. 별도 '후퇴선'을 그으면 필지 경계선과 같은 자리라
-        # 이중선처럼 보였다 — 보라 편입 면 + 라벨만 남긴다.
+        cm = strip.centroid
+        # '도로 편입 약 3㎡' 와 '후퇴 1.2m' 를 따로 라벨로 — declutter 가 겹치지 않게
+        # 자동 배치한다(별도 후퇴선은 경계선과 겹쳐 빼고, 값만 라벨로).
         labels.append({
             "lon": rp.x, "lat": rp.y,
-            "text": f"도로 편입 약 {area:,.0f}㎡ · 후퇴 {setback:.1f}m (측량 후 확정)",
+            "text": f"도로 편입 약 {area:,.0f}㎡",
+        })
+        labels.append({
+            "lon": cm.x, "lat": cm.y,
+            "text": f"후퇴 {setback:.1f}m",
         })
     dims = None
     if labels or segments:
@@ -217,14 +224,17 @@ def division_dimensions(kept_zone: str, kept_geom: dict, kept_area: float,
             "text": f"분할 제외 {float(ex.get('area_m2') or 0):,.0f}㎡",
         })
         try:
+            _first = True
             for ls in _iter_linestrings(kept.boundary.intersection(eg.boundary)):
                 if ls.length > 0:
-                    # 빨간 분할선 자체가 경계를 보여주므로 '분할선' 글자는 넣지 않는다
-                    # (근처 '분할 제외 N㎡' 라벨과 겹쳐 붙어 보였다). 선만 그린다.
+                    # 빨간 분할선 + '분할선' 글자(첫 조각에만 1개). 라벨은 declutter 로
+                    # 근처 '분할 제외 N㎡' 와 안 겹치게 자동 배치된다.
                     segments.append({
                         "positions": [[float(x), float(y)] for x, y in ls.coords],
-                        "label": "", "color": "#C62828", "width": 6, "onTop": True,
+                        "label": "분할선" if _first else "",
+                        "color": "#C62828", "width": 6, "onTop": True,
                     })
+                    _first = False
         except Exception:
             logger.debug("분할 경계선 계산 실패", exc_info=True)
     # persist=True: 분할선·면적 라벨은 지속 레이어에 그려, 이후 모델 배치·이격선
