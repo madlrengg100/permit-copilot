@@ -5,6 +5,15 @@
 > 가능 모델 목록은 `orchestrator._model_options_for_diagnosis()`만 — CLAUDE.md 준수.
 
 ## 2026-08-03
+### 분할 실행 답변에 방법 설명 포함 + 이격 '미수집' 문구 정확화
+- 분할 실행 시 짧은 확인 메시지만 나오고 방법 설명(규제 분리·도로 후퇴 목록)이 빠진다는
+  피드백 → _execute_division 이 덮어쓰기 전 _division_scenario_answer(방법 목록+규모 추정+
+  후속 인허가)를 캡처해 실행 답변 앞에 붙이고, 뒤에 '▶ 위 방법 중 …로 분할해 지도·팝업 재계산'
+  확인을 잇는다. 개발부담금은 assessed_area_m2 로 정상 재계산됨(앞선 None 은 조회 키 오독).
+- 이격 NOT_COLLECTED 문구(App.tsx 이격 라벨)도 site_constraints 와 동일하게 정확화 —
+  '별표 미수집으로 확정 못함' → '단독주택 등은 별표2상 이격이 조례 위임(강제 없음)이라 통상
+  0m, 아파트·대형시설만 조례 별표 확인'. 110 테스트 통과.
+
 ### 제미나이 503(과부하) ⚠ 하드에러 해소 — LLM 재시도 + 분할 실행 결정적 안전망
 - 증상: '분할해서 지어줘'(버튼) 시 '⚠ Error code: 503 - This model is currently experiencing
   high demand'가 사용자에게 그대로 튀었다. 원인: gemini 무료 티어의 일시적 503(과부하)에

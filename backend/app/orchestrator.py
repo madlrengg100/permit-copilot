@@ -1483,6 +1483,8 @@ class Orchestrator:
         # 분할선을 지도에 보이게 하려고, 덮어쓰기 전 원본 대지면적·용도지역 조각을 남겨둔다.
         _orig_area = round(float((d.get("parcel") or {}).get("area_m2") or area), 1)
         _orig_shares = [dict(s) for s in (lu.get("zone_shares") or []) if s.get("geometry")]
+        # 방법 설명(규제 분리·도로 후퇴 목록)을 덮어쓰기 전 원본 기준으로 캡처해 실행 답변에 함께 낸다.
+        _methods_text = self._division_scenario_answer()
         # 분할 후 단일 용도지역의 실제 건폐율·용적률(걸침 가중값이 아니라)로 재계산한다.
         limits = ordinance.resolve_limits(zone, d.get("jurisdiction"))
         if not limits.get("found"):
@@ -1576,11 +1578,11 @@ class Orchestrator:
         if _overlay_cmds:
             yield {"event": "map_commands", "data": {"commands": _overlay_cmds}}
         _txt = (
-            f"{zone} 부분 약 {area:,.0f}㎡로 분할했다고 가정하고 대지면적·건축 규모를 다시 "
-            f"계산해 지도와 팝업에 반영했습니다(건폐율 {limits['bcr_max_pct']:g}%·용적률 "
-            f"{limits['far_max_pct']:g}% → 건축면적 약 {mass['building_area_m2']:,.0f}㎡·연면적 "
-            f"약 {mass['gross_floor_area_m2']:,.0f}㎡). 분할은 끝이 아니라 시작입니다 — 분할한 "
-            "대지에 개발행위허가·건축허가가 이어져야 하고, 정확한 분할선은 분할측량으로 확정합니다."
+            _methods_text
+            + f"\n\n▶ 위 방법 중 '{zone} 부분 약 {area:,.0f}㎡'로 분할했다고 가정해 대지면적·건축 "
+            f"규모를 다시 계산하고 지도(분할선·면적)와 팝업에 반영했습니다(건폐율 "
+            f"{limits['bcr_max_pct']:g}%·용적률 {limits['far_max_pct']:g}% → 건축면적 약 "
+            f"{mass['building_area_m2']:,.0f}㎡·연면적 약 {mass['gross_floor_area_m2']:,.0f}㎡)."
         )
         _opts = _model_options_for_diagnosis(d, include_alternatives=True)
         yield {"event": "message", "data": {"text": _txt, "options": _opts}}
