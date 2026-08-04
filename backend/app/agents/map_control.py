@@ -556,10 +556,9 @@ def _build_dimensions(
             segments.append(tk)
 
     # 도로 접촉 — 필지가 실제로 도로와 맞닿는 '그 변'을 자주색으로 그리고 길이를 라벨로
-    # 붙인다. 접촉선은 필지 경계선(청록)과 좌표가 같아, 둘 다 지면부착이면 자주색이 청록
-    # 경계선을 덮어 경계가 안 보인다. 안쪽으로 밀면 실제 접한 변에서 너무 떨어져 보이므로,
-    # 좌표는 경계선 그대로 두고 지면에서 살짝 띄워(lift_m) 카메라 시점에서 경계선 위로
-    # 분리해 그린다.
+    # 붙인다. 단, 접촉선은 필지 경계선(청록)과 좌표가 같아 지면부착 선 두 개가 겹치면
+    # 자주색이 청록 경계선을 덮어 경계가 안 보인다. 그래서 접촉선을 필지 '안쪽'으로 약
+    # 0.6m 들여, 경계선과 겹치지 않는 나란한 선으로 그린다(라벨의 접촉길이는 원래 값).
     road_access = diagnosis.get("road_access") or {}
     roads = road_access.get("roads") or []
     rgeom = road_access.get("road_contact_geometry")
@@ -571,7 +570,11 @@ def _build_dimensions(
         elif rgeom.get("type") == "LineString" and len(rgeom.get("coordinates", [])) >= 2:
             contact_lines = [rgeom["coordinates"]]
     if contact_lines:
+        from shapely.geometry import LineString
+
+        parcel_poly = shape(geometry).buffer(0) if geometry else None
         m_per_deg_lon = 111320.0 * max(0.1, math.cos(math.radians(mid_lat)))
+        inset_deg = 0.6 / m_per_deg_lon  # 경계선과 겹치지 않게 안쪽으로 들이는 폭(약 0.6m)
 
         def _seg_len_m(coords: list) -> float:
             total = 0.0
@@ -580,6 +583,27 @@ def _build_dimensions(
                 dy = (coords[k][1] - coords[k - 1][1]) * 111320.0
                 total += math.hypot(dx, dy)
             return total
+
+        def _inset_into_parcel(coords: list) -> list:
+            """접촉선을 필지 안쪽으로 들인 좌표. 경계선(청록)과 안 겹치게. 실패 시 원본."""
+            if parcel_poly is None:
+                return [[float(p[0]), float(p[1])] for p in coords]
+            try:
+                base = LineString([(float(p[0]), float(p[1])) for p in coords])
+                for side in ("left", "right"):
+                    off = base.parallel_offset(inset_deg, side, join_style=2)
+                    if off.is_empty:
+                        continue
+                    cand = off if off.geom_type == "LineString" else max(
+                        off.geoms, key=lambda g: g.length
+                    )
+                    if cand.is_empty or len(cand.coords) < 2:
+                        continue
+                    if parcel_poly.contains(cand.interpolate(0.5, normalized=True)):
+                        return [[float(x), float(y)] for x, y in cand.coords]
+            except Exception:
+                logger.debug("도로접촉선 내측 오프셋 실패", exc_info=True)
+            return [[float(p[0]), float(p[1])] for p in coords]
 
         # 라벨(접촉길이)은 인덱스 순서가 아니라 '그 접촉선 길이에 가장 가까운 도로'로 맞춘다
         # (roads 는 길이순 정렬, 접촉선 조각 순서는 달라 예전엔 2.3m↔36.5m 라벨이 뒤바뀌었다).
@@ -599,12 +623,11 @@ def _build_dimensions(
                 length = roads[best_j].get("contact_length_m")
             segments.append(
                 {
-                    "positions": [[float(p[0]), float(p[1])] for p in line],
+                    "positions": _inset_into_parcel(line),
                     "label": f"도로 접촉 {length:g}m" if length else "도로 접촉",
                     "color": road_color,
                     "width": 7,
                     "onTop": True,
-                    "lift_m": 0.6,  # 경계선 위로 띄워 겹침(덮음) 방지
                 }
             )
     elif roads and roads[0].get("contact_length_m"):
