@@ -1438,6 +1438,94 @@ class Orchestrator:
         )
         return "\n".join(lines)
 
+    async def _execute_division(self):
+        """'분할해서 지어줘' 실행 — 용도지역 걸침 필지는 경계로 분할(건축 가능한 가장 큰
+        용도지역 조각)해 대지·규모를 재계산하고, 기존 치수선을 지운 뒤 지도·팝업을 다시
+        그린다. 도로 후퇴·일반 분할은 분할선 지정이 필요해 규모는 판정 텍스트로 안내한다."""
+        from .tools import land_division, ordinance
+        d = self.diagnosis or {}
+        reg = d.get("regulation") or {}
+        req = d.get("request") or {}
+        lu = d.get("land_use") or {}
+        ld = d.get("land_division") or {}
+
+        shares = [
+            s for s in (lu.get("zone_shares") or [])
+            if s.get("geometry") and float(s.get("area_m2") or 0) > 0
+        ]
+        pick = max(shares, key=lambda s: float(s["area_m2"])) if len(shares) >= 2 else None
+
+        # 성립 불가(맹지·협소)거나 지오메트리로 그릴 방법이 없으면 판정 텍스트만 낸다.
+        if ld.get("status") != "FEASIBLE" or not pick or not reg.get("bcr_max_pct"):
+            _msg = self._division_scenario_answer()
+            if pick is None and ld.get("status") == "FEASIBLE":
+                _msg += (
+                    "\n\n(지도 반영은 용도지역 걸침 필지에서 경계로 바로 분할해 다시 계산합니다. "
+                    "도로 후퇴·일반 분할은 분할선을 지정해야 해 규모는 위 추정으로만 안내합니다.)"
+                )
+            yield {"event": "message", "data": {"text": _msg}}
+            self.messages.append({"role": "assistant", "content": _msg})
+            return
+
+        area = round(float(pick["area_m2"]), 1)
+        geometry = pick["geometry"]
+        zone = pick["zone"]
+        # 분할 후 단일 용도지역의 실제 건폐율·용적률(걸침 가중값이 아니라)로 재계산한다.
+        limits = ordinance.resolve_limits(zone, d.get("jurisdiction"))
+        if not limits.get("found"):
+            yield {"event": "message", "data": {"text": self._division_scenario_answer()}}
+            return
+        zone_reg = {
+            "bcr_max_pct": limits["bcr_max_pct"],
+            "far_max_pct": limits["far_max_pct"],
+        }
+        try:
+            mass, sc = land_division.recompute_massing(
+                area_m2=area, geometry=geometry, regulation=zone_reg,
+                building_use=req.get("building_use") or "시설물", zone=zone,
+                jurisdiction=d.get("jurisdiction"), road_access=d.get("road_access"),
+            )
+        except Exception:
+            logger.debug("분할 매스 재계산 실패", exc_info=True)
+            yield {"event": "message", "data": {"text": self._division_scenario_answer()}}
+            return
+
+        # 진단을 '분할된 단일 용도지역 대지'로 갱신 → 지도·팝업이 새 면적·규모로 다시 그려진다.
+        d["parcel"]["geometry"] = geometry
+        d["parcel"]["area_m2"] = area
+        d["massing"] = mass
+        d["site_constraints"] = sc
+        d["placement_restricted"] = False
+        d["assume_divided"] = True
+        reg["zone"] = zone
+        reg["bcr_max_pct"] = limits["bcr_max_pct"]
+        reg["far_max_pct"] = limits["far_max_pct"]
+        reg.pop("weighted_limits", None)
+        reg["map_presentation"] = {
+            "verdict": "conditional", "label": "조건부 가능(분할 가정)",
+            "color": "#F9A825", "show_building_mass": True,
+            # 분할 뷰는 기존 치수선을 지우고 분할선(대지 경계)·건물만 깔끔히 보여준다.
+            "show_building_dimensions": False,
+        }
+        lu["zone_shares"] = [{"zone": zone, "area_m2": area, "share_pct": 100.0}]
+        lu["zones"] = [zone]
+        lu["straddling"] = False
+
+        # 기존 치수선을 끄고, 분할 대지로 재계산한 지도·팝업을 다시 그린다.
+        yield {"event": "map_commands",
+               "data": {"commands": [{"type": "set_layers", "dimensions": False}]}}
+        yield self._render_event()
+        _txt = (
+            f"{zone} 부분 약 {area:,.0f}㎡로 분할했다고 가정하고 대지면적·건축 규모를 다시 "
+            f"계산해 지도와 팝업에 반영했습니다(건폐율 {limits['bcr_max_pct']:g}%·용적률 "
+            f"{limits['far_max_pct']:g}% → 건축면적 약 {mass['building_area_m2']:,.0f}㎡·연면적 "
+            f"약 {mass['gross_floor_area_m2']:,.0f}㎡). 분할은 끝이 아니라 시작입니다 — 분할한 "
+            "대지에 개발행위허가·건축허가가 이어져야 하고, 정확한 분할선은 분할측량으로 확정합니다."
+        )
+        _opts = _model_options_for_diagnosis(d, include_alternatives=True)
+        yield {"event": "message", "data": {"text": _txt, "options": _opts}}
+        self.messages.append({"role": "assistant", "content": _txt})
+
     async def _recommend_areas_events(
         self, region: str, use: str
     ) -> tuple[list[dict], dict]:
@@ -2899,12 +2987,20 @@ class Orchestrator:
                 self.messages.append({"role": "assistant", "content": _msg + _learned})
                 self._selection_changed = False
                 return
-            # 필지 분할 시나리오 — '분할해서 지어줘/분할하면 되나/분할 후 다시 확인'은
-            # 분할 성립 판정(land_division)으로 답한다(1단계: 성립 여부·유효면적·규모 추정).
+            # 검토 의견의 '필지 분할해서 지어드릴까요?' 제안(pending_offer='divide')에 사용자가
+            # 긍정 화답('응/그래/좋아/보여줘')하면, 제미나이 분류가 흔들려도 분할 실행으로 잇는다.
+            if (
+                self.conversation_context().get("pending_offer") == "divide"
+                and _is_affirmation(original_query)
+            ):
+                interpreted["assume_divided"] = True
+                interpreted["control"] = None
+                self.update_conversation_context(pending_offer="")
+            # 필지 분할 시나리오 — '분할해서 지어줘/분할하면 되나/분할 후 다시 확인'.
+            # 용도지역 걸침은 경계로 바로 분할해 대지·규모를 재계산하고 지도·팝업을 갱신한다.
             if interpreted.get("assume_divided"):
-                _div_msg = self._division_scenario_answer()
-                yield {"event": "message", "data": {"text": _div_msg}}
-                self.messages.append({"role": "assistant", "content": _div_msg})
+                async for _e in self._execute_division():
+                    yield _e
                 self._selection_changed = False
                 return
             # 사용자가 '이런 말은 이동하라는 뜻'이라고 가르치면 이동 표현으로 학습한다.
@@ -4194,7 +4290,22 @@ class Orchestrator:
             judgment = f"{lead}\n\n{judgment}".strip()
         if not judgment:
             return None
-        return {"event": "message", "data": {"text": f"## 검토 의견\n{judgment}"}}
+        data = {"text": f"## 검토 의견\n{judgment}"}
+        # 분할이 성립하는 필지면 검토 의견 끝에 '필지 분할해서 지어드릴까요?' 역질문을
+        # 붙이고 버튼을 단다(클릭·긍정 화답 모두 분할 실행으로 이어진다).
+        _ld = diagnosis.get("land_division") or {}
+        if _ld.get("status") == "FEASIBLE" and not diagnosis.get("assume_divided"):
+            data["text"] += (
+                "\n\n이 필지는 필지 분할이 성립할 수 있습니다. "
+                "분할해서 건축 규모를 다시 계산해 보여드릴까요?"
+            )
+            data["options"] = [{
+                "label": "필지 분할해서 규모 보기",
+                "detail": "규제 없는 부분·유효 대지로 재계산",
+                "action": "divide:apply",
+            }]
+            self.update_conversation_context(pending_offer="divide")
+        return {"event": "message", "data": data}
 
     async def _diagnose_and_emit(
         self, query: str, emit_card: bool = True, lines_only: list | None = None

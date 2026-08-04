@@ -15,6 +15,46 @@ from __future__ import annotations
 
 from . import min_lot_area
 
+
+def recompute_massing(
+    *, area_m2: float, geometry: dict, regulation: dict, building_use: str,
+    zone: str, jurisdiction: str | None, road_access: dict | None,
+) -> tuple[dict, dict]:
+    """분할된 대지(부분 지오메트리·면적)로 매스·이격을 다시 계산한다.
+    prediagnosis 의 매스 산출과 같은 순서(밀도 산정 → 이격·주차 반영)로 맞춘다."""
+    from . import massing as massing_tool
+    from . import site_constraints
+
+    mass = massing_tool.calc_massing(
+        area_m2=area_m2,
+        bcr_max_pct=regulation["bcr_max_pct"],
+        far_max_pct=regulation["far_max_pct"],
+        far_target_pct=None,
+    )
+    sc = site_constraints.apply(
+        parcel_geometry=geometry,
+        massing=mass,
+        building_use=building_use,
+        zone=zone,
+        jurisdiction=jurisdiction,
+        road_access=road_access,
+        parking_strategy="unspecified",
+    )
+    achievable = sc.get("achievable_gross_floor_area_m2", mass["gross_floor_area_m2"])
+    adj = sc["adjusted_building_area_m2"]
+    mass.update({
+        "density_building_area_m2": mass["building_area_m2"],
+        "building_area_m2": adj,
+        "gross_floor_area_m2": achievable,
+        "floors_theoretical": round(achievable / adj, 2) if adj else 0,
+        "floors": sc["floors"],
+        "full_floors": sc["full_floors"],
+        "top_floor_ratio": sc["top_floor_ratio"],
+        "mass_height_m": sc["mass_height_m"],
+        "layout_feasible": sc.get("layout_feasible", True),
+    })
+    return mass, sc
+
 # 국토계획법 시행령상 토지분할이 개발행위허가 대상인 용도지역(도시지역 주거·상업·공업의
 # 단순 분할은 대개 제외되나, 아래는 허가 대상이므로 임의 분할 불가).
 _DEV_PERMIT_ZONES = ("녹지", "관리지역", "농림", "자연환경보전")

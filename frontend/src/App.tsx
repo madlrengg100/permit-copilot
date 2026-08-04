@@ -655,6 +655,11 @@ export default function App() {
             void showUseModel(action.slice("use-model:".length));
             return;
           }
+          // 검토 의견의 '필지 분할해서 지어드릴까요?' 버튼 → 분할 실행 자연어로 이어준다.
+          if (action === "divide:apply") {
+            void send("분할해서 지어줘");
+            return;
+          }
           if (!action.startsWith("housing:")) return;
           const type = action.slice("housing:".length) as HousingModelType;
           try {
