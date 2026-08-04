@@ -106,6 +106,25 @@ VWorld 3D 위에서 실행한다.
   실패하고 있었다(기존 건물의 멸실 후 재건축 판단과 도로명주소 juso 폴백이 이 때문에 누수). 호출 3곳
   (건축물대장 `building_register`, 토지이용계획 config LANDUSE, 토지소유 `land_ownership`)을 https로
   바꿔 복구했고, 종합진단 콜드 지연이 약 17.7초→4초로 줄었다.
+- **규제 범례·용도지구 제약 확대** — 우하단 규제 범례에 개발제한·군사·경관·고도지구·
+  지구단위계획·문화재 등 용도지구/구역 라벨을 더하고, 역사문화환경보존지역(문화재보호법
+  제13조 현상변경 허가·국가유산청 협의)·수질보전특별대책지역·배출시설설치제한지역·수변구역을
+  인식한다. 시설 용도별 제약(`zoning._FACILITY_SCOPED`)으로 가축사육제한구역은 축산 시설에만,
+  교육환경(학교정화)구역 금지시설은 숙박·유흥 등에만 걸어(검토 용도 facility를 zoning에 전달)
+  농막·단독주택엔 무관한 지구를 제약으로 세지 않는다.
+- **특수시설도 밀도 상한 표시** — 농막·움막·태양광 등 `no_building_model` 특수시설 팝업에도
+  용도지역 건폐율·용적률 상한을 함께 표시한다.
+- **검토 의견 구체화·작성 중 표시** — 검토 의견을 규제별 구체 방법(협의·심의·허가·필지분할·
+  분할 후 개발행위/건축허가·맹지 진입로) 중심으로 내고 원론적 마무리를 없앴다. 판독·추론이
+  무거운 검토 의견 2개 호출만 상위 모델(`gemini-flash-latest`, `reasoning_effort=low`)로 돌리며,
+  생성 대기 구간엔 '검토 의견 작성 중' 진행 표시를 낸다.
+- **건축물대장 조회 안정화** — 건축HUB 간헐 503·타임아웃을 재시도로 흡수하고, 오케스트레이터
+  '건축물대장 직접 조회'에도 도로명주소(juso) 조인을 적용해 PNU만으론 놓치던 건물 대표지번
+  등록 건을 전국적으로 보정한다.
+- **맹지 도시계획도로 조회 성능** — 맹지 필지에서만 부르는 도시계획도로 조회에 6초 상한과
+  폴백을 둬 콜드 진단을 약 22초→5.5초로 줄이고 20초 타임아웃 회귀를 해소했다.
+- **특정 용도 팔로업에도 모델 버튼** — 같은 필지에서 "단독주택 지을 수 있어" 같은 특정 용도
+  후속 질문에도 그 지역에 가능한 모델 버튼을 방출한다.
 
 ## 실행
 
@@ -193,13 +212,18 @@ HTTPS를 강제하면(HSTS/HTTPS-First) HTTP 서버라 `ERR_SSL_PROTOCOL_ERROR` 
 | 인스턴스 | `e2-standard-8` — 8 vCPU(AMD EPYC 7B12) · 31 GiB RAM · 500 GB 디스크 |
 | OS | Rocky Linux 9.8 (kernel 5.14) |
 | 실행 | systemd 서비스 2개(backend :8000 / frontend :5173) |
-| LLM | **Google Gemini `gemini-flash-lite-latest`** (OpenAI 호환 모드) |
+| LLM | **Google Gemini** — 라우팅·추출·분류 `gemini-flash-lite-latest`, 검토 의견만 `gemini-flash-latest` (모두 무료 티어, OpenAI 호환 모드) |
 
 LLM은 `app/llm.py` 의 어댑터로 공급자를 바꿔 붙인다. 운영값은
 `LLM_PROVIDER=openai`, `LLM_MODEL=gemini-flash-lite-latest`, `GEMINI_API_KEY` 이며,
 OpenAI 호환 `/chat/completions` 엔드포인트(`generativelanguage.googleapis.com`)로
 호출한다. LLM은 **자연어 → 구조 변환과 후속 자연어 답변에만** 쓰고, 판정·계산·묘화는
-결정적 코드가 하므로 경량 모델로도 동작한다. 산지 SQLite(1.77 GB)를 상시 적재하므로
+결정적 코드가 하므로 경량 모델로도 동작한다. 라우팅·추출·분류 같은 값싼 호출은
+`gemini-flash-lite-latest` 그대로 쓰고, 여러 규제 데이터를 인과·해결방법으로 엮는
+'검토 의견'(판독·추론이 무거운 2개 호출)만 한 단계 위 `gemini-flash-latest`
+(`reasoning_effort=low`)로 올린다 — `config.LLM_MODEL_HEAVY`(env `LLM_MODEL_HEAVY` 로
+재정의)이며 `complete()` 에 per-call 모델·`reasoning_effort` 오버라이드로 지정한다. 둘 다
+gemini 무료 티어다. 산지 SQLite(1.77 GB)를 상시 적재하므로
 메모리 여유가 있는 사양을 쓴다.
 
 ### 데이터 저장소 (DB 서버 없이 파일 기반)

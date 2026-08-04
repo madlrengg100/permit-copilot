@@ -153,6 +153,11 @@
 > **구현 참고**: 진행 이벤트는 `run_prediagnosis` 가 완료된 뒤 일괄 방출된다(콜백이 리스트에
 > 적재만 함). 단계별 실시간 스트리밍이 아니다.
 
+> **검토 의견 진행 표시**: 카드·지도를 먼저 흘려보낸 뒤 무거운 LLM으로 '검토 의견'(판단 문단)을
+> 이어 계산하는 6~8초 빈 구간이 멈춘 듯 보이지 않도록 `tool_start {tool:"judgment"}`(프런트
+> `TOOL_LABEL.judgment` = "검토 의견 작성 중")를 먼저 방출하고, 계산이 끝나면 `message` 로 검토
+> 의견을 방출한다.
+
 ### 4.3 인증 및 보안
 
 - `APP_TOKEN` 설정 시 `/api/chat` 에 `X-App-Token` 헤더 일치 요구. 불일치 → **401**.
@@ -227,6 +232,12 @@ SDK 원문 오류를 조치 가능한 문장으로 변환한다. 판정 순서:
 원문에 있어야 실행). emit 단일 원본은 `_recommend_areas_events()`로 메인 도구루프와 후속이 공용한다.
 후보 필지는 공간스캔이 만들며 RAG(조례 벡터)는 근거 조문 검색용일 뿐 필지 DB가 아니다(역할 분리).
 
+**가능 모델 버튼(`_model_options_for_diagnosis`)** — 준비된 3D 모델 버튼은 최초 진단 카드뿐 아니라
+같은 필지의 특정 용도 팔로업('단독주택 지을 수 있어')에도 함께 제시한다. 팔로업은 카드를 다시
+띄우지 않지만(`emit_card=False`) 그 용도가 허용/조건부이고 매스가 있으며 배치제한(협소·기존건물·
+용적률 초과)이 아니면 모델 버튼을 빼지 않는다. 버튼 판정 단일 원본은 이 함수뿐이며 프런트에 용도
+허용 판정이나 질문 정규식을 두지 않는다.
+
 ### 5.2 사전진단 에이전트
 
 **도구 루프를 쓰지 않는 이유** — 조회 순서가 고정(주소→좌표→필지→용도지역→규제→규모)이고
@@ -279,9 +290,18 @@ altitude = clamp(√면적 × 2, 60, 700)   [지면 위 높이, m]
 용도(allowed/conditional)가 있으면 그 용도로 재진단해 매스를 만들어 3D로 표시한다(원본 불허
 판정은 보존).
 
+**특수·가설 시설의 규모 표시(`no_building_model`)** — 농막·움막·태양광처럼 전용 3D 모델·규모
+산정이 부적절한 시설(`show_building_mass=False`)은 오해를 주는 매스·치수·규모는 감추되, **용도지역
+건폐율·용적률 상한은 필지 기준값으로 팝업 '가능 규모'에 함께 표시**한다(판정 조건부/가능은 유지).
+안내 문구는 '3D 모델·규모만 미표시, 상한은 함께 표시'임을 밝히고 현재 구현된 다른 용도 모델을
+보여줄지 되묻는다.
+
 **3D 높이 치수** — 가로·세로 치수선에 더해 두 선이 만나는 모서리에서 `height_m` 만큼 수직
 높이선(노랑)을 세워 3축(가로·세로·높이)을 완성한다. 후속 오버레이(`overlay_command`)도
 도로접촉·건축선·배수로에 더해 치수(가로·세로·높이)·면적(대지·건축)을 요청 시 다시 그린다.
+**배수 유의사항 문구**는 오수·배수 요건이 사실상 없는 특수·가설 시설(`no_building_model`)에는 붙이지
+않고, 사유지 통과 상세 경고(토지사용승낙·기존건물 우회)는 통과 필지 소유구분이 **'사유'로 확인된
+경우에만** 낸다(지목 추정만으로는 특정 배수처·경로를 단정하지 않으며 일반 면책 문구는 1줄로 축약).
 
 **용도지역 조각 색상** — 지적편집도 관례(주거 노랑 / 상업 분홍 / 공업 보라 / 녹지 초록 /
 관리 연두, 21개 지역 정의). 단, 걸친 지역들이 같은 색 계열이면(자연녹지·생산녹지 등 색상환
@@ -330,6 +350,14 @@ Gemini는 `extra_content.google.thought_signature` 동반을 요구하며, 누�
 | `cerebras` | api.cerebras.ai/v1 | `llama-3.3-70b` | `CEREBRAS_API_KEY` |
 | `openrouter` | openrouter.ai/api/v1 | `llama-3.3-70b-instruct:free` | `OPENROUTER_API_KEY` |
 
+**두 단계 모델(`LLM_MODEL` vs `LLM_MODEL_HEAVY`)** — 라우팅·추출·분류 같은 값싼 호출은 기본
+경량 모델(`LLM_MODEL`, gemini 무료 티어 `gemini-flash-lite-latest`)을 쓴다. 여러 규제 데이터를
+읽어 인과·해결방법으로 엮는 **판독·추론이 무거운 '검토 의견'(판단 문단) 생성만** 한 단계 위
+모델(`LLM_MODEL_HEAVY`, gemini 무료 티어 `gemini-flash-latest`, `reasoning_effort=low`, 역시 무료)로
+올린다. `LLM_MODEL_HEAVY` env로 재정의 가능하며 다른 provider는 `LLM_MODEL` 그대로다. 검토 의견은
+원론적 마무리 없이 규제별 구체 방법(관계기관 협의·심의·허가, 부분 걸침 시 필지분할과 분할 후
+개발행위·건축허가, 맹지 진입로 확보) 중심으로 작성한다.
+
 ---
 
 ## 6. 도구 계층 명세
@@ -348,7 +376,7 @@ Gemini는 `extra_content.google.thought_signature` 동반을 요구하며, 누�
 | | `get_planned_roads(geometry)` | 접하는 도시계획시설 도로(`lt_c_upisuq151`) — 규격·집행여부(미집행=미개설) |
 | | `outer_rings(geometry)` | Polygon/MultiPolygon → 외곽 링 통일 |
 | | `geodesic_area_m2(geometry)` | 측지 면적 계산(pyproj Geod) |
-| `zoning` | `lookup_zoning_rules(zone, use, districts, jurisdiction)` | 허용 판정 + 밀도 상한 |
+| `zoning` | `lookup_zoning_rules(zone, use, districts, jurisdiction, facility)` | 허용 판정 + 밀도 상한 (`facility`=검토 용도, 시설 특정 제약 필터) |
 | | `uses_for_zone(zone)` | 지역 → 용도별 허용 상태 역인덱스 |
 | `ordinance` | `resolve_limits(zone, jurisdiction)` | **조례/법정 상한 결정(우선순위 적용)** |
 | | `detect_jurisdiction(address)` | 주소 → 조례 보유 지자체 |
@@ -400,8 +428,18 @@ Gemini는 `extra_content.google.thought_signature` 동반을 요구하며, 누�
 `uses_for_zone(zone)` — 역인덱스. "이 필지에 뭘 지을 수 있어?" 열거 질의에 사용하며
 결과가 항상 `regulation.zone_use_overview` 로 전달된다.
 
-`CONSTRAINT_NOTES` — 7개 용도지구/구역(지구단위계획·경관·고도·방화·개발제한·문화재보호·
-학교환경위생정화)의 실무 주의사항. **해당 지구가 있으면 판정을 조건부로 하향**한다.
+`_CONSTRAINT_KEYWORDS`(구 `CONSTRAINT_NOTES`) — 지역지구명에 키워드가 포함되면 걸리는 실무
+주의사항. 조례·연도별 명칭 변형(경관지구→중점경관관리구역, 문화재보호구역→문화유산보호구역 등)이
+많아 정확한 명칭 대신 키워드로 매칭한다. 지구단위계획·경관·고도·방화·개발제한에 더해 **역사문화환경
+보존지역**(지정문화유산 주변 — 문화재보호법 제13조 현상변경 허가·국가유산청 협의), **수질보전특별
+대책지역·특별대책지역·배출시설설치제한지역·수변구역**(오수·폐수 배출과 건축·개발행위 제한, 유역
+환경청 협의), 상수원보호·군사·비행안전·가축사육제한을 인식한다. **해당 지구가 있으면 판정을
+조건부로 하향**한다.
+
+`_FACILITY_SCOPED` — 시설 용도별로만 걸리는 제약은 검토 용도가 그 부류일 때만 남긴다. 가축사육
+제한구역은 축산·축사에만, 교육환경(학교정화)구역 금지시설 제한은 숙박·유흥 등에만 적용하므로,
+농막·단독주택 등 무관한 용도에는 제약으로 세지 않는다(`lookup_zoning_rules(..., facility=)` 로 검토
+용도 전달). 즉 같은 필지·지구라도 검토 용도에 따라 제약 여부가 달라진다.
 
 수치를 이 파일에 두지 않는 이유: 손으로 옮긴 표에서 용적률 하한 7건이 틀렸던 이력이 있다.
 
@@ -596,7 +634,7 @@ lonBackOff = backOff · sin(heading) / (111320 · cos(lat))
 | `VWORLD_KEY` | — | 미설정 시 mock 모드 |
 | `VWORLD_DOMAIN` | `http://localhost:5173` | **인증키 등록 서비스URL**(접속 URL 아님) |
 | `DATA_GO_KR_SERVICE_KEY` | — | 공공데이터포털 키. 건축물대장 표제부 + 토지소유정보 공용 |
-| `JUSO_CONFM_KEY` | — | 행안부 juso.go.kr 도로명주소 승인키. 건축물대장 PNU 0건 시 건물 대표지번 주소 폴백 |
+| `JUSO_CONFM_KEY` | — | 행안부 juso.go.kr 도로명주소 승인키. 건축물대장 PNU 0건 시 도로명↔대표지번 조인으로 건물 대표지번 주소 폴백(전국) |
 | `APP_TOKEN` | — | `/api/chat` 보호. 외부 노출 시 필수 |
 | `ALLOWED_ORIGINS` | `http://localhost:5173` | CORS |
 | `VITE_APP_TOKEN` | — | 프론트 전송 토큰(`APP_TOKEN` 과 일치 필요) |
@@ -683,7 +721,8 @@ cd frontend && npm run dev -- --host 0.0.0.0 --port 5173
 - OS: Rocky Linux 9.8 · systemd 서비스 2개(backend :8000 / frontend :5173)
 
 ### B. LLM
-- Google Gemini `gemini-flash-lite-latest` (OpenAI 호환 모드, GEMINI_API_KEY)
+- Google Gemini (OpenAI 호환 모드, GEMINI_API_KEY) — 경량 `gemini-flash-lite-latest`(라우팅·추출·분류,
+  `LLM_MODEL`) / 상위 `gemini-flash-latest`(무거운 '검토 의견' 생성만, `LLM_MODEL_HEAVY`). 둘 다 무료 티어.
 - 역할: 자연어→구조 변환·후속 답변만. 판정·계산·묘화는 결정적 코드.
 
 ### C. 데이터 저장소 (파일 기반, DB 서버 없음)
@@ -698,7 +737,7 @@ cd frontend && npm run dev -- --host 0.0.0.0 --port 5173
 
 ### E. 공간 규제 연계
 - 산지구분(전국 106만 폴리곤), 1:5,000 임상도(338만 폴리곤),
-  농업진흥지역(WFS), 건축물대장(건축HUB API), 도로 접도(연속지적도): 연계
+  농업진흥지역(WFS), 건축물대장(건축HUB API, 간헐 503·타임아웃 백오프 재시도), 도로 접도(연속지적도): 연계
 - 도시계획도로: VWorld WFS `lt_c_upisuq151` 접함 geometry·집행여부(미집행=미개설)
 - 재해위험지구: VWorld WFS `lt_c_up201` 전국 실시간 중첩
 - 생태·자연도·별도관리지역: 국립생태원 2026 정기고시 로컬 SQLite RTree
@@ -708,6 +747,12 @@ cd frontend && npm run dev -- --host 0.0.0.0 --port 5173
 도로명주소 juso 폴백까지 이 때문에 누수). 이 호스트를 쓰는 3곳(`building_register` 건축물대장, config
 LANDUSE 토지이용계획, `land_ownership` 토지소유)을 https로 바꿔 복구했고, 종합진단 콜드 지연이 약
 17.7초→4초로 줄었다.
+
+**도시계획도로 조회 지연 상한 (2026-08)** — 도시계획시설 도로(`get_planned_roads`)는 연속지적도상
+도로가 없는 **맹지 필지에서만** 단독 조회한다. VWorld가 느리면 이 한 호출이 httpx 15초 한도까지
+물려 진단 전체가 LLM 클라이언트 한도(20초)를 넘겨 타임아웃나던 회귀가 있었다. 조회에 **6초 상한**을
+걸고 초과 시 토지이음 지정목록의 도로 '접함'으로 폴백하도록 해, 콜드 진단을 약 22초→5.5초로 줄이고
+타임아웃 회귀를 해소했다.
 
 법률·조례 수집·청킹·관할 검색의 상세 규격은
 `docs/LEGAL-ORDINANCE-INDEX.md`를 따른다.

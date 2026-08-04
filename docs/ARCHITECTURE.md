@@ -155,6 +155,13 @@ LLM에게 주는 도구는 3개뿐이다:
 리스트(지번·지목, 클릭 시 개별 진단)를 낸다 — '기능 없음'으로 회피하지 않는다(지역 어간이 질문 원문에
 있어야 실행). emit 단일 원본은 `_recommend_areas_events()`로, 메인 도구루프와 후속이 공용한다.
 
+**같은 필지 특정 용도 팔로업의 모델 버튼·검토 의견 지연 방출** — 같은 필지에 특정 용도를 다시
+묻는 팔로업(`specific_use_feasibility`, 카드 재출력 없음 `emit_card=False`)에도 지을 수 있는 모델
+버튼(`_model_options_for_diagnosis`)은 빠뜨리지 않고 방출한다. 검토 의견은 곧바로 흘리지 않고
+`pending_judgment` 마커로 지연 방출하며, `main.py` 가 렌더 직전에 `tool_start(judgment)` 진행 표시를
+먼저 흘린 뒤 `render_pending_judgment()` 로 실제 의견을 만든다(무거운 검토 의견 호출의 지연을
+사용자에게 진행 중으로 보여주기 위함).
+
 ### 4.2 사전진단 에이전트 — 왜 도구 루프를 쓰지 않는가
 
 `app/agents/prediagnosis.py` 의 설계 노트가 근거를 담고 있다.
@@ -204,6 +211,13 @@ extract_request(client, query)   # "테헤란로 152에 업무시설" → (주�
   않지만, `possible_models`('다른 건물?')에서 그 지역에 지을 수 있는 용도(allowed/conditional)가
   있으면 그 용도로 재진단해 매스를 만들어 3D로 표시한다(매스는 용도 무관 = 건폐율·용적률 봉투,
   원본 불허 판정은 보존).
+- **우하단 규제 범례 (`show_restriction_pieces`)** — 환경·재해 중첩 조각에 더해
+  `regulation.constraints`(용도지구·구역 제약)를 라벨 조각으로 얹는다. 면적 지오메트리가 없으므로
+  성격별 색과 `note` 툴팁으로만 구분한다(zoning `_match_constraints` 가 만든 것을 그대로 쓴다 —
+  여기서 새 규칙을 만들지 않는다).
+- **특수시설 팝업의 밀도 상한** — 매스를 세우지 않는 특수시설(`no_building_model`,
+  `show_building_mass=False`)에도 건폐율·용적률 상한(`bcr_max_pct`/`far_max_pct`)은 팝업에 표시한다
+  (가능 규모는 감추되 밀도 규제 자체는 남긴다; 프론트 `App.tsx` 에서 이 표시를 massing 블록 밖으로 옮겼다).
 - **기능 제어·맥락 복원** — 치수선·지적도·용도지역·경사도·팝업 켜기/끄기와 3D 모델 숨김/복원
   명령·문구의 단일 원본은 `_control_command()`/`_control_result()`다. 숨김/표시 실행 시 필지 대화
   상태에 마지막 제어 대상(`last_control`)을 기록해, "다시 켜/복원"은 항상 3D 모델이 아니라 마지막에
@@ -245,7 +259,7 @@ side = √면적 ;  altitude = clamp(side × 2, 60, 700)   # 지면 위 높이
 |---|---|
 | `vworld.py` | 지오코딩 / 필지 / 용도지역 / bbox 필지목록 (VWorld). `get_ledger_area_m2`(토지대장 공부면적 `lndpclAr`) · `get_planned_roads`(도시계획 도로 `lt_c_upisuq151`, 집행여부) 포함 |
 | `landuse.py` | 용도지역·지구 상세 조회 |
-| `zoning.py` | 용도별 허용 판정 `USE_MATRIX`(10개 용도) + 조례 밀도 상한 |
+| `zoning.py` | 용도별 허용 판정 `USE_MATRIX`(10개 용도) + 조례 밀도 상한 + 용도지구·구역 제약 매칭(`_match_constraints`: 역사문화환경·수질보전특별대책·배출시설설치제한·특별대책지역·수변구역 등). 시설 특정 제약은 `_FACILITY_SCOPED`로 검토 용도에 해당할 때만 적용(가축사육제한→축산, 학교정화 금지시설→숙박·유흥). `lookup_zoning_rules(facility=…)`로 진단의 `requested_facility` 전달 |
 | `ordinance.py` | 건폐율/용적률 조례·법정 상한 `resolve_limits` (약 200개 관할) |
 | `ordinance_index.py` | 전국 법령·관할 조례 근거 검색 (numpy TF-IDF, 범위 분리) |
 | `permit_requirements.py` | `permit_rules.json` 조건 평가, 인허가 단계·선행관계 그래프 생성 |
@@ -259,7 +273,7 @@ side = √면적 ;  altitude = clamp(side × 2, 60, 700)   # 지면 위 높이
 | `regulatory_screen.py` | 재해·환경·국가유산 스크리닝 |
 | `local_spatial.py` | 대용량 로컬 벡터 SQLite RTree 조회 (산지 106만 폴리곤) |
 | `ogc.py` | OGC WFS/WMS 범용 클라이언트 + 필지 중첩 |
-| `building_register.py` | 건축물대장 표제부 (국토부 건축HUB API). PNU로 0건이면 juso.go.kr 도로명주소로 건물 대표지번을 얻어 재조회(대단지·구축 아파트 검출) |
+| `building_register.py` | 건축물대장 표제부 (국토부 건축HUB API). 간헐 503·타임아웃은 백오프 재시도(최대 5회)로 '건물 없음' 오판을 막고, PNU로 0건이면 juso.go.kr 도로명주소로 건물 대표지번을 얻어 재조회(대단지·구축 아파트 검출) |
 | `permit_requirements.py` | 인허가 단계·서류·부서 산출 |
 | `conversion_charges.py` / `development_charge.py` | 농지보전부담금·개발부담금 참고액 |
 | `massing.py` | 밀도 → 건축면적·연면적·층수·높이 |
@@ -271,6 +285,12 @@ HTTP 응답을 주지 않아 15초 타임아웃으로 건축물대장 조회가 
 재건축 판단, 도로명주소 juso 폴백까지 이 때문에 누수). 이 호스트를 쓰는 3곳(`building_register`
 건축물대장, config LANDUSE 토지이용계획, `land_ownership` 토지소유)을 https로 바꿔 복구했고,
 종합진단 콜드 지연이 약 17.7초→4초로 줄었다.
+
+**맹지 필지 도시계획도로 조회의 지연 상한 (2026-08)** — 진단 파이프라인은 연속지적도상 도로가
+없는(맹지) 필지에만 `vworld.get_planned_roads`(도시계획 도로 레이어)를 단독 조회하는데, VWorld 가
+느리면 이 한 호출이 httpx 한도까지 물려 진단 전체가 20초(LLM 클라이언트 한도)를 넘겨 타임아웃났다
+(콜드 진단 22초). `asyncio.wait_for` 6초 상한을 걸고 초과·빈 응답이면 토지이음 지정목록의 도로
+'접함'으로 폴백해, 콜드 진단을 5.5초로 되돌렸다.
 
 법률·조례 수집과 청킹의 입력·필터·메타데이터·TF-IDF 수식·관할 격리·LLM
 전달 구조는 [LEGAL-ORDINANCE-INDEX.md](LEGAL-ORDINANCE-INDEX.md)를 기준으로
@@ -338,6 +358,16 @@ Anthropic과 OpenAI(및 호환 엔드포인트)를 같은 인터페이스로 감
 | 도구 정의 | `{name, description, input_schema}` 그대로 | `{type:"function", function:{…, parameters}}` 로 변환 |
 | system | 별도 인자 | `messages[0]` 에 삽입 |
 | 도구 결과 | user 메시지 1개에 `tool_result` 블록들 | 호출 1건당 `role:"tool"` 메시지 1개 |
+
+**호출별 모델·추론예산 (`complete(model=…, reasoning_effort=…)`)** — 어댑터의 `complete()`
+는 호출마다 모델과 추론 예산을 바꿀 수 있다(anthropic·openai 양쪽). 값싼 호출(라우팅·주소추출·
+후속 답변)은 기본 `LLM_MODEL`(gemini 무료 티어에서 `gemini-flash-lite-latest`)로 두고, 여러
+규제 데이터를 인과·해결로 엮는 '검토 의견' 두 호출(`_verdict_judgment`·
+`_all_uses_verdict_judgment_with_llm`)만 `LLM_MODEL_HEAVY`(`config.py` 신설, gemini 에선
+`gemini-flash-latest`, `reasoning_effort='low'`, `max_tokens` 2400/3000)로 격상한다. gemini flash 계열은
+thinking 이 기본 ON 이라 토큰·지연이 함께 늘어 검토 의견 대기 상한도 8→14초로 넓혔다.
+`reasoning_effort` 는 gemini(OpenAI 호환)의 thinking 예산 제어 필드이고, anthropic 은 자체 adaptive
+thinking 을 쓰므로 시그니처 호환용으로만 받는다.
 
 **`_tool_call_to_dict()` 주의** — 응답의 tool_call을 이력에 되돌릴 때 필드를 골라 담으면 안 된다.
 Gemini는 `extra_content.google.thought_signature` 를 함께 돌려주길 요구하고,
@@ -621,7 +651,8 @@ cd frontend && npm run dev
 | 항목 | 값 |
 |---|---|
 | 공급자 | Google Gemini (OpenAI 호환 모드) |
-| 모델 | `gemini-flash-lite-latest` |
+| 모델 | `gemini-flash-lite-latest` (일반 호출) |
+| 검토 의견 모델 | `gemini-flash-latest` (`LLM_MODEL_HEAVY`) — 판독·추론이 무거운 검토 의견 2개 호출만 격상, `reasoning_effort='low'` |
 | 설정 | `LLM_PROVIDER=openai` · `LLM_MODEL=gemini-flash-lite-latest` · `GEMINI_API_KEY` |
 | 엔드포인트 | `generativelanguage.googleapis.com` OpenAI 호환 `/chat/completions` |
 | 어댑터 | `app/llm.py` — Anthropic/OpenAI 동일 인터페이스, 공급자 교체 가능 |

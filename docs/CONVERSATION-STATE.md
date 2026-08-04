@@ -19,6 +19,14 @@
   함께 묻지 않음)이면** 종합판정 카드·3D 매스·가능여부 팝업을 내지 않고 요청한 선만
   그린다. 판정은 `orchestrator._is_line_only_query()`(원문 기준), 지도는
   `map_control.build_lines_only_commands()`(clear_mass·fly_to·highlight_parcel + 요청 선).
+- **최초 진단 출력 순서:** 종합판정 카드·지도·가능 모델을 먼저 흘리고, '검토 의견'
+  (가능/불가 판단 문단)은 무거운 상위 LLM(gemini-flash-latest)이라 지금 계산하지 않고
+  `pending_judgment` 마커로 미룬다. 소비 지점(`backend/app/main.py`)이 마커를 받으면
+  렌더 직전에 `tool_start(judgment)` 이벤트를 먼저 흘려 프런트에 '검토 의견 작성 중'
+  진행 표시(`frontend/src/App.tsx`의 `TOOL_LABEL.judgment`)를 보인 뒤,
+  `orchestrator.render_pending_judgment()`로 판단 문단을 계산·방출한다. 이 진행 표시는
+  마커를 남기는 **최초 진단(emit_card=True)에서만** 나오고, 빠른 경로(flash-lite) 팔로업은
+  대기 구간이 없어 표시하지 않는다.
 - 같은 PNU 후속: 종합판정 카드를 반복하지 않고 질문에 대한 답만 출력한다.
 - A → B → A → B: PNU별 진단과 최근 질문을 각각 보존하고 해당 필지 상태를 복원한다.
 - 백엔드 재시작: 세션 상태를
@@ -31,6 +39,10 @@
   용도지역을 공간스캔한 후보 리스트를 낸다. '기능 없음'으로 회피하지 않는다. emit 단일
   원본은 `orchestrator._recommend_areas_events()`(도구루프·후속 공용). 후보 필지는 공간
   스캔이 만들며 RAG(조례 벡터)는 근거 조문 검색용일 뿐 필지 DB가 아니다.
+  시군구·읍면동만 있고 번지가 없는 지역 탐색 질의는 결정적 안전망
+  `orchestrator._region_search_request()`가 recommend_areas 로 보내 엉뚱한 현재 필지
+  진단·무응답을 막는다. 다만 의도 표현을 정규식에 나열하는 방식은 취약하므로,
+  표현 나열식 하드코딩은 지양하고 사실 추출 + LLM 판단이 방향이다.
 - `다른 건물`, `가능 모델`, `뭘 지을 수 있어`는 직전 단일 용도의 재판정이 아니라
   현재 필지의 허용 용도 전체를 묻는 상태다. 팝업의 검토 용도는
   `가능한 건축물 전체`로 바꾸되 직전 단일용도 진단 원본은 보존한다.
@@ -48,6 +60,12 @@
 - 건축 불가 판정이면 모델 버튼과 3D 모델·건축 치수선을 표시하지 않는다.
 - 같은 필지 후속에서는 사용자가 건축물 종류·가능 모델을 명시적으로 요청할 때만
   모델 목록을 다시 표시한다.
+- 같은 필지에서 '○○ 지을 수 있어?'(`intent=specific_use_feasibility`) 팔로업으로
+  재진단(`emit_card=False`)했을 때도, 재진단된 용도가 가능하고 준비된 모델이 있으면
+  최초 카드와 동일하게 '가능 모델' 버튼을 함께 낸다. 카드는 다시 띄우지 않지만 모델
+  제시는 빠지지 않는다. 버튼 생성은 여전히 `_model_options_for_diagnosis()` 한 곳만
+  담당한다(매스 있음·배치제한 아님·허용/조건부일 때만). 프런트에 모델 판정을 넣지 않는
+  원칙은 그대로다.
 - **되물어 확인(offer) 흐름:** 사용자가 어떤 건축물이 가능한지 '궁금해서 묻기만'
   하고 표시를 명령하진 않으면(예: `가능한 건축물이 뭐야?`, `어떤 건물 지을 수 있어?`)
   제미나이가 `offer_show_models=true`로 두고 `answer`로 `가능한 건축물 모델을 지도에
@@ -116,6 +134,7 @@
 | PNU별 A↔B 상태 | `backend/app/orchestrator.py`의 `set_selected_parcel` |
 | 새 필지/후속 전달 | `/api/chat`의 `selected_parcel`, `continuation` |
 | 가능 모델 목록 | `backend/app/orchestrator.py`의 `_model_options_for_diagnosis` |
+| 검토 의견 지연 방출·판단 문단 렌더 | `orchestrator.render_pending_judgment` + `main.py`의 `pending_judgment` 소비 |
 | 팝업 검토 범위 전환 | `set_panel_context` 지도 명령과 `frontend/src/App.tsx` 병합 처리 |
 | 모델 클릭 후 실제 용도 판정 | `/api/session/{id}/setback-for-use` |
 | 모델 버튼 렌더링 | `frontend/src/components/ChatPanel.tsx` |
