@@ -762,7 +762,7 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
                     else "·".join(dict.fromkeys(restriction_titles)) + " 중첩"
                 ),
                 "note": (
-                    "지도 영역 아닌 지정 규제 (사전검토용)" if constraint_shown
+                    "이 필지에 지정된 규제입니다 (사전검토용)" if constraint_shown
                     else "환경·재해 중첩 (사전검토 참고용)"
                 ),
                 # 색이 무슨 뜻인지 범례에 키로 보여준다(색=건축 가부 심각도).
