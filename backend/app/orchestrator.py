@@ -1470,6 +1470,9 @@ class Orchestrator:
         area = round(float(pick["area_m2"]), 1)
         geometry = pick["geometry"]
         zone = pick["zone"]
+        # 분할선을 지도에 보이게 하려고, 덮어쓰기 전 원본 대지면적·용도지역 조각을 남겨둔다.
+        _orig_area = round(float((d.get("parcel") or {}).get("area_m2") or area), 1)
+        _orig_shares = [dict(s) for s in (lu.get("zone_shares") or []) if s.get("geometry")]
         # 분할 후 단일 용도지역의 실제 건폐율·용적률(걸침 가중값이 아니라)로 재계산한다.
         limits = ordinance.resolve_limits(zone, d.get("jurisdiction"))
         if not limits.get("found"):
@@ -1515,6 +1518,24 @@ class Orchestrator:
         yield {"event": "map_commands",
                "data": {"commands": [{"type": "set_layers", "dimensions": False}]}}
         yield self._render_event()
+        # 분할선을 눈에 보이게 — 분할 대상(초록)·분할 제외 부분(빨강)을 조각으로 얹는다.
+        # 두 색이 맞닿는 선이 곧 분할 경계다. 건물은 초록(분할 대상) 위에 선다.
+        _div_pieces = [{
+            "zone": f"분할 대상 · {zone}", "color": "#2E7D32", "geometry": geometry,
+            "area_m2": area,
+            "share_pct": round(area / _orig_area * 100, 1) if _orig_area else None,
+        }]
+        for s in _orig_shares:
+            if s.get("zone") != zone:
+                _sa = round(float(s.get("area_m2") or 0), 1)
+                _div_pieces.append({
+                    "zone": f"분할 제외 · {s['zone']}", "color": "#C62828",
+                    "geometry": s["geometry"], "area_m2": _sa,
+                    "share_pct": round(_sa / _orig_area * 100, 1) if _orig_area else None,
+                })
+        if len(_div_pieces) >= 2:
+            yield {"event": "map_commands",
+                   "data": {"commands": [{"type": "show_zone_pieces", "pieces": _div_pieces}]}}
         _txt = (
             f"{zone} 부분 약 {area:,.0f}㎡로 분할했다고 가정하고 대지면적·건축 규모를 다시 "
             f"계산해 지도와 팝업에 반영했습니다(건폐율 {limits['bcr_max_pct']:g}%·용적률 "
