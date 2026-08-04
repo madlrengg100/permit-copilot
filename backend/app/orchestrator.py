@@ -1573,19 +1573,28 @@ class Orchestrator:
                     "share_pct": round(_sa / _orig_area * 100, 1) if _orig_area else None,
                 })
         _excluded = [s for s in _orig_shares if s.get("zone") != zone]
+        from .agents.map_control import division_dimensions, road_setback_pieces
+        # 미달도로(폭<4m) 접한 변의 '도로 후퇴 편입분'(약 3㎡ 등)을 실제 접한 변 위에
+        # 함께 그린다 — 분할 제외(규제 분리)와 색·라벨을 달리(보라 '도로 편입')해 헷갈리지
+        # 않게. 위치는 접촉선 기반이라 실제는 측량 후 확정.
+        _setback_pieces, _setback_dims = road_setback_pieces(d)
+        if _setback_pieces:
+            _div_pieces.extend(_setback_pieces)
         _overlay_cmds = []
         if len(_div_pieces) >= 2:
-            # persist=True: 분할 대상(초록)·제외(빨강) 조각은 지속 레이어에 — 건물 모델을
-            # 세워도(clear_mass) 지워지지 않고 분할 경계가 계속 보인다.
+            # persist=True: 분할 대상(초록)·제외(빨강)·도로 편입(보라) 조각은 지속 레이어에 —
+            # 건물 모델을 세워도(clear_mass) 지워지지 않고 경계가 계속 보인다.
             _overlay_cmds.append(
                 {"type": "show_zone_pieces", "pieces": _div_pieces, "persist": True}
             )
         # 면에는 면적(㎡) 라벨을, 분할 경계선은 빨간 치수선으로 — '숫자가 보이게'.
         if _excluded:
-            from .agents.map_control import division_dimensions
             _overlay_cmds.append(
                 division_dimensions(zone, geometry, area, _excluded)
             )
+        # 도로 후퇴 편입분 라벨·후퇴선(보라)도 같은 지속 레이어에 얹는다.
+        if _setback_dims:
+            _overlay_cmds.append(_setback_dims)
         if _overlay_cmds:
             yield {"event": "map_commands", "data": {"commands": _overlay_cmds}}
         _txt = (

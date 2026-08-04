@@ -17,7 +17,7 @@ from __future__ import annotations
 import logging
 import math
 
-from shapely.geometry import shape
+from shapely.geometry import mapping, shape
 
 from ..tools.footprint import inset_for_area
 
@@ -101,6 +101,111 @@ def _iter_linestrings(geom):
     elif isinstance(geom, (MultiLineString, GeometryCollection)):
         for part in geom.geoms:
             yield from _iter_linestrings(part)
+
+
+def road_setback_pieces(diagnosis: dict) -> tuple[list[dict], dict | None]:
+    """미달도로(지적 추정폭<4m) 접한 변의 '도로 후퇴 편입분'을 지도용 조각 + 라벨/후퇴선으로.
+
+    분할 후 건축물과 함께 '어느 변이 얼마나 도로로 편입되는지'를 실제 접한 변 위에
+    그린다(규제 분리의 '분할 제외'와 색·라벨을 달리해 헷갈리지 않게 한다). 접한 변은
+    road_contact_geometry(접촉선) 중 그 도로 접촉길이에 가장 가까운 조각으로 특정하고,
+    그 선을 안쪽으로 후퇴폭만큼 부풀려 필지와 교차한 띠가 편입분이다. 좌표는 지적 기반
+    추정이라 실제 위치·면적은 현황측량 후 확정된다.
+
+    반환: (show_zone_pieces 용 조각 리스트, show_dimensions 명령 또는 None)
+    """
+    ra = diagnosis.get("road_access") or {}
+    roads = ra.get("roads") or []
+    parcel_geom = (diagnosis.get("parcel") or {}).get("geometry") or diagnosis.get("geometry")
+    rcg = ra.get("road_contact_geometry")
+    if not parcel_geom or not rcg:
+        return [], None
+    sub = [
+        r for r in roads
+        if (r.get("cadastral_width_estimate_m") or 99) and float(r["cadastral_width_estimate_m"]) < 4
+        and float(r.get("contact_length_m") or 0) > 0
+    ]
+    if not sub:
+        return [], None
+    try:
+        parcel = shape(parcel_geom).buffer(0)
+        mls = shape(rcg)
+    except Exception:
+        return [], None
+    parts = list(mls.geoms) if mls.geom_type == "MultiLineString" else [mls]
+    if not parts:
+        return [], None
+    mid_lat = parcel.centroid.y
+    m_per_deg_lon = 111320.0 * max(0.1, math.cos(math.radians(mid_lat)))
+
+    def _seg_len_m(ls) -> float:
+        cs = list(ls.coords)
+        total = 0.0
+        for i in range(1, len(cs)):
+            dx = (cs[i][0] - cs[i - 1][0]) * m_per_deg_lon
+            dy = (cs[i][1] - cs[i - 1][1]) * 111320.0
+            total += math.hypot(dx, dy)
+        return total
+
+    used: set[int] = set()
+    pieces: list[dict] = []
+    labels: list[dict] = []
+    segments: list[dict] = []
+    for r in sub:
+        w = float(r["cadastral_width_estimate_m"])
+        clen = float(r["contact_length_m"])
+        setback = (4 - w) / 2  # 소요너비 4m 확보를 위한 중심선 후퇴폭
+        # 이 도로의 접촉선: 아직 안 쓴 조각 중 접촉길이가 가장 가까운 것.
+        best_i, best_diff = None, None
+        for i, ls in enumerate(parts):
+            if i in used:
+                continue
+            diff = abs(_seg_len_m(ls) - clen)
+            if best_diff is None or diff < best_diff:
+                best_i, best_diff = i, diff
+        if best_i is None:
+            continue
+        used.add(best_i)
+        contact = parts[best_i]
+        d_deg = setback / m_per_deg_lon
+        try:
+            strip = contact.buffer(d_deg, cap_style=2, join_style=2).intersection(parcel).buffer(0)
+        except Exception:
+            logger.debug("도로 후퇴 편입 띠 계산 실패", exc_info=True)
+            continue
+        if strip.is_empty:
+            continue
+        area = round(clen * setback, 1)
+        polys = [strip] if strip.geom_type == "Polygon" else [
+            g for g in getattr(strip, "geoms", []) if g.geom_type == "Polygon"
+        ]
+        for poly in polys:
+            pieces.append({
+                "zone": "도로 편입(후퇴)", "color": "#AD1457",
+                "geometry": mapping(poly), "area_m2": area, "share_pct": None,
+            })
+        rp = strip.representative_point()
+        labels.append({
+            "lon": rp.x, "lat": rp.y,
+            "text": f"도로 편입 약 {area:,.0f}㎡ (측량 후 확정)",
+        })
+        # 편입 안쪽 경계(후퇴선)도 보라 치수선으로 — 어디까지 물러나는지 보이게.
+        try:
+            inner = parcel.boundary.intersection(contact.buffer(d_deg, cap_style=2, join_style=2))
+            for ls in _iter_linestrings(inner):
+                if ls.length > 0:
+                    segments.append({
+                        "positions": [[float(x), float(y)] for x, y in ls.coords],
+                        "label": f"도로 후퇴 {setback:.1f}m", "color": "#AD1457",
+                        "width": 5, "onTop": True,
+                    })
+        except Exception:
+            logger.debug("도로 후퇴선 계산 실패", exc_info=True)
+    dims = None
+    if labels or segments:
+        # persist=True: 분할 오버레이와 같은 지속 레이어에 — 모델을 세워도 남는다.
+        dims = {"type": "show_dimensions", "segments": segments, "labels": labels, "persist": True}
+    return pieces, dims
 
 
 def division_dimensions(kept_zone: str, kept_geom: dict, kept_area: float,
