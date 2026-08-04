@@ -1575,7 +1575,11 @@ class Orchestrator:
         _excluded = [s for s in _orig_shares if s.get("zone") != zone]
         _overlay_cmds = []
         if len(_div_pieces) >= 2:
-            _overlay_cmds.append({"type": "show_zone_pieces", "pieces": _div_pieces})
+            # persist=True: 분할 대상(초록)·제외(빨강) 조각은 지속 레이어에 — 건물 모델을
+            # 세워도(clear_mass) 지워지지 않고 분할 경계가 계속 보인다.
+            _overlay_cmds.append(
+                {"type": "show_zone_pieces", "pieces": _div_pieces, "persist": True}
+            )
         # 면에는 면적(㎡) 라벨을, 분할 경계선은 빨간 치수선으로 — '숫자가 보이게'.
         if _excluded:
             from .agents.map_control import division_dimensions

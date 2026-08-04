@@ -26,6 +26,9 @@ declare global {
 
 export type MapCommand =
   | { type: "clear_mass" }
+  // 분할 오버레이(분할 대상·제외 조각 + 면적·분할선)만 지운다. 건물 매스·치수선을
+  // 지우는 clear_mass 와 달리 지속 레이어라, 분할 전 복귀·새 진단에서만 호출한다.
+  | { type: "clear_division_overlay" }
   | {
       /** 같은 필지 후속 질문에서 법적 진단 원본은 보존하고 현재 표시 범위만 바꾼다. */
       type: "set_panel_context";
@@ -70,6 +73,8 @@ export type MapCommand =
   | {
       /** 걸침 필지: 용도지역별 교차 조각을 색으로 깐다. 색 경계 = 지역 경계 */
       type: "show_zone_pieces";
+      // 분할 오버레이(분할 대상·제외)면 true — clear_mass 로도 안 지워지는 지속 레이어에 그린다.
+      persist?: boolean;
       pieces: Array<{
         zone: string;
         share_pct: number;
@@ -100,6 +105,8 @@ export type MapCommand =
   | {
       /** 검은 박스 대신 지도에 직접 얹는 치수선·면적 라벨 */
       type: "show_dimensions";
+      // 분할선·분할 면적 라벨이면 true — 지속 레이어에 그려 이후 이격선 표시로도 안 지워진다.
+      persist?: boolean;
       segments: Array<{ positions: number[][]; label: string; color?: string; width?: number; onTop?: boolean; height_m?: number }>;
       labels: Array<{ lon: number; lat: number; text: string; height?: number; offset?: boolean }>;
     }
@@ -691,6 +698,10 @@ export class MapBridge {
   private cadastreLoadGeneration = 0;
   // 걸침 필지의 용도지역 조각 오버레이
   private zonePieceIds: string[] = [];
+  // 분할 오버레이(분할 대상·제외 조각 + 면적 라벨 + 분할선) 전용 지속 레이어.
+  // clear_mass·clearDimensions·이격선 재표시로도 안 지워지고, clear_division_overlay
+  // (분할 전 복귀·새 진단)에서만 지운다. 건물 모델을 세워도 분할 경계가 남는다.
+  private divisionOverlayIds: string[] = [];
   private restrictionPieceIds: string[] = [];
   // 지형·배치·도로 접도 등 '공간에서 확인할 수치'를 건물 옆에 띄우는 라벨
   private siteNoteIds: string[] = [];
@@ -872,6 +883,10 @@ export class MapBridge {
             this.clearDimensions();
             this.clearSlopeGrid();
             this.slopeData = null;
+            // 분할 오버레이는 지속 레이어라 여기서 지우지 않는다(모델을 세워도 남아야 한다).
+            break;
+          case "clear_division_overlay":
+            this.clearDivisionOverlay();
             break;
           case "fly_to":
             // 지형 상대 Entity가 생성된 다음 중심을 잡아야 실제 매스 위치와
@@ -1119,6 +1134,8 @@ export class MapBridge {
    */
   private showZonePieces(cmd: Extract<MapCommand, { type: "show_zone_pieces" }>): void {
     const ws3d = window.ws3d;
+    // 분할 오버레이면 지속 레이어(모델을 세워도 남는다)에, 아니면 일반 조각 레이어에 담는다.
+    const bucket = cmd.persist ? this.divisionOverlayIds : this.zonePieceIds;
     let drawn = 0;
     for (const piece of cmd.pieces) {
       const pieceColor = ws3d.common.Color.fromCssColorString(piece.color);
@@ -1137,7 +1154,7 @@ export class MapBridge {
             heightReference: 2, // RELATIVE_TO_GROUND
           },
         });
-        this.zonePieceIds.push(id);
+        bucket.push(id);
         drawn += 1;
       }
     }
@@ -1150,6 +1167,10 @@ export class MapBridge {
 
   private clearZonePieces(): void {
     this.removeAll(this.zonePieceIds);
+  }
+
+  private clearDivisionOverlay(): void {
+    this.removeAll(this.divisionOverlayIds);
   }
 
   private showRestrictionPieces(
@@ -1249,8 +1270,14 @@ export class MapBridge {
    * 노란 치수선(VWorld 측정선 느낌) + 중앙 값 라벨, 면적은 지점 라벨.
    */
   private showDimensions(cmd: Extract<MapCommand, { type: "show_dimensions" }>): void {
-    this.lastDimensionsCommand = cmd; // 접기/펼치기 재표시용
-    this.clearDimensions();
+    // 분할선·분할 면적 라벨은 지속 레이어에 담는다 — 이후 이격선(show_dimensions)이
+    // 와도 clearDimensions 로 지워지지 않아 건물을 세운 뒤에도 분할 경계가 남는다.
+    const persist = cmd.persist === true;
+    const bucket = persist ? this.divisionOverlayIds : this.dimensionIds;
+    if (!persist) {
+      this.lastDimensionsCommand = cmd; // 접기/펼치기 재표시용(분할 오버레이는 제외)
+      this.clearDimensions();
+    }
     const ws3d = window.ws3d;
     const relativeToGround =
       (window as any).Cesium?.HeightReference?.RELATIVE_TO_GROUND ?? 2;
@@ -1285,7 +1312,7 @@ export class MapBridge {
             depthFailMaterial: segColor,
           },
         });
-        this.dimensionIds.push(vlineId);
+        bucket.push(vlineId);
         const vlabelId = `map-dim-vlabel-${Date.now()}-${rid()}`;
         this.viewer.entities.add({
           id: vlabelId,
@@ -1300,7 +1327,7 @@ export class MapBridge {
             disableDepthTestDistance: Number.POSITIVE_INFINITY,
           },
         });
-        this.dimensionIds.push(vlabelId);
+        bucket.push(vlabelId);
         continue;
       }
 
@@ -1316,7 +1343,7 @@ export class MapBridge {
       // onTop: 지적 경계선(청록)보다 위에 그려 선면 전체가 그 색으로 보이게 한다.
       if (seg.onTop) linePoly.zIndex = 1000;
       this.viewer.entities.add({ id: lineId, polyline: linePoly });
-      this.dimensionIds.push(lineId);
+      bucket.push(lineId);
 
       const mid = seg.positions[Math.floor(seg.positions.length / 2)];
       const a = seg.positions[0];
@@ -1340,15 +1367,19 @@ export class MapBridge {
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
         },
       });
-      this.dimensionIds.push(labelId);
-      // 겹침 방지 대상으로 등록(글자수로 대략적 폭 추정).
-      this.dimLabelAnchors.push({
-        id: labelId,
-        lon: midLon,
-        lat: midLat,
-        w: seg.label.length * 9 + 14,
-        h: 22,
-      });
+      bucket.push(labelId);
+      // 겹침 방지 대상으로 등록(글자수로 대략적 폭 추정). 분할 오버레이 라벨은
+      // 정규 치수선 declutter 상태(dimLabelAnchors)에 섞지 않는다 — 이후 이격선이
+      // 그 배열을 비워도 분할 라벨은 그대로 남아야 한다.
+      if (!persist) {
+        this.dimLabelAnchors.push({
+          id: labelId,
+          lon: midLon,
+          lat: midLat,
+          w: seg.label.length * 9 + 14,
+          h: 22,
+        });
+      }
       void mid;
     }
 
@@ -1384,7 +1415,7 @@ export class MapBridge {
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
         },
       });
-      this.dimensionIds.push(id);
+      bucket.push(id);
     }
     // 세그먼트 라벨(가로·세로·도로접촉·건축선/이격) 겹침 방지 — 카메라가 움직일
     // 때마다 화면좌표로 겹침을 검사해 라벨을 화면상에서 밀어낸다. 회전·줌아웃에도
@@ -1431,8 +1462,12 @@ export class MapBridge {
         ent.label.pixelOffset = new C.Cartesian2(chosen[0], chosen[1]);
       }
     };
-    declutter();
-    this.dimLabelDisposer = this.onCameraChange(declutter);
+    // 분할 오버레이는 정규 declutter 루프에 붙이지 않는다(disposer 를 덮어써
+    // 정규 치수선 재배치를 끊지 않도록). 라벨 수가 적어 겹침도 거의 없다.
+    if (!persist) {
+      declutter();
+      this.dimLabelDisposer = this.onCameraChange(declutter);
+    }
     this.viewer.scene?.requestRender?.();
     this.note(`✓ 치수선 ${cmd.segments.length}개 · 라벨 ${cmd.labels.length}개 표시`);
   }

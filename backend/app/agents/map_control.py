@@ -130,7 +130,9 @@ def division_dimensions(kept_zone: str, kept_geom: dict, kept_area: float,
                     })
         except Exception:
             logger.debug("분할 경계선 계산 실패", exc_info=True)
-    return {"type": "show_dimensions", "segments": segments, "labels": labels}
+    # persist=True: 분할선·면적 라벨은 지속 레이어에 그려, 이후 모델 배치·이격선
+    # 표시(clearDimensions)로도 지워지지 않고 건물 옆에 계속 남는다.
+    return {"type": "show_dimensions", "segments": segments, "labels": labels, "persist": True}
 
 
 def _restriction_color(label: str) -> str:
@@ -666,8 +668,12 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
 
     lon, lat = location["lon"], location["lat"]
 
-    # 1) 매스는 항상 먼저 지운다 — 이전 질의 결과가 겹쳐 보이지 않도록
+    # 1) 매스는 항상 먼저 지운다 — 이전 질의 결과가 겹쳐 보이지 않도록.
+    #    분할 오버레이(지속 레이어)도 전체 재구성 시점엔 함께 지운다 — 새 필지 진단이나
+    #    '분할 전' 복귀에서 이전 분할선·면적이 남지 않도록. 분할 실행은 이 재구성 뒤에
+    #    다시 그리므로 살아남는다.
     commands.append({"type": "clear_mass"})
+    commands.append({"type": "clear_division_overlay"})
 
     # 2) 대상 위치로 이동.
     #    고도는 필지 크기에 맞춘다. 고정값을 쓰면 작은 필지(수백 ㎡)는 점처럼

@@ -5,6 +5,19 @@
 > 가능 모델 목록은 `orchestrator._model_options_for_diagnosis()`만 — CLAUDE.md 준수.
 
 ## 2026-08-03
+### 분할 오버레이 지속 레이어 — 건물 모델을 세워도 분할 대상·제외가 남는다
+- '분할해서 지어줘' 뒤 모델 버튼을 누르면 분할 대상(초록)·제외(빨강) 면적과 분할선·면적
+  라벨이 사라졌다. 원인: 모델 버튼이 그 용도의 이격을 백엔드에서 받아 show_dimensions
+  (이격선)를 그리는데, showDimensions 가 앞선 치수선(=분할 면적 라벨·분할선)을
+  clearDimensions 로 지웠다. clear_mass 도 zonePieces 를 지웠다.
+- 분할 오버레이 전용 지속 레이어(divisionOverlayIds)를 추가. show_zone_pieces·
+  show_dimensions 에 persist 플래그를 두어 분할 조각·분할선·면적 라벨은 이 레이어에
+  담는다. clear_mass·clearDimensions·이격선 재표시로는 지워지지 않고, 전체 재구성
+  (build_map_commands)이 내보내는 clear_division_overlay 로만 지운다 → 새 필지 진단·
+  '분할 전 건축물 보기'에서만 정리된다. 건물 모델을 세워도 분할 경계가 계속 보인다.
+  검증: 분할 실행 명령열이 clear_mass→clear_division_overlay→…→show_zone_pieces
+  (persist)→show_dimensions(persist) 순으로 나오고, 110 테스트 통과.
+
 ### 분할 전/후 건축물 토글 — 역질문(버튼) + 자연어 실행
 - 분할 실행이 진단을 분할 대지로 덮어써 원본(분할 전)을 다시 볼 수 없었다. _execute_division
   이 분할 전 원본을 diagnosis['_pre_division']에 보존하고 항상 원본에서 분할하도록 함.
