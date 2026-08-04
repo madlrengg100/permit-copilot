@@ -931,6 +931,9 @@ export default function App() {
           />
         )}
 
+        {/* 우하단 범례 스택 — 용도지역 걸침구분 + 규제 중첩을 세로로 쌓아 서로 겹치지
+            않게 한다(높이가 달라도 flex 가 알아서 띄운다). */}
+        <div className="legend-stack">
         {/* 걸침 필지 범례 — 지도에 깔린 용도지역 조각 색의 의미를 설명한다.
             걸침이 아닌 필지에서는 나타나지 않는다. */}
         {zoneLegend && zoneLegend.length > 0 && (
@@ -949,7 +952,7 @@ export default function App() {
           </div>
         )}
         {restrictionLegend && restrictionLegend.pieces.length > 0 && (
-          <div className={`restriction-legend${zoneLegend?.length ? " with-zone" : ""}`}>
+          <div className="restriction-legend">
             <div className="zone-legend-title">{restrictionLegend.title}</div>
             {restrictionLegend.colorKey && restrictionLegend.colorKey.length > 0 && (
               <div className="zone-legend-note" style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "3px" }}>
@@ -977,6 +980,7 @@ export default function App() {
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

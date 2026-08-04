@@ -749,47 +749,56 @@ body {
 
 /* 걸침 필지 용도지역 범례 — 지도 우측 하단의 작은 창.
    우상단은 결과 패널 기본 위치·지도 컨트롤과 겹치므로 피한다. */
-.zone-legend {
+/* 우하단 범례 스택 — 여러 범례를 세로로 쌓아 겹치지 않게. 높이가 달라도 flex 가
+   자동으로 간격을 지킨다(예전 고정 offset 188px 은 조각 수가 늘면 겹쳤다).
+   컨테이너는 클릭을 통과시키고(pointer-events:none) 범례 카드만 받는다. */
+.legend-stack {
   position: absolute;
   right: 16px;
   bottom: 66px;
-  background: rgba(17, 20, 26, 0.88);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 10px 12px;
-  min-width: 210px;
-  font-size: 12px;
+  display: flex;
+  flex-direction: column-reverse; /* 화면상 규제(위)·용도지역(아래) 순으로 */
+  gap: 10px;
+  align-items: stretch;
+  max-width: 272px;
   z-index: 5;
+  pointer-events: none;
 }
+.zone-legend,
 .restriction-legend {
-  position: absolute;
-  right: 16px;
-  bottom: 66px;
-  background: rgba(17, 20, 26, 0.9);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 10px 12px;
-  min-width: 210px;
+  position: static;
+  background: rgba(15, 18, 24, 0.66);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 13px;
+  padding: 12px 14px;
+  min-width: 214px;
   font-size: 12px;
-  z-index: 5;
+  color: #eef1f5;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  pointer-events: auto;
 }
-.restriction-legend.with-zone { bottom: 188px; }
 .zone-legend-title {
-  font-weight: 600;
-  margin-bottom: 6px;
+  font-weight: 700;
+  margin-bottom: 9px;
+  font-size: 12.5px;
+  letter-spacing: 0.2px;
+  color: #fff;
 }
 .zone-legend-row {
   display: flex;
   align-items: center;
-  gap: 7px;
-  margin: 4px 0;
+  gap: 9px;
+  margin: 6px 0;
 }
 .zone-legend-swatch {
-  width: 14px;
-  height: 14px;
-  border-radius: 3px;
+  width: 13px;
+  height: 13px;
+  border-radius: 4px;
   flex: none;
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
 }
 .zone-legend-name { flex: 1; }
 .zone-legend-pct { color: var(--muted); font-size: 11px; }

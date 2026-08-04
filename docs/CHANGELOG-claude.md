@@ -5,6 +5,15 @@
 > 가능 모델 목록은 `orchestrator._model_options_for_diagnosis()`만 — CLAUDE.md 준수.
 
 ## 2026-08-03
+### 분할 화면 '기본만' 정리 + 우하단 범례 겹침 해소·유리 스타일
+- 분할 실행 화면에서 가로/세로·이격·도로접촉·배수 등 일반 치수선과 도로 편입 3㎡
+  오버레이를 빼고(색 겹침·렌더 과부하), 분할 대상(초록)·제외(빨강) 조각 + 분할선·면적만
+  남겼다. _execute_division 이 build_map_commands 결과에서 show_dimensions 를 걸러 그린다.
+- 우하단 범례 2개(용도지역 걸침구분 + 규제 중첩)가 고정 offset(188px) 때문에 조각 수가
+  늘면 겹쳤다. 둘을 .legend-stack(flex column-reverse, gap)로 묶어 높이와 무관하게 항상
+  간격을 지키게 하고, 카드 배경을 반투명 유리(rgba 0.66 + backdrop blur)·둥근 모서리·그림자로
+  다듬었다. 컨테이너는 pointer-events:none 으로 지도 클릭을 막지 않는다.
+
 ### 분할 후 건축물에 '도로 후퇴 편입분(약 3㎡)'을 실제 접한 변에 표시
 - 미달도로(지적 추정폭<4m) 접한 변의 도로 후퇴 편입분을, 분할 실행('분할해서 지어줘'·
   '분할 후 건축물 보여줘') 시 지도에 도형으로 그린다. map_control.road_setback_pieces 가

@@ -1553,10 +1553,15 @@ class Orchestrator:
         lu["zones"] = [zone]
         lu["straddling"] = False
 
-        # 기존 치수선을 끄고, 분할 대지로 재계산한 지도·팝업을 다시 그린다.
-        yield {"event": "map_commands",
-               "data": {"commands": [{"type": "set_layers", "dimensions": False}]}}
-        yield self._render_event()
+        # 분할 대지로 재계산한 지도·팝업을 다시 그린다. 단 분할 화면은 '기본만' 깔끔히 —
+        # 가로/세로·이격·도로접촉·배수 등 일반 치수선은 빼고(겹침·과부하 방지), 아래에서
+        # 분할 대상/제외 조각과 분할선·면적만 얹는다.
+        from .agents.map_control import build_map_commands, division_dimensions
+        _base_cmds = [
+            c for c in build_map_commands(self.diagnosis or {})
+            if c.get("type") != "show_dimensions"
+        ]
+        yield {"event": "map_commands", "data": {"commands": _base_cmds}}
         # 분할선을 눈에 보이게 — 분할 대상(초록)·분할 제외 부분(빨강)을 조각으로 얹는다.
         # 두 색이 맞닿는 선이 곧 분할 경계다. 건물은 초록(분할 대상) 위에 선다.
         _div_pieces = [{
@@ -1573,16 +1578,9 @@ class Orchestrator:
                     "share_pct": round(_sa / _orig_area * 100, 1) if _orig_area else None,
                 })
         _excluded = [s for s in _orig_shares if s.get("zone") != zone]
-        from .agents.map_control import division_dimensions, road_setback_pieces
-        # 미달도로(폭<4m) 접한 변의 '도로 후퇴 편입분'(약 3㎡ 등)을 실제 접한 변 위에
-        # 함께 그린다 — 분할 제외(규제 분리)와 색·라벨을 달리(보라 '도로 편입')해 헷갈리지
-        # 않게. 위치는 접촉선 기반이라 실제는 측량 후 확정.
-        _setback_pieces, _setback_dims = road_setback_pieces(d)
-        if _setback_pieces:
-            _div_pieces.extend(_setback_pieces)
         _overlay_cmds = []
         if len(_div_pieces) >= 2:
-            # persist=True: 분할 대상(초록)·제외(빨강)·도로 편입(보라) 조각은 지속 레이어에 —
+            # persist=True: 분할 대상(초록)·제외(빨강) 조각은 지속 레이어에 —
             # 건물 모델을 세워도(clear_mass) 지워지지 않고 경계가 계속 보인다.
             _overlay_cmds.append(
                 {"type": "show_zone_pieces", "pieces": _div_pieces, "persist": True}
@@ -1592,9 +1590,6 @@ class Orchestrator:
             _overlay_cmds.append(
                 division_dimensions(zone, geometry, area, _excluded)
             )
-        # 도로 후퇴 편입분 라벨·후퇴선(보라)도 같은 지속 레이어에 얹는다.
-        if _setback_dims:
-            _overlay_cmds.append(_setback_dims)
         if _overlay_cmds:
             yield {"event": "map_commands", "data": {"commands": _overlay_cmds}}
         _txt = (
