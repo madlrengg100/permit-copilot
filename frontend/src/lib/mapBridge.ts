@@ -107,7 +107,7 @@ export type MapCommand =
       type: "show_dimensions";
       // 분할선·분할 면적 라벨이면 true — 지속 레이어에 그려 이후 이격선 표시로도 안 지워진다.
       persist?: boolean;
-      segments: Array<{ positions: number[][]; label: string; color?: string; width?: number; onTop?: boolean; height_m?: number }>;
+      segments: Array<{ positions: number[][]; label: string; color?: string; width?: number; onTop?: boolean; height_m?: number; lift_m?: number }>;
       labels: Array<{ lon: number; lat: number; text: string; height?: number; offset?: boolean }>;
     }
   | {
@@ -1333,13 +1333,24 @@ export class MapBridge {
 
       const lineId = `map-dim-line-${Date.now()}-${rid()}`;
       const flat = seg.positions.flatMap(([lon, lat]) => [lon, lat]);
+      // lift_m: 지면부착 대신 지면에서 그만큼 띄워 그린다. 도로접촉선이 지면부착
+      // 필지 경계선(청록)과 같은 자리에서 겹쳐 경계를 덮는 문제를, 안쪽으로 밀지
+      // 않고 살짝 위로 띄워(카메라 시점에서 경계선 위로) 분리해 보이게 한다.
+      const lift = seg.lift_m;
       const linePoly: any = {
-        positions: ws3d.common.Cartesian3.fromDegreesArray(flat),
-        clampToGround: true,
         width: seg.width ?? (isCustom ? 5 : 3),
         material: segColor,
         depthFailMaterial: segColor,
       };
+      if (lift && lift > 0) {
+        linePoly.positions = seg.positions.map(([lon, lat]) =>
+          ws3d.common.Cartesian3.fromDegrees(lon, lat, this.terrainHeight(lon, lat) + lift),
+        );
+        linePoly.clampToGround = false;
+      } else {
+        linePoly.positions = ws3d.common.Cartesian3.fromDegreesArray(flat);
+        linePoly.clampToGround = true;
+      }
       // onTop: 지적 경계선(청록)보다 위에 그려 선면 전체가 그 색으로 보이게 한다.
       if (seg.onTop) linePoly.zIndex = 1000;
       this.viewer.entities.add({ id: lineId, polyline: linePoly });
