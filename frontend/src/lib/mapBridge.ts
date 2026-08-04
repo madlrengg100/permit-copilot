@@ -1300,67 +1300,35 @@ export class MapBridge {
         : yellow;
       const isCustom = Boolean(seg.color);
 
-      // 높이 치수선 — 가로·세로와 같은 얇은 노란 선. 모서리에서 매스 높이만큼 수직으로.
-      // 라벨은 지면 기준(RELATIVE_TO_GROUND)이라 지형 타일 로드 타이밍과 무관하게 보인다.
+      // 높이 치수선 — 가로·세로가 만나는 모서리에서 매스 높이만큼 수직으로 올린 노란 선.
       if (seg.height_m && seg.height_m > 0) {
         const [hlon, hlat] = seg.positions[0];
-        const hM = seg.height_m;
+        const base = this.terrainHeight(hlon, hlat) + 0.5;
+        const top = base + seg.height_m;
         const vlineId = `map-dim-vline-${Date.now()}-${rid()}`;
-        const setLine = (base: number) => {
-          const ent = this.viewer.entities.getById(vlineId);
-          if (ent?.polyline) {
-            ent.polyline.positions = [
-              ws3d.common.Cartesian3.fromDegrees(hlon, hlat, base),
-              ws3d.common.Cartesian3.fromDegrees(hlon, hlat, base + hM),
-            ] as any;
-          }
-        };
         this.viewer.entities.add({
           id: vlineId,
           polyline: {
             positions: [
-              ws3d.common.Cartesian3.fromDegrees(hlon, hlat, this.terrainHeight(hlon, hlat) + 0.5),
-              ws3d.common.Cartesian3.fromDegrees(hlon, hlat, this.terrainHeight(hlon, hlat) + 0.5 + hM),
+              ws3d.common.Cartesian3.fromDegrees(hlon, hlat, base),
+              ws3d.common.Cartesian3.fromDegrees(hlon, hlat, top),
             ],
-            width: seg.width ?? 7, // 가로·세로보다 살짝 굵게 — 얇아서 안 보이던 것 보정
+            width: seg.width ?? 6,
             material: segColor,
             depthFailMaterial: segColor,
           },
         });
         bucket.push(vlineId);
-        // 폴리라인은 절대고도라, 지형 타일이 늦게 로드되면 밑동이 0(땅속)에 박혀 안 보인다.
-        // globe.getHeight 가 유효값을 줄 때까지(최대 ~3초) 짧게 폴링해, 로드되는 즉시 밑동을
-        // 지면에 다시 세운다(면적 라벨·매스가 지면기준으로 잘 뜨는 것과 같은 결과가 된다).
-        {
-          const C = (window as any).Cesium;
-          let tries = 0;
-          const raw = () => {
-            try { return this.viewer.scene?.globe?.getHeight?.(C.Cartographic.fromDegrees(hlon, hlat)); }
-            catch { return undefined; }
-          };
-          const fixBase = () => {
-            const h = raw();
-            if (typeof h === "number" && isFinite(h)) {
-              setLine(h + 0.5);
-              this.viewer.scene?.requestRender?.();
-            } else if (tries++ < 40) {
-              window.setTimeout(fixBase, 80);
-            }
-          };
-          fixBase();
-        }
         const vlabelId = `map-dim-vlabel-${Date.now()}-${rid()}`;
         this.viewer.entities.add({
           id: vlabelId,
-          // 지면에서 height_m/2 만큼 위(RELATIVE_TO_GROUND) — 지형 로드와 무관하게 보인다.
-          position: ws3d.common.Cartesian3.fromDegrees(hlon, hlat, seg.height_m / 2 + 0.5),
+          position: ws3d.common.Cartesian3.fromDegrees(hlon, hlat, base + seg.height_m / 2),
           label: {
             text: seg.label,
             font: isCustom ? "bold 13px 'Malgun Gothic', sans-serif" : "13px 'Malgun Gothic', sans-serif",
             fillColor: isCustom ? ws3d.common.Color.WHITE : ws3d.common.Color.BLACK,
             showBackground: true,
             backgroundColor: isCustom ? segColor.withAlpha(0.95) : yellow.withAlpha(0.98),
-            heightReference: relativeToGround,
             disableDepthTestDistance: Number.POSITIVE_INFINITY,
           },
         });
