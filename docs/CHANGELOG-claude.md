@@ -5,6 +5,16 @@
 > 가능 모델 목록은 `orchestrator._model_options_for_diagnosis()`만 — CLAUDE.md 준수.
 
 ## 2026-08-03
+### 제미나이 503(과부하) ⚠ 하드에러 해소 — LLM 재시도 + 분할 실행 결정적 안전망
+- 증상: '분할해서 지어줘'(버튼) 시 '⚠ Error code: 503 - This model is currently experiencing
+  high demand'가 사용자에게 그대로 튀었다. 원인: gemini 무료 티어의 일시적 503(과부하)에
+  LLM 클라이언트가 재시도를 안 했고(max_retries=0), _interpret_followup 이 503으로 실패→폴백→
+  '분할해서 지어줘'가 분할 실행 아닌 재진단으로 샜으며 그 재진단의 extract LLM 호출이 또 503.
+- 수정 ①: llm.py 두 클라이언트 max_retries 0→2 — SDK 백오프로 503·타임아웃 흡수(503은 응답이
+  빨라 재시도 비용 작음). ②: _is_division_request 결정적 안전망 추가 — '분할'+실행어면 제미나이가
+  503으로 다운돼도 분할 실행(_execute_division)으로 라우팅. 검증: 분할해서 지어줘→치수선 off·
+  분할 대지 재렌더·면적 라벨·분할선·규모 재계산. 110 테스트 통과.
+
 ### 필지 분할 시나리오 1단계 — 성립 판정 + '분할해서 지어줘' 자연어 제어
 - 배경: '분할 후 다시 지어줘'류를 하려면 먼저 '분할이 성립하는지'를 판정해야 하는데 없었다.
 - tools/land_division.assess(신규): 기존 데이터로 분할 성립 여부·방법·유효 대지면적을 결정적

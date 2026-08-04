@@ -96,6 +96,16 @@ def _region_search_request(query: str) -> tuple[str, str] | None:
     return region, facility
 
 
+def _is_division_request(query: str) -> bool:
+    """'분할해서 지어줘/분할 후 규모 보여줘'처럼 필지 분할 실행을 청하는지 결정적으로
+    인식한다. 제미나이(assume_divided)가 흔들리거나 503으로 다운돼도 분할 실행이 되게
+    하는 안전망(분할 성립 판정은 별도로 걸러진다)."""
+    q = query or ""
+    return bool(re.search(r"분할", q)) and bool(
+        re.search(r"(지어|짓|세워|규모|보여|보게|해줘|해\s*봐|계산|다시|확인)", q)
+    )
+
+
 def _is_affirmation(query: str) -> bool:
     """시스템 제안('보여드릴까요?')에 대한 긍정 화답인지 판단한다.
 
@@ -3040,8 +3050,11 @@ class Orchestrator:
             # 검토 의견의 '필지 분할해서 지어드릴까요?' 제안(pending_offer='divide')에 사용자가
             # 긍정 화답('응/그래/좋아/보여줘')하면, 제미나이 분류가 흔들려도 분할 실행으로 잇는다.
             if (
-                self.conversation_context().get("pending_offer") == "divide"
-                and _is_affirmation(original_query)
+                _is_division_request(original_query)
+                or (
+                    self.conversation_context().get("pending_offer") == "divide"
+                    and _is_affirmation(original_query)
+                )
             ):
                 interpreted["assume_divided"] = True
                 interpreted["control"] = None
