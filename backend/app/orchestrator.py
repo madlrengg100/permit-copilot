@@ -2910,6 +2910,30 @@ class Orchestrator:
                         }
                 data: dict = {"text": answer}
                 if intent == "possible_models":
+                    # '기존 건축물이 멸실·해체되었다는 가정으로 가능한 건축물 보여줘' —
+                    # 배치 불가가 '기존 건물' 때문일 때만(협소 대지 등은 멸실로도 안 풀림)
+                    # 그 제한을 해제해 조건부 가능으로 매스·모델을 보여준다. 실제 신축은
+                    # 해체(멸실)허가·소유권 정리가 선행되므로 문구로 전제를 분명히 한다.
+                    _demo_applied = False
+                    _existing_d = self.diagnosis.get("existing_buildings") or {}
+                    _lot_d = self.diagnosis.get("min_lot_area") or {}
+                    if (
+                        interpreted.get("assume_demolished")
+                        and self.diagnosis.get("placement_restricted")
+                        and _existing_d.get("has_buildings")
+                        and not _lot_d  # 협소가 함께면 멸실로도 배치 불가 → 해제하지 않음
+                    ):
+                        self.diagnosis["assume_demolished"] = True
+                        self.diagnosis["placement_restricted"] = False
+                        (self.diagnosis.setdefault("regulation", {}))["map_presentation"] = {
+                            "verdict": "conditional",
+                            "label": "조건부 가능(멸실 가정)",
+                            "color": "#F9A825",
+                            "show_building_mass": True,
+                            "show_building_dimensions": True,
+                        }
+                        _demo_applied = True
+                        yield self._render_event()  # 숨겼던 매스를 다시 그린다
                     # 직전 단일용도가 불허(판매시설 등)면 매스가 아예 계산되지 않아 3D·모델이
                     # 뜨지 않는다. 지을 수 있는 용도가 있으면 그 용도로 재진단해 매스를 만들고
                     # 지도를 갱신한다(매스는 용도 무관 = 건폐율·용적률 envelope). 원본 불허
@@ -2970,11 +2994,19 @@ class Orchestrator:
                         "event": "map_commands",
                         "data": {"commands": [_context_cmd]},
                     }
-                    data["text"] = (
-                        f"{answer}\n\n"
-                        "**가능 모델**\n"
-                        "허용되는 용도 중 준비된 모델만 보여드립니다."
-                    )
+                    if _demo_applied:
+                        data["text"] = (
+                            "기존 건축물이 멸실·해체되었다는 가정으로, 지을 수 있는 건축물을 "
+                            "조건부 가능으로 표시합니다. 실제 신축은 기존 건축물의 해체(멸실)허가·"
+                            "신고와 소유·권리관계 정리가 선행되어야 합니다.\n\n"
+                            "**가능 모델**\n허용되는 용도 중 준비된 모델만 보여드립니다."
+                        )
+                    else:
+                        data["text"] = (
+                            f"{answer}\n\n"
+                            "**가능 모델**\n"
+                            "허용되는 용도 중 준비된 모델만 보여드립니다."
+                        )
                     data["options"] = _model_options_for_diagnosis(
                         self.diagnosis,
                         include_alternatives=True,
@@ -3466,6 +3498,16 @@ class Orchestrator:
                             "되물어라(모델은 아직 띄우지 않는다). 사용자가 이 되물음에 긍정하면 "
                             "그때 intent=possible_models 로 분류한다. '보여줘/표시해/모델 켜'처럼 "
                             "이미 표시를 명령했으면 되묻지 말고 바로 possible_models."
+                        ),
+                    },
+                    "assume_demolished": {
+                        "type": "boolean",
+                        "description": (
+                            "이 필지가 기존 건축물 때문에 '실질 배치 불가'인데, 사용자가 그 기존 "
+                            "건축물이 멸실·해체(철거)되었다고 가정하고 지을 수 있는 건축물/모델을 "
+                            "보여달라고 하면 true(예: '기존 건물 멸실됐다 치고 가능한 건물 보여줘', "
+                            "'철거 가정하고 조건부 가능한 거 보여줘'). 이때 intent 는 possible_models. "
+                            "멸실 가정이 아니거나, 협소 대지 등 건물 아닌 사유의 제한이면 false."
                         ),
                     },
                     "control": {

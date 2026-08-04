@@ -6,6 +6,19 @@
 
 ## 2026-08-03
 
+### '기존 건축물 멸실 가정으로 가능한 건축물 보여줘' 자연어 제어(제미나이 해석)
+- 요구: 기존 건축물로 '실질 배치 불가'인 필지에서, 사용자가 "그 건물이 멸실·해체됐다고
+  가정하고 지을 수 있는 건축물을 조건부 가능으로 보여줘"라고 하면 배치 불가를 해제하고
+  매스·모델을 표시.
+- 구현: _interpret_followup 스키마에 `assume_demolished` 필드 추가 — 제미나이가 멸실 가정
+  요청을 해석해 intent=possible_models + assume_demolished=true 로 분류(정규식 아님). possible_models
+  핸들러에서 배치 불가가 '기존 건물' 때문이고 협소(min_lot_area) 아님일 때만 placement_restricted를
+  해제하고 map_presentation을 '조건부 가능(멸실 가정)'(show_building_mass=true)로 바꾼 뒤 매스를
+  다시 그리고(_render_event) 가능 모델 버튼을 방출. 답변에 '멸실 가정·해체허가·소유권 정리 선행'
+  전제를 명시. 협소 대지는 멸실로도 안 풀려 해제하지 않는다.
+- 검증: 세종대로 110(기존건물·비협소) — 해제 전 모델 [] → 해제 후 3종+매스, 제미나이 intent=
+  possible_models·assume_demolished=true. 110 테스트 통과.
+
 ### 사유지 침범(배수 우회) 판정의 소유구분 API 복구 — data.go.kr NSDI → VWorld NED
 - 증상: 배수로가 지나는 필지의 소유구분(사유=승낙 필요·차단 / 국공유=통과 가능·우회)을
   land_ownership.lookup_ownership 이 조회하는데, 실제로는 늘 미상→지목 추정으로 폴백됐다.
