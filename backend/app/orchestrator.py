@@ -1660,6 +1660,7 @@ class Orchestrator:
         if (
             _is_building_restore_request(original_query)
             and not _asks_possible_use_list(original_query)
+            and not _requested_map_lines(original_query)  # 특정 선 요청은 복원 아님 → map_lines
             and self.conversation_context().get("pending_offer") != "show_models"
         ):
             # '다시 켜/복원'은 방금 '끈' 대상을 되살린다. 치수선을 껐으면 치수선을,
@@ -1828,7 +1829,13 @@ class Orchestrator:
 
         # 학습된 제어 표현(사용자가 가르친 말 → 정식 대상)을 빠른 경로로 즉시
         # 처리한다. 예: 앞서 '수치선=치수선'을 학습했으면 규칙에 없어도 바로 켜고 끈다.
-        for _term, _tgt in self.control_glossary.items():
+        # 단, 우수·배수·도로 접촉·건축선 같은 '특정 오버레이 선' 요청('치수선에 닿는 도로접촉
+        # 보여줘' 등)은 여기서 레이어 토글로 가로채지 않고 제미나이 map_lines 로 그 선만 그린다
+        # ('치수선'·'접촉'의 글자가 제어어에 오매칭되던 문제 차단).
+        _line_overlay_req = bool(_requested_map_lines(original_query))
+        for _term, _tgt in (
+            {} if _line_overlay_req else self.control_glossary
+        ).items():
             if not _term or _term not in compact_query or _tgt not in self._CONTROL_LABELS:
                 continue
             _off = re.search(r"(꺼|끄|숨|닫|접|치워|없애|안보이|off)", compact_query, re.I)
