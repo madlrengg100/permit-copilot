@@ -1454,6 +1454,13 @@ class Orchestrator:
         그린다. 도로 후퇴·일반 분할은 분할선 지정이 필요해 규모는 판정 텍스트로 안내한다."""
         from .tools import land_division, ordinance
         d = self.diagnosis or {}
+        # 항상 '분할 전(원본)'에서 분할한다 — 이미 나눠진 상태면 보존한 원본으로 되돌린 뒤
+        # 분할해, '분할 전 건축물 보기'로 원본을 다시 볼 수 있게 한다.
+        if d.get("_pre_division"):
+            self.diagnosis = copy.deepcopy(d["_pre_division"])
+            d = self.diagnosis
+        _pre_snapshot = copy.deepcopy(d)
+        _pre_snapshot.pop("_pre_division", None)
         reg = d.get("regulation") or {}
         req = d.get("request") or {}
         lu = d.get("land_use") or {}
@@ -1584,9 +1591,38 @@ class Orchestrator:
             f"{limits['bcr_max_pct']:g}%·용적률 {limits['far_max_pct']:g}% → 건축면적 약 "
             f"{mass['building_area_m2']:,.0f}㎡·연면적 약 {mass['gross_floor_area_m2']:,.0f}㎡)."
         )
-        _opts = _model_options_for_diagnosis(d, include_alternatives=True)
+        d["_pre_division"] = _pre_snapshot  # 분할 전 원본 보존('분할 전 건축물 보기'용)
+        _opts = [{
+            "label": "분할 전 건축물 보기",
+            "detail": "원본 필지(분할 전) 규모로 되돌리기",
+            "action": "divide:before",
+        }]
+        _opts += _model_options_for_diagnosis(d, include_alternatives=True)
         yield {"event": "message", "data": {"text": _txt, "options": _opts}}
         self.messages.append({"role": "assistant", "content": _txt})
+
+    async def _show_predivision(self):
+        """'분할 전 건축물 보여줘' — 분할 전(원본 필지) 규모·건물로 되돌려 다시 그린다."""
+        d = self.diagnosis or {}
+        if not d.get("_pre_division"):
+            _m = "아직 필지를 분할하지 않아 현재가 분할 전(원본) 상태입니다."
+            yield {"event": "message", "data": {"text": _m}}
+            self.messages.append({"role": "assistant", "content": _m})
+            return
+        self.diagnosis = copy.deepcopy(d["_pre_division"])
+        yield self._render_event()
+        _m = (
+            "분할 전(원본 필지) 건축물·규모로 되돌렸습니다. 다시 분할해서 보려면 아래 "
+            "'분할 후 건축물 보기'를 누르거나 '분할해서 지어줘'라고 하세요."
+        )
+        _opts = [{
+            "label": "분할 후 건축물 보기",
+            "detail": "규제 없는 부분·유효 대지로 재계산",
+            "action": "divide:after",
+        }]
+        _opts += _model_options_for_diagnosis(self.diagnosis, include_alternatives=True)
+        yield {"event": "message", "data": {"text": _m, "options": _opts}}
+        self.messages.append({"role": "assistant", "content": _m})
 
     async def _recommend_areas_events(
         self, region: str, use: str
@@ -3061,7 +3097,15 @@ class Orchestrator:
                 interpreted["assume_divided"] = True
                 interpreted["control"] = None
                 self.update_conversation_context(pending_offer="")
-            # 필지 분할 시나리오 — '분할해서 지어줘/분할하면 되나/분할 후 다시 확인'.
+            # '분할 전 건축물 보여줘' → 원본(분할 전)으로 되돌린다.
+            if _is_division_request(original_query) and re.search(
+                r"분할\s*전|원본|원래(대로)?|되돌|나누기\s*전", original_query
+            ):
+                async for _e in self._show_predivision():
+                    yield _e
+                self._selection_changed = False
+                return
+            # 필지 분할 시나리오 — '분할해서 지어줘/분할 후 건축물 보여줘/분할하면 되나'.
             # 용도지역 걸침은 경계로 바로 분할해 대지·규모를 재계산하고 지도·팝업을 갱신한다.
             if interpreted.get("assume_divided"):
                 async for _e in self._execute_division():

@@ -660,6 +660,15 @@ export default function App() {
             void send("분할해서 지어줘");
             return;
           }
+          // 분할 전/후 건축물 토글 버튼.
+          if (action === "divide:before") {
+            void send("분할 전 건축물 보여줘");
+            return;
+          }
+          if (action === "divide:after") {
+            void send("분할 후 건축물 보여줘");
+            return;
+          }
           if (!action.startsWith("housing:")) return;
           const type = action.slice("housing:".length) as HousingModelType;
           try {

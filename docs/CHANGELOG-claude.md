@@ -5,6 +5,15 @@
 > 가능 모델 목록은 `orchestrator._model_options_for_diagnosis()`만 — CLAUDE.md 준수.
 
 ## 2026-08-03
+### 분할 전/후 건축물 토글 — 역질문(버튼) + 자연어 실행
+- 분할 실행이 진단을 분할 대지로 덮어써 원본(분할 전)을 다시 볼 수 없었다. _execute_division
+  이 분할 전 원본을 diagnosis['_pre_division']에 보존하고 항상 원본에서 분할하도록 함.
+- '분할 전 건축물 보여줘'(자연어) 또는 '분할 전 건축물 보기' 버튼(divide:before) → _show_
+  predivision 이 원본(3,005㎡)으로 되돌려 다시 그리고 '분할 후 건축물 보기' 버튼 제시.
+  '분할 후 건축물 보여줘'/버튼(divide:after) → 원본에서 재분할(2,918㎡). LLM 없이도 결정적
+  라우팅(_is_division_request + '분할 전' 정규식). 프론트 onAction 에 divide:before/after 연결.
+  검증: 분할(2,918)↔원본(3,005) 토글, 팝업·버튼 정상. 110 테스트 통과.
+
 ### 분할 실행 답변에 방법 설명 포함 + 이격 '미수집' 문구 정확화
 - 분할 실행 시 짧은 확인 메시지만 나오고 방법 설명(규제 분리·도로 후퇴 목록)이 빠진다는
   피드백 → _execute_division 이 덮어쓰기 전 _division_scenario_answer(방법 목록+규모 추정+
