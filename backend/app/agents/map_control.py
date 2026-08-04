@@ -185,12 +185,22 @@ def road_setback_pieces(diagnosis: dict) -> tuple[list[dict], dict | None]:
                 "geometry": mapping(poly), "area_m2": area, "share_pct": None,
             })
         rp = strip.representative_point()
-        # 후퇴폭은 라벨에 합쳐 넣는다. 별도 '후퇴선'을 그으면 필지-도로 경계(도로접촉선)와
-        # 같은 자리·비슷한 색이라 도로접촉선이 이중으로 보였다 — 보라 편입 면 + 라벨만 남긴다.
         labels.append({
             "lon": rp.x, "lat": rp.y,
-            "text": f"도로 편입 약 {area:,.0f}㎡ · 후퇴 {setback:.1f}m (측량 후 확정)",
+            "text": f"도로 편입 약 {area:,.0f}㎡ (측량 후 확정)",
         })
+        # 편입 안쪽 경계(후퇴선)도 보라 치수선으로 — 어디까지 물러나는지 보이게.
+        try:
+            inner = parcel.boundary.intersection(contact.buffer(d_deg, cap_style=2, join_style=2))
+            for ls in _iter_linestrings(inner):
+                if ls.length > 0:
+                    segments.append({
+                        "positions": [[float(x), float(y)] for x, y in ls.coords],
+                        "label": f"도로 후퇴 {setback:.1f}m", "color": "#AD1457",
+                        "width": 5, "onTop": True,
+                    })
+        except Exception:
+            logger.debug("도로 후퇴선 계산 실패", exc_info=True)
     dims = None
     if labels or segments:
         # persist=True: 분할 오버레이와 같은 지속 레이어에 — 모델을 세워도 남는다.
@@ -555,10 +565,8 @@ def _build_dimensions(
         if tk:
             segments.append(tk)
 
-    # 도로 접촉 — 필지가 실제로 도로와 맞닿는 '그 변'을 자주색으로 그리고 길이를 라벨로
-    # 붙인다. 단, 접촉선은 필지 경계선(청록)과 좌표가 같아 지면부착 선 두 개가 겹치면
-    # 자주색이 청록 경계선을 덮어 경계가 안 보인다. 그래서 접촉선을 필지 '안쪽'으로 약
-    # 0.6m 들여, 경계선과 겹치지 않는 나란한 선으로 그린다(라벨의 접촉길이는 원래 값).
+    # 도로 접촉 — 필지가 실제로 도로와 맞닿는 '그 선'을 파란색으로 그리고 길이를
+    # 라벨로 붙인다. 접촉선 기하(road_contact_geometry)를 그대로 사용한다.
     road_access = diagnosis.get("road_access") or {}
     roads = road_access.get("roads") or []
     rgeom = road_access.get("road_contact_geometry")
@@ -570,64 +578,15 @@ def _build_dimensions(
         elif rgeom.get("type") == "LineString" and len(rgeom.get("coordinates", [])) >= 2:
             contact_lines = [rgeom["coordinates"]]
     if contact_lines:
-        from shapely.geometry import LineString
-
-        parcel_poly = shape(geometry).buffer(0) if geometry else None
-        m_per_deg_lon = 111320.0 * max(0.1, math.cos(math.radians(mid_lat)))
-        inset_deg = 0.6 / m_per_deg_lon  # 경계선과 겹치지 않게 안쪽으로 들이는 폭(약 0.6m)
-
-        def _seg_len_m(coords: list) -> float:
-            total = 0.0
-            for k in range(1, len(coords)):
-                dx = (coords[k][0] - coords[k - 1][0]) * m_per_deg_lon
-                dy = (coords[k][1] - coords[k - 1][1]) * 111320.0
-                total += math.hypot(dx, dy)
-            return total
-
-        def _inset_into_parcel(coords: list) -> list:
-            """접촉선을 필지 안쪽으로 들인 좌표. 경계선(청록)과 안 겹치게. 실패 시 원본."""
-            if parcel_poly is None:
-                return [[float(p[0]), float(p[1])] for p in coords]
-            try:
-                base = LineString([(float(p[0]), float(p[1])) for p in coords])
-                for side in ("left", "right"):
-                    off = base.parallel_offset(inset_deg, side, join_style=2)
-                    if off.is_empty:
-                        continue
-                    cand = off if off.geom_type == "LineString" else max(
-                        off.geoms, key=lambda g: g.length
-                    )
-                    if cand.is_empty or len(cand.coords) < 2:
-                        continue
-                    if parcel_poly.contains(cand.interpolate(0.5, normalized=True)):
-                        return [[float(x), float(y)] for x, y in cand.coords]
-            except Exception:
-                logger.debug("도로접촉선 내측 오프셋 실패", exc_info=True)
-            return [[float(p[0]), float(p[1])] for p in coords]
-
-        # 라벨(접촉길이)은 인덱스 순서가 아니라 '그 접촉선 길이에 가장 가까운 도로'로 맞춘다
-        # (roads 는 길이순 정렬, 접촉선 조각 순서는 달라 예전엔 2.3m↔36.5m 라벨이 뒤바뀌었다).
-        used_roads: set[int] = set()
-        for line in contact_lines:
-            seglen = _seg_len_m(line)
-            best_j, best_diff = None, None
-            for j, rd in enumerate(roads):
-                if j in used_roads or rd.get("contact_length_m") is None:
-                    continue
-                diff = abs(float(rd["contact_length_m"]) - seglen)
-                if best_diff is None or diff < best_diff:
-                    best_j, best_diff = j, diff
-            length = None
-            if best_j is not None:
-                used_roads.add(best_j)
-                length = roads[best_j].get("contact_length_m")
+        for i, line in enumerate(contact_lines):
+            length = roads[i].get("contact_length_m") if i < len(roads) else None
             segments.append(
                 {
-                    "positions": _inset_into_parcel(line),
+                    "positions": [[float(p[0]), float(p[1])] for p in line],
                     "label": f"도로 접촉 {length:g}m" if length else "도로 접촉",
                     "color": road_color,
-                    "width": 7,
-                    "onTop": True,
+                    "width": 9,  # 굵게
+                    "onTop": True,  # 지적 경계선(청록) 위 우선순위로 그려 통짜 자주색
                 }
             )
     elif roads and roads[0].get("contact_length_m"):
