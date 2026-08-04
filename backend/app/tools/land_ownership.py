@@ -14,16 +14,16 @@ import os
 import httpx
 
 from ..cache import async_ttl_cache
-from ..config import DATA_GO_KR_SERVICE_KEY
+from ..config import USE_MOCK, VWORLD_DOMAIN, VWORLD_KEY
 
-# 공공데이터포털/NSDI '국토교통부_토지소유정보' 속성 API. 소유구분(posesnSeCodeNm)을 PNU로 준다.
-# 활용신청 승인 후 상세문서의 실제 요청주소가 다르면 env 로 덮어쓴다(코드 수정 없이).
+# 토지소유정보(소유구분)는 VWorld 국토정보(NED) getPossessionAttr 에서 받는다. 토지이용계획
+# (getLandUseAttr)과 같은 플랫폼·키(VWORLD_KEY)라 별도 data.go.kr 활용신청이 필요 없다.
+# (data.go.kr/1611000 NSDI 토지소유 서비스는 이 키에 미등록이라 NO_OPENAPI_SERVICE 400을 낸다.)
+# 소유구분명은 posesnSeCodeNm 이다: 개인·법인·종중·종교단체·외국인=사유,
+# 국유지·시 도유지·군유지·구유지=국공유.
 LAND_OWNERSHIP_API_URL = os.getenv(
     "LAND_OWNERSHIP_API_URL",
-    os.getenv(  # 구 변수명 호환
-        "LAND_CHARACTERISTICS_API_URL",
-        "https://apis.data.go.kr/1611000/nsdi/LandOwnershipService/attr/getLandOwnership",
-    ),
+    "https://api.vworld.kr/ned/data/getPossessionAttr",
 )
 
 # 소유구분명 → 통과 가능(공공) / 사유. 명칭 표기가 기관마다 달라 토큰 포함으로 판정한다.
@@ -46,13 +46,13 @@ def _walk(obj):
 
 
 def _ownership_name(data: dict) -> str | None:
-    """응답 구조가 기관마다 달라, 소유구분으로 보이는 문자열을 방어적으로 찾는다."""
-    # 1) 필드명이 소유구분을 가리키는 문자열 값 우선.
+    """VWorld getPossessionAttr 응답에서 소유구분명(posesnSeCodeNm)을 찾는다."""
+    # 1) 소유구분명 필드를 정확히 집는다(ownshipChgCauseCodeNm='소유권이전' 같은
+    #    변동원인 필드를 소유구분으로 오인하지 않도록 정확한 키 우선).
     for key, value in _walk(data):
-        if isinstance(value, str) and value.strip():
-            if any(hint in str(key).lower() for hint in _OWNER_FIELD_HINTS):
-                return value.strip()
-    # 2) 못 찾으면 값 자체가 소유구분 명칭 토큰을 포함하는 것을 찾는다.
+        if str(key) == "posesnSeCodeNm" and isinstance(value, str) and value.strip():
+            return value.strip()
+    # 2) 폴백: 값 자체가 소유구분 명칭 토큰을 포함하는 것을 찾는다(다른 표기 대비).
     for _key, value in _walk(data):
         if isinstance(value, str) and any(
             t in value for t in (*_PUBLIC_OWNER_TOKENS, *_PRIVATE_OWNER_TOKENS)
@@ -77,18 +77,19 @@ async def lookup_ownership(pnu: str, timeout: float = 15.0) -> dict:
     digits = "".join(ch for ch in (pnu or "") if ch.isdigit())
     if len(digits) != 19:
         return {"status": "UNAVAILABLE", "ownership": None, "detail": "19자리 PNU 필요"}
-    if not DATA_GO_KR_SERVICE_KEY:
+    if USE_MOCK or not VWORLD_KEY:
         return {
             "status": "NOT_CONFIGURED",
             "ownership": None,
-            "detail": "토지특성정보 인증키(DATA_GO_KR_SERVICE_KEY)가 없습니다.",
+            "detail": "VWorld 키(VWORLD_KEY)가 없습니다.",
         }
     params = {
-        "serviceKey": DATA_GO_KR_SERVICE_KEY,
+        "key": VWORLD_KEY,
         "pnu": digits,
         "format": "json",
-        "numOfRows": "10",
+        "numOfRows": "5",
         "pageNo": "1",
+        "domain": VWORLD_DOMAIN,
     }
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
@@ -96,17 +97,17 @@ async def lookup_ownership(pnu: str, timeout: float = 15.0) -> dict:
             response.raise_for_status()
             data = response.json()
     except httpx.HTTPStatusError as exc:
-        # 예외 문자열에 serviceKey 가 든 URL 이 노출될 수 있어 상태코드만 보존한다.
+        # 예외 문자열에 key 가 든 URL 이 노출될 수 있어 상태코드만 보존한다.
         return {
             "status": "UNAVAILABLE",
             "ownership": None,
-            "detail": f"토지특성정보 API HTTP {exc.response.status_code}",
+            "detail": f"토지소유정보 API HTTP {exc.response.status_code}",
         }
     except (httpx.HTTPError, ValueError) as exc:
         return {
             "status": "UNAVAILABLE",
             "ownership": None,
-            "detail": f"토지특성정보 조회 실패: {type(exc).__name__}",
+            "detail": f"토지소유정보 조회 실패: {type(exc).__name__}",
         }
 
     name = _ownership_name(data)
@@ -115,5 +116,5 @@ async def lookup_ownership(pnu: str, timeout: float = 15.0) -> dict:
         "status": "FOUND" if ownership else "CLEAR",
         "ownership": ownership,
         "detail": name,
-        "source": "국토교통부 토지특성정보(소유구분)",
+        "source": "VWorld 국토정보(NED) 토지소유정보(소유구분)",
     }
