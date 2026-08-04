@@ -2798,6 +2798,21 @@ class Orchestrator:
                 self.update_conversation_context(pending_offer="show_models")
             elif self.conversation_context().get("pending_offer"):
                 self.update_conversation_context(pending_offer="")
+            # 제미나이가 '우수방류/도로접촉 치수선 보여줘'류 특정 오버레이 선 SHOW 요청을
+            # dimensions 전역 토글(control)로 잘못 담는 경우가 있다. 질의가 특정 선(우수·배수·
+            # 도로접촉·건축선·이격)을 명시하고 끄기가 아니면, 전역 치수선 토글 대신 그 선만
+            # 그리도록 map_lines 로 돌린다(제미나이가 못 담았어도 결정적으로 보정).
+            _named_lines = _requested_map_lines(original_query)
+            _hide_req = bool(
+                re.search(r"(꺼|끄|숨|가려|지워|치워|없애|해제|off|안\s*보이)", user_query)
+            )
+            if _named_lines and not _hide_req:
+                interpreted["control"] = None
+                _prev_ml = [
+                    k for k in (interpreted.get("map_lines") or [])
+                    if k in {"road", "building_line", "drainage", "dimensions", "area"}
+                ]
+                interpreted["map_lines"] = list(dict.fromkeys(_prev_ml + _named_lines))
             # 규칙이 못 잡은 제어 표현을 제미나이가 의미로 해석해 왔으면 실행한다.
             # 새 표현(learn_term)은 학습사전에 넣어 다음부터 빠른 경로로 바로 처리한다.
             _control = interpreted.get("control") or {}
@@ -3472,6 +3487,10 @@ class Orchestrator:
                             "대지면적·건축면적을 보고자 하면 area. 여러 개면 함께 담는다"
                             "(예: '가로 세로 높이 대지·건축면적 도로접촉 배수로 다 보여줘' → "
                             "[dimensions, area, road, drainage]). "
+                            "'맞닿는 치수선', '그 선', '방금 그린 선에 닿는 선', '우수방류와 맞닿는 선'처럼 "
+                            "직전에 보여준 선을 가리키는 표현이면 그 선의 종류를 담아라(직전이 우수 배수선이면 "
+                            "drainage, 도로접촉선이면 road). 이런 요청을 control 의 dimensions 전역 토글로 "
+                            "돌리지 마라. "
                             "단어가 아니라 의도로 판단하고, 보려는 뜻이 없으면 빈 배열."
                         ),
                     },
@@ -3533,7 +3552,11 @@ class Orchestrator:
                             "사용자가 지도 표시를 켜거나 끄라고 한 제어 명령을 의미로 해석해 담는다. "
                             "규칙이 못 잡은 표현·동의어·구어·오타도 뜻으로 판단한다. 예: '수치선 꺼', "
                             "'눈금 지워', '지적선 안 보이게', '아까 그거 다시 켜'. 표시 제어가 아니면 "
-                            "빈 객체로 둔다(그러면 intent 로 답한다)."
+                            "빈 객체로 둔다(그러면 intent 로 답한다). "
+                            "★ 단, 특정 선(우수·오수 배수, 도로접촉, 건축선·이격, '맞닿는 선', '그 선', "
+                            "'닿는 치수선')을 보여달라는 요청은 control 이 아니라 map_lines 에 담아라. "
+                            "control 의 target=dimensions 는 '치수선/눈금 전체를 켜/꺼'처럼 전역 치수선 "
+                            "토글에만 쓴다 — 특정 선을 보여달라는 요청에 dimensions 전역 토글을 쓰지 마라."
                         ),
                         "properties": {
                             "action": {
