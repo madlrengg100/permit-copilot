@@ -1346,39 +1346,42 @@ export class MapBridge {
       bucket.push(lineId);
 
       const mid = seg.positions[Math.floor(seg.positions.length / 2)];
-      const a = seg.positions[0];
-      const b = seg.positions[seg.positions.length - 1];
-      const midLon = (a[0] + b[0]) / 2;
-      const midLat = (a[1] + b[1]) / 2;
-      const labelId = `map-dim-label-${Date.now()}-${rid()}`;
-      this.viewer.entities.add({
-        id: labelId,
-        position: ws3d.common.Cartesian3.fromDegrees(midLon, midLat, 1),
-        label: {
-          text: seg.label,
-          font: isCustom ? "bold 13px 'Malgun Gothic', sans-serif" : "13px 'Malgun Gothic', sans-serif",
-          fillColor: isCustom ? ws3d.common.Color.WHITE : ws3d.common.Color.BLACK,
-          showBackground: true,
-          backgroundColor: isCustom ? segColor.withAlpha(0.95) : yellow.withAlpha(0.98),
-          // 치수선 라벨(가로/세로)은 살짝 위로 올려, 같은 지면의 '도로 접촉'
-          // 라벨과 겹치지 않게 한다.
-          pixelOffset: new ws3d.common.Cartesian2(0, -20),
-          heightReference: relativeToGround,
-          disableDepthTestDistance: Number.POSITIVE_INFINITY,
-        },
-      });
-      bucket.push(labelId);
-      // 겹침 방지 대상으로 등록(글자수로 대략적 폭 추정). 분할 오버레이 라벨은
-      // 정규 치수선 declutter 상태(dimLabelAnchors)에 섞지 않는다 — 이후 이격선이
-      // 그 배열을 비워도 분할 라벨은 그대로 남아야 한다.
-      if (!persist) {
-        this.dimLabelAnchors.push({
+      // 라벨 텍스트가 비어 있으면(예: 분할선처럼 선만 필요한 경우) 라벨은 그리지 않는다.
+      if (seg.label && seg.label.trim()) {
+        const a = seg.positions[0];
+        const b = seg.positions[seg.positions.length - 1];
+        const midLon = (a[0] + b[0]) / 2;
+        const midLat = (a[1] + b[1]) / 2;
+        const labelId = `map-dim-label-${Date.now()}-${rid()}`;
+        this.viewer.entities.add({
           id: labelId,
-          lon: midLon,
-          lat: midLat,
-          w: seg.label.length * 9 + 14,
-          h: 22,
+          position: ws3d.common.Cartesian3.fromDegrees(midLon, midLat, 1),
+          label: {
+            text: seg.label,
+            font: isCustom ? "bold 13px 'Malgun Gothic', sans-serif" : "13px 'Malgun Gothic', sans-serif",
+            fillColor: isCustom ? ws3d.common.Color.WHITE : ws3d.common.Color.BLACK,
+            showBackground: true,
+            backgroundColor: isCustom ? segColor.withAlpha(0.95) : yellow.withAlpha(0.98),
+            // 치수선 라벨(가로/세로)은 살짝 위로 올려, 같은 지면의 '도로 접촉'
+            // 라벨과 겹치지 않게 한다.
+            pixelOffset: new ws3d.common.Cartesian2(0, -20),
+            heightReference: relativeToGround,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          },
         });
+        bucket.push(labelId);
+        // 겹침 방지 대상으로 등록(글자수로 대략적 폭 추정). 분할 오버레이 라벨은
+        // 정규 치수선 declutter 상태(dimLabelAnchors)에 섞지 않는다 — 이후 이격선이
+        // 그 배열을 비워도 분할 라벨은 그대로 남아야 한다.
+        if (!persist) {
+          this.dimLabelAnchors.push({
+            id: labelId,
+            lon: midLon,
+            lat: midLat,
+            w: seg.label.length * 9 + 14,
+            h: 22,
+          });
+        }
       }
       void mid;
     }

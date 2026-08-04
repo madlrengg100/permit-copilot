@@ -759,8 +759,8 @@ body {
   display: flex;
   flex-direction: column-reverse; /* 화면상 규제(위)·용도지역(아래) 순으로 */
   gap: 10px;
-  align-items: stretch;
-  max-width: 272px;
+  align-items: flex-end; /* 왼쪽으로 늘어나되 오른쪽 끝은 지도 가장자리에 정렬 */
+  max-width: 360px;
   z-index: 5;
   pointer-events: none;
 }
@@ -818,8 +818,8 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
 }
-.zone-legend-name { flex: 1; }
-.zone-legend-pct { color: var(--muted); font-size: 11px; }
+.zone-legend-name { flex: 1; white-space: nowrap; } /* 두 줄로 접히지 않게 — 박스가 왼쪽으로 늘어난다 */
+.zone-legend-pct { color: var(--muted); font-size: 11px; white-space: nowrap; padding-left: 14px; }
 .zone-legend-note {
   margin-top: 7px;
   padding-top: 6px;

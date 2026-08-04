@@ -143,7 +143,7 @@ export default function App() {
   );
   // 걸침 필지의 용도지역 조각 범례 (색 -> 지역명·비율). 걸침일 때만 표시.
   const [zoneLegend, setZoneLegend] = useState<
-    Array<{ zone: string; share_pct: number; area_m2: number; color: string }> | null
+    Array<{ zone: string; share_pct: number | null; area_m2: number; color: string }> | null
   >(null);
   const [restrictionLegend, setRestrictionLegend] = useState<{
     title: string;
@@ -944,7 +944,8 @@ export default function App() {
                 <span className="zone-legend-swatch" style={{ background: z.color }} />
                 <span className="zone-legend-name">{z.zone}</span>
                 <span className="zone-legend-pct">
-                  {z.share_pct}% · {Math.round(z.area_m2).toLocaleString()}㎡
+                  {z.share_pct != null ? `${z.share_pct}% · ` : ""}
+                  {Math.round(z.area_m2).toLocaleString()}㎡
                 </span>
               </div>
             ))}

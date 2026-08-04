@@ -1556,7 +1556,9 @@ class Orchestrator:
         # 분할 대지로 재계산한 지도·팝업을 다시 그린다. 단 분할 화면은 '기본만' 깔끔히 —
         # 가로/세로·이격·도로접촉·배수 등 일반 치수선은 빼고(겹침·과부하 방지), 아래에서
         # 분할 대상/제외 조각과 분할선·면적만 얹는다.
-        from .agents.map_control import build_map_commands, division_dimensions
+        from .agents.map_control import (
+            build_map_commands, division_dimensions, road_setback_pieces,
+        )
         _base_cmds = [
             c for c in build_map_commands(self.diagnosis or {})
             if c.get("type") != "show_dimensions"
@@ -1578,9 +1580,14 @@ class Orchestrator:
                     "share_pct": round(_sa / _orig_area * 100, 1) if _orig_area else None,
                 })
         _excluded = [s for s in _orig_shares if s.get("zone") != zone]
+        # 미달도로(폭<4m) 접한 변의 '도로 후퇴 편입분'(약 3㎡)도 함께 얹는다 — 도로접촉선
+        # 등 잡선은 이미 뺐으므로 이제 겹치지 않고 깔끔히 들어간다(보라 편입 면 + 라벨).
+        _setback_pieces, _setback_dims = road_setback_pieces(d)
+        if _setback_pieces:
+            _div_pieces.extend(_setback_pieces)
         _overlay_cmds = []
         if len(_div_pieces) >= 2:
-            # persist=True: 분할 대상(초록)·제외(빨강) 조각은 지속 레이어에 —
+            # persist=True: 분할 대상(초록)·제외(빨강)·도로 편입(보라) 조각은 지속 레이어에 —
             # 건물 모델을 세워도(clear_mass) 지워지지 않고 경계가 계속 보인다.
             _overlay_cmds.append(
                 {"type": "show_zone_pieces", "pieces": _div_pieces, "persist": True}
@@ -1590,6 +1597,9 @@ class Orchestrator:
             _overlay_cmds.append(
                 division_dimensions(zone, geometry, area, _excluded)
             )
+        # 도로 후퇴 편입분 라벨(보라)도 같은 지속 레이어에 얹는다.
+        if _setback_dims:
+            _overlay_cmds.append(_setback_dims)
         if _overlay_cmds:
             yield {"event": "map_commands", "data": {"commands": _overlay_cmds}}
         _txt = (

@@ -185,22 +185,12 @@ def road_setback_pieces(diagnosis: dict) -> tuple[list[dict], dict | None]:
                 "geometry": mapping(poly), "area_m2": area, "share_pct": None,
             })
         rp = strip.representative_point()
+        # 후퇴폭은 라벨에 합친다. 별도 '후퇴선'을 그으면 필지 경계선과 같은 자리라
+        # 이중선처럼 보였다 — 보라 편입 면 + 라벨만 남긴다.
         labels.append({
             "lon": rp.x, "lat": rp.y,
-            "text": f"도로 편입 약 {area:,.0f}㎡ (측량 후 확정)",
+            "text": f"도로 편입 약 {area:,.0f}㎡ · 후퇴 {setback:.1f}m (측량 후 확정)",
         })
-        # 편입 안쪽 경계(후퇴선)도 보라 치수선으로 — 어디까지 물러나는지 보이게.
-        try:
-            inner = parcel.boundary.intersection(contact.buffer(d_deg, cap_style=2, join_style=2))
-            for ls in _iter_linestrings(inner):
-                if ls.length > 0:
-                    segments.append({
-                        "positions": [[float(x), float(y)] for x, y in ls.coords],
-                        "label": f"도로 후퇴 {setback:.1f}m", "color": "#AD1457",
-                        "width": 5, "onTop": True,
-                    })
-        except Exception:
-            logger.debug("도로 후퇴선 계산 실패", exc_info=True)
     dims = None
     if labels or segments:
         # persist=True: 분할 오버레이와 같은 지속 레이어에 — 모델을 세워도 남는다.
@@ -229,9 +219,11 @@ def division_dimensions(kept_zone: str, kept_geom: dict, kept_area: float,
         try:
             for ls in _iter_linestrings(kept.boundary.intersection(eg.boundary)):
                 if ls.length > 0:
+                    # 빨간 분할선 자체가 경계를 보여주므로 '분할선' 글자는 넣지 않는다
+                    # (근처 '분할 제외 N㎡' 라벨과 겹쳐 붙어 보였다). 선만 그린다.
                     segments.append({
                         "positions": [[float(x), float(y)] for x, y in ls.coords],
-                        "label": "분할선", "color": "#C62828", "width": 6, "onTop": True,
+                        "label": "", "color": "#C62828", "width": 6, "onTop": True,
                     })
         except Exception:
             logger.debug("분할 경계선 계산 실패", exc_info=True)
