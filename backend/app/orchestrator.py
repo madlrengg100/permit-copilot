@@ -1556,14 +1556,10 @@ class Orchestrator:
         # 분할 대지로 재계산한 지도·팝업을 다시 그린다. 단 분할 화면은 '기본만' 깔끔히 —
         # 가로/세로·이격·도로접촉·배수 등 일반 치수선은 빼고(겹침·과부하 방지), 아래에서
         # 분할 대상/제외 조각과 분할선·면적만 얹는다.
-        from .agents.map_control import (
-            build_map_commands, division_dimensions, road_setback_pieces,
-        )
-        _base_cmds = [
-            c for c in build_map_commands(self.diagnosis or {})
-            if c.get("type") != "show_dimensions"
-        ]
-        yield {"event": "map_commands", "data": {"commands": _base_cmds}}
+        from .agents.map_control import division_dimensions, road_setback_pieces
+        # 분할 대지로 재계산한 지도·팝업을 원래대로 전부 다시 그린다 — 가로·세로·높이
+        # 치수선 등 아무것도 빼지 않는다. 그 위에 분할 조각·분할선·도로 편입을 얹는다.
+        yield self._render_event()
         # 분할선을 눈에 보이게 — 분할 대상(초록)·분할 제외 부분(빨강)을 조각으로 얹는다.
         # 두 색이 맞닿는 선이 곧 분할 경계다. 건물은 초록(분할 대상) 위에 선다.
         _div_pieces = [{
