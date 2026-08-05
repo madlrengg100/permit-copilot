@@ -79,8 +79,10 @@ function renderMarkdownCore(text: string): ReactNode {
 // 접기/펼치기로 만들 섹션 규칙. 헤더 제목이 test 에 맞으면 그 섹션을 <details>로 감싼다.
 const COLLAPSIBLE_SECTIONS: Array<{ test: RegExp; label: string }> = [
   { test: /국가법령정보센터 원문 확인/, label: "국가법령정보센터 원문" },
-  { test: /관련 법령 조문\(근거\)/, label: "인허가 단계 관련 법령 조문" },
-  { test: /관련 조례 조문\(근거\)/, label: "지자체 관련 조례 조문" },
+  // 답변 생성 과정에서 제목이 '관련 근거법', '법적 근거'처럼 조금 달라져도
+  // 긴 법령 목록은 같은 접이식 영역으로 렌더링한다.
+  { test: /(?:관련\s*)?(?:근거\s*법(?:령)?|법적\s*근거)|관련\s*법령\s*조문(?:\(근거\))?/, label: "관련 근거법" },
+  { test: /관련\s*조례\s*조문(?:\(근거\))?/, label: "지자체 관련 조례 조문" },
 ];
 
 function renderMarkdown(text: string): ReactNode {
@@ -106,11 +108,12 @@ function renderMarkdown(text: string): ReactNode {
     if (rule) {
       const bodyLines = lines.slice(startH + 1, endH).filter((line) => line.trim());
       const count = bodyLines.filter((line) => /^\s*-\s+/.test(line)).length;
+      const countLabel = count > 0 ? `${count}건 ` : "";
       nodes.push(
         <details className="law-sources" key={startH}>
           <summary>
-            <span className="law-summary-closed">▾ {rule.label} {count}건 펼치기</span>
-            <span className="law-summary-open">▴ {rule.label} {count}건 닫기</span>
+            <span className="law-summary-closed">▾ {rule.label} {countLabel}펼치기</span>
+            <span className="law-summary-open">▴ {rule.label} {countLabel}닫기</span>
           </summary>
           <div className="law-sources-body">{renderMarkdownCore(bodyLines.join("\n"))}</div>
         </details>,

@@ -395,6 +395,26 @@ body {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
+.result-legal-details {
+  margin-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+  padding-top: 5px;
+  font-size: 10px;
+  color: #fff;
+}
+
+.result-legal-details summary {
+  cursor: pointer;
+  list-style: none;
+  font-weight: 700;
+  color: #fff;
+}
+
+.result-legal-details summary::-webkit-details-marker { display: none; }
+.result-legal-open { display: none; }
+.result-legal-details[open] .result-legal-closed { display: none; }
+.result-legal-details[open] .result-legal-open { display: inline; }
+
 .constraints {
   margin: 5px 0 0;
   padding-left: 13px;
