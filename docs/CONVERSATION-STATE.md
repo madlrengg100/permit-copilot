@@ -107,6 +107,25 @@
   가르치는 문장은 개념 정의 질문이 아니다. `_is_teaching_statement()` 로 개념 fast-path에서
   제외해 제미나이 학습 훅(control.learn_term / learn_nav_term)에 도달시킨다.
 
+## 필지 분할과 분할 전/후 뷰
+
+- **분할 성립 판정**은 `tools/land_division.assess(diagnosis)` — 규제 분리(용도지역/규제구역
+  걸침)·도로 후퇴(미달도로 편입)만 다룬다(일반 분할은 손으로 그려야 해 제외).
+- **분할 실행**은 `orchestrator._execute_division()` — 분할 대지로 규모·부담금을 재계산하고,
+  분할 후 화면에는 일반 가로·세로·높이·도로접촉·배수·이격 치수선을 내보내지 않는다
+  (map_presentation.show_building_dimensions=False). 대신 분할 전용 오버레이만 얹는다:
+  - 분할 대상(초록 면)·분할 제외(빨강 면) 조각(`show_zone_pieces`, persist)
+  - 분할 경계선 = 흰 점선(kind="division", 면 색과 분리된 시각 문법)
+  - 도로 편입 예정면(파랑 #1565C0) + 도로후퇴선(보라 #7B1FA2 평행선, kind="setback")
+  - 라벨은 persist 전용 declutter 채널로 서로 겹치지 않게 배치, 박스 색은 면/선 색과 일치.
+- **분할 전/후 토글**: `_division_view_request(query)` 가 '분할 전/원본/나누기 전'→"before",
+  '분할 후'→"after" 를 **일반 possible_models 표시보다 먼저** 결정적으로 라우팅한다. 버튼
+  (`divide:before`/`divide:after`)도 같은 원문을 보내 자연어와 단일 경로. 분할 전 원본은
+  `diagnosis['_pre_division']` 에 보존해 왕복 전환한다.
+- 범례는 `show_zone_pieces.legend_items`(각 항목 `symbol: "area"|"line"`)로 면·선을 구분해
+  그린다(`zone-legend.is-division`). 지도 오버레이 명령·색의 단일 원본은
+  `map_control.road_setback_pieces()`·`division_dimensions()` 다 — 색/문구를 프런트에 중복 정의하지 않는다.
+
 ## 책임 분리
 
 - 프런트: 원문과 구조화 상태 전달, 백엔드가 보낸 UI·모델 결과 표시만 수행

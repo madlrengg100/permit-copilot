@@ -626,11 +626,19 @@ _meta.sources[]                    조례명 · 조례번호 · 시행일 · 조
 | 명령 | 필드 |
 |---|---|
 | `clear_mass` | — |
+| `clear_division_overlay` | — (분할 대상·제외·도로편입 등 persist 오버레이만 제거. 새 진단·분할 전 복귀 시) |
 | `fly_to` | `lon, lat, altitude, tilt, heading?` |
 | `highlight_parcel` | `geometry, pnu, label, color` |
-| `show_zone_pieces` | `pieces[{zone, share_pct, area_m2, color, geometry}]` |
+| `show_zone_pieces` | `pieces[{zone, share_pct, area_m2, color, geometry}]`, `persist?`, `legend_items?[{label, color, symbol("area"|"line"), share_pct, area_m2, note}]` |
+| `show_dimensions` | `segments[{positions, label, color?, width?, onTop?, height_m?, lift_m?, kind?}]`, `labels[{lon, lat, text, height?, color?, kind?}]`, `persist?` |
 | `extrude_mass` | `geometry, footprint_geometry, top_footprint_geometry, anchor, height_m, floors, full_floors, top_floor_ratio, flat_only, footprint_ratio, color, opacity, label` |
 | `show_panel` | `anchor, verdict, verdict_label, color, address, zone, districts, building_use, site_area_m2, bcr_max_pct, far_max_pct, legal_basis, constraints, zone_use_overview, massing` |
+
+**분할 후 뷰 오버레이(persist)** — `_execute_division` 은 일반 치수선 없이 분할 대상(초록 면)·
+분할 제외(빨강 면)·도로 편입 예정면(파랑)·도로후퇴선(보라 평행선)·분할 경계선(흰 점선)만
+persist 지속 레이어로 얹는다. persist 라벨은 정규 치수선과 독립된 전용 declutter 채널로 겹치지
+않게 배치되고, 건물 모델을 세워도(`clear_mass`) 남는다. 명령/색의 단일 원본은
+`map_control.road_setback_pieces()`·`division_dimensions()`.
 
 **`fly_to` 는 지연 실행된다** — 지형 상대 Entity가 먼저 생성돼야 카메라 목표가 실제 건물 위치와
 일치하므로, 루프에서 보류했다가 마지막에 실행한다. 카메라는 건물 **높이의 절반**을 겨냥한다.
