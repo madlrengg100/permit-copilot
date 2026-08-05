@@ -1448,31 +1448,10 @@ class Orchestrator:
             )
         lines = [
             f"분할 성립 가능성이 있습니다. {zone}·대지 약 {area:,.0f}㎡ 기준으로 검토할 "
-            "수 있는 방법은 다음과 같습니다.",
-            "",
-            "## 분할 방법·관련 조례·법령 조문(근거)",
+            "수 있는 방법은 다음과 같습니다."
         ]
         for m in methods:
-            method = str(m.get("method") or "")
-            lines.append(f"- **{method}:** {m.get('note')}")
-            if method.startswith("규제 분리"):
-                basis = (
-                    "건축법 제57조·건축법 시행령 제80조(최소 분할면적)"
-                )
-                if ld.get("needs_dev_permit"):
-                    basis += (
-                        " · 국토의 계획 및 이용에 관한 법률 제56조·같은 법 시행령 "
-                        "제51조(녹지지역 토지분할 개발행위허가)"
-                    )
-                lines.append(f"근거 — {basis}")
-            elif "도로 후퇴" in method:
-                lines.append(
-                    "근거 — 건축법 제46조·건축법 시행령 제31조"
-                    "(소요 너비 미달 도로의 건축선)"
-                )
-        # 접기 영역은 방법·근거까지만 포함한다. 계산 결과와 실제 지도 반영 내용은
-        # 닫은 상태에서도 바로 읽을 수 있게 다음 헤더로 섹션을 끝낸다.
-        lines.extend(["", "## 분할 후 계산 결과"])
+            lines.append(f"· {m.get('method')}: {m.get('note')}")
         best = max(methods, key=lambda m: float(m.get("buildable_area_m2") or 0))
         bcr = reg.get("bcr_max_pct")
         far = reg.get("far_max_pct")

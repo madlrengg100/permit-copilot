@@ -1249,16 +1249,24 @@ function ResultPanel({
           </p>
         )}
         {compactSiteNote && <p className="result-note">{compactSiteNote}</p>}
-        {panel.legal_basis && (
-          <p className="result-basis">
-            {panel.legal_basis.includes("조례") ? "적용 조례: " : ""}
-            {panel.legal_basis}
-          </p>
-        )}
-        {legalSources.length > 0 && (
-          <p className="result-basis">
-            국가법령정보센터 관련 현행 법령 {legalSources.length}건 연결 확인
-          </p>
+        {(panel.legal_basis || legalSources.length > 0) && (
+          <details className="result-legal-details">
+            <summary>
+              <span className="result-legal-closed">▾ 관련 근거법 펼치기</span>
+              <span className="result-legal-open">▴ 관련 근거법 닫기</span>
+            </summary>
+            {panel.legal_basis && (
+              <p className="result-basis">
+                {panel.legal_basis.includes("조례") ? "적용 조례: " : "근거: "}
+                {panel.legal_basis}
+              </p>
+            )}
+            {legalSources.length > 0 && (
+              <p className="result-basis">
+                국가법령정보센터 관련 현행 법령 {legalSources.length}건 연결 확인
+              </p>
+            )}
+          </details>
         )}
       </div>
     </div>
