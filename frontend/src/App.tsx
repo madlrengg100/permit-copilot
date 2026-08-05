@@ -143,8 +143,16 @@ export default function App() {
   );
   // 걸침 필지의 용도지역 조각 범례 (색 -> 지역명·비율). 걸침일 때만 표시.
   const [zoneLegend, setZoneLegend] = useState<
-    Array<{ zone: string; share_pct: number | null; area_m2: number; color: string }> | null
+    Array<{
+      zone: string;
+      share_pct: number | null;
+      area_m2: number | null;
+      color: string;
+      symbol?: "area" | "line";
+      note?: string;
+    }> | null
   >(null);
+  const [zoneLegendIsDivision, setZoneLegendIsDivision] = useState(false);
   const [restrictionLegend, setRestrictionLegend] = useState<{
     title: string;
     note?: string;
@@ -519,9 +527,20 @@ export default function App() {
           // 없으면 이전 범례를 지운다 — 지도와 범례가 어긋나지 않게.
           const zp = cmds.find((c) => c.type === "show_zone_pieces");
           if (zp) {
-            setZoneLegend(zp.pieces);
+            setZoneLegendIsDivision(zp.persist === true);
+            setZoneLegend(
+              zp.legend_items?.map((item) => ({
+                zone: item.label,
+                share_pct: item.share_pct ?? null,
+                area_m2: item.area_m2 ?? null,
+                color: item.color,
+                symbol: item.symbol,
+                note: item.note,
+              })) ?? zp.pieces,
+            );
           } else if (cmds.some((c) => c.type === "clear_mass")) {
             setZoneLegend(null);
+            setZoneLegendIsDivision(false);
           }
           const rp = cmds.find((c) => c.type === "show_restriction_pieces");
           if (rp?.type === "show_restriction_pieces") {
@@ -937,19 +956,23 @@ export default function App() {
         {/* 걸침 필지 범례 — 지도에 깔린 용도지역 조각 색의 의미를 설명한다.
             걸침이 아닌 필지에서는 나타나지 않는다. */}
         {zoneLegend && zoneLegend.length > 0 && (
-          <div className="zone-legend">
+          <div className={`zone-legend${zoneLegendIsDivision ? " is-division" : ""}`}>
             <div className="zone-legend-title">용도지역 걸침구분</div>
             {zoneLegend.map((z) => (
-              <div key={z.zone} className="zone-legend-row">
-                <span className="zone-legend-swatch" style={{ background: z.color }} />
+              <div key={`${z.symbol ?? "area"}-${z.zone}`} className="zone-legend-row" title={z.note}>
+                <span
+                  className={z.symbol === "line" ? "zone-legend-line" : "zone-legend-swatch"}
+                  style={{ background: z.color, opacity: z.symbol === "line" ? 1 : 0.55 }}
+                />
                 <span className="zone-legend-name">{z.zone}</span>
-                <span className="zone-legend-pct">
-                  {z.share_pct != null ? `${z.share_pct}% · ` : ""}
-                  {Math.round(z.area_m2).toLocaleString()}㎡
-                </span>
+                {z.area_m2 != null && (
+                  <span className="zone-legend-pct">
+                    {z.share_pct != null ? `${z.share_pct}% · ` : ""}
+                    {Math.round(z.area_m2).toLocaleString()}㎡
+                  </span>
+                )}
               </div>
             ))}
-            <div className="zone-legend-note">색 경계 = 용도지역 경계 (사전검토 참고용)</div>
           </div>
         )}
         {restrictionLegend && restrictionLegend.pieces.length > 0 && (
@@ -978,9 +1001,6 @@ export default function App() {
                 )}
               </div>
             ))}
-            <div className="zone-legend-note">
-              {restrictionLegend.note ?? "환경·재해 중첩 (사전검토 참고용)"}
-            </div>
           </div>
         )}
         </div>

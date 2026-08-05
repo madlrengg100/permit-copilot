@@ -18,6 +18,7 @@ import logging
 import math
 
 from shapely.geometry import mapping, shape
+from shapely.ops import transform
 
 from ..tools.footprint import inset_for_area
 
@@ -167,9 +168,19 @@ def road_setback_pieces(diagnosis: dict) -> tuple[list[dict], dict | None]:
             continue
         used.add(best_i)
         contact = parts[best_i]
-        d_deg = setback / m_per_deg_lon
         try:
-            strip = contact.buffer(d_deg, cap_style=2, join_style=2).intersection(parcel).buffer(0)
+            origin_x, origin_y = parcel.centroid.x, parcel.centroid.y
+
+            def _to_m(x, y, z=None):
+                return ((x - origin_x) * m_per_deg_lon, (y - origin_y) * 111320.0)
+
+            def _to_deg(x, y, z=None):
+                return (origin_x + x / m_per_deg_lon, origin_y + y / 111320.0)
+
+            parcel_m = transform(_to_m, parcel)
+            contact_m = transform(_to_m, contact)
+            strip_m = contact_m.buffer(setback, cap_style=2, join_style=2).intersection(parcel_m).buffer(0)
+            strip = transform(_to_deg, strip_m)
         except Exception:
             logger.debug("도로 후퇴 편입 띠 계산 실패", exc_info=True)
             continue
@@ -187,18 +198,43 @@ def road_setback_pieces(diagnosis: dict) -> tuple[list[dict], dict | None]:
                 "geometry": mapping(poly), "area_m2": area, "share_pct": None,
             })
         rp = strip.representative_point()
-        cm = strip.centroid
-        # '도로 편입 약 3㎡' 와 '후퇴 1.2m' 를 따로 라벨로 — declutter 가 겹치지 않게
-        # 자동 배치한다(별도 후퇴선은 경계선과 겹쳐 빼고, 값만 라벨로).
+        # 도로후퇴선은 1.2m 길이의 짧은 치수선이 아니다. 현재 도로 경계에서 필지
+        # 안쪽으로 1.2m 평행 이동한 선이며, 파란 편입 예정면의 안쪽 긴 경계다.
+        # strip 경계에서 현재 접촉선 주변을 제외한 조각 중 가장 긴 것을 후퇴선으로 쓴다.
+        try:
+            # 접촉선을 좌·우로 정확히 setback만큼 평행 이동한 두 후보 중 파란 편입면
+            # 및 필지 안에 놓이는 쪽을 고른다. strip 경계를 통째로 쓰면 양끝 짧은
+            # 연결선까지 U자 형태로 붙으므로 평행선 자체만 사용한다.
+            offset_parts = []
+            for side in ("left", "right"):
+                offset = contact_m.parallel_offset(setback, side, join_style=2)
+                offset_parts.extend(_iter_linestrings(offset))
+            if offset_parts:
+                inner = max(
+                    offset_parts,
+                    key=lambda ls: strip_m.buffer(0.05).intersection(ls).length,
+                ).intersection(strip_m.buffer(0.05))
+                inner_lines = list(_iter_linestrings(inner))
+                inner = max(inner_lines, key=lambda ls: ls.length) if inner_lines else None
+            else:
+                inner = None
+            if inner is not None and not inner.is_empty:
+                inner = transform(_to_deg, inner)
+                segments.append({
+                    "positions": [[float(x), float(y)] for x, y in inner.coords],
+                    "label": f"도로후퇴선 {setback:.1f}m",
+                    "color": "#7B1FA2", "width": 4, "onTop": True,
+                    "kind": "setback",
+                })
+        except Exception:
+            logger.debug("도로후퇴선 계산 실패", exc_info=True)
+
+        # 파란 라벨은 편입되는 '면적'만 설명한다. 후퇴 거리는 위 보라색 거리선이 맡는다.
         labels.append({
             "lon": rp.x, "lat": rp.y,
-            "text": f"도로 편입 약 {area:,.0f}㎡",
+            "text": f"도로 편입 예정면적 약 {area:,.0f}㎡",
             "color": "#1565C0",  # 도로 편입 파랑(면 색과 동일)
-        })
-        labels.append({
-            "lon": cm.x, "lat": cm.y,
-            "text": f"후퇴 {setback:.1f}m",
-            "color": "#1565C0",  # 같은 도로 편입 건이라 같은 파랑
+            "kind": "road_area",
         })
     dims = None
     if labels or segments:
@@ -217,7 +253,7 @@ def division_dimensions(kept_zone: str, kept_geom: dict, kept_area: float,
     kc = kept.representative_point()
     # 라벨 배경색을 해당 면 색과 맞춘다 — 어느 면 얘긴지 색으로 바로 읽히게.
     labels.append({
-        "lon": kc.x, "lat": kc.y, "text": f"분할 대상 {kept_area:,.0f}㎡",
+        "lon": kc.x, "lat": kc.y, "text": f"면적 · 분할 대상 {kept_area:,.0f}㎡",
         "color": "#2E7D32",  # 분할 대상 초록
     })
     for ex in excluded:
@@ -227,19 +263,21 @@ def division_dimensions(kept_zone: str, kept_geom: dict, kept_area: float,
         ec = eg.representative_point()
         labels.append({
             "lon": ec.x, "lat": ec.y,
-            "text": f"분할 제외 {float(ex.get('area_m2') or 0):,.0f}㎡",
+            "text": f"면적 · 분할 제외 {float(ex.get('area_m2') or 0):,.0f}㎡",
             "color": "#C62828",  # 분할 제외 빨강
         })
         try:
             _first = True
             for ls in _iter_linestrings(kept.boundary.intersection(eg.boundary)):
                 if ls.length > 0:
-                    # 빨간 분할선 + '분할선' 글자(첫 조각에만 1개). 라벨은 declutter 로
+                    # 흰 점선 + 가위 표식으로 면 색(빨강)과 시각 문법을 완전히 분리한다.
+                    # 라벨은 declutter 로
                     # 근처 '분할 제외 N㎡' 와 안 겹치게 자동 배치된다.
                     segments.append({
                         "positions": [[float(x), float(y)] for x, y in ls.coords],
-                        "label": "분할선" if _first else "",
-                        "color": "#C62828", "width": 6, "onTop": True,
+                        "label": "분할 경계선" if _first else "",
+                        "color": "#FFFFFF", "width": 5, "onTop": True,
+                        "kind": "division",
                     })
                     _first = False
         except Exception:

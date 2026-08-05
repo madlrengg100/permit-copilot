@@ -106,6 +106,26 @@ def _is_division_request(query: str) -> bool:
     )
 
 
+def _division_view_request(query: str) -> str | None:
+    """분할 전/후 건축물 보기의 명시적 전환 요청.
+
+    일반 possible_models·building_model 표시보다 먼저 처리해야 현재 모델을 다시 그리는
+    것으로 새지 않는다. 버튼도 같은 원문을 보내므로 자연어와 단일 경로를 사용한다.
+    """
+    q = re.sub(r"\s+", " ", query or "").strip()
+    if not re.search(r"분할|원본|나누기", q):
+        return None
+    if re.search(r"분할\s*전|원본|나누기\s*전", q) and re.search(
+        r"건축물|건물|모델|보여|보기|표시|되돌", q
+    ):
+        return "before"
+    if re.search(r"분할\s*후|나눈\s*후", q) and re.search(
+        r"건축물|건물|모델|보여|보기|표시", q
+    ):
+        return "after"
+    return None
+
+
 def _is_affirmation(query: str) -> bool:
     """시스템 제안('보여드릴까요?')에 대한 긍정 화답인지 판단한다.
 
@@ -1557,8 +1577,9 @@ class Orchestrator:
         # 가로/세로·이격·도로접촉·배수 등 일반 치수선은 빼고(겹침·과부하 방지), 아래에서
         # 분할 대상/제외 조각과 분할선·면적만 얹는다.
         from .agents.map_control import division_dimensions, road_setback_pieces
-        # 분할 대지로 재계산한 지도·팝업을 원래대로 전부 다시 그린다 — 가로·세로·높이
-        # 치수선 등 아무것도 빼지 않는다. 그 위에 분할 조각·분할선·도로 편입을 얹는다.
+        # 분할 후 화면에는 일반 가로·세로·높이·도로접촉·배수·이격 치수선을 내보내지
+        # 않는다. 위 map_presentation.show_building_dimensions=False가 이를 강제하고,
+        # 아래에서는 분할 대상·제외·경계선·도로편입·도로후퇴선만 별도로 얹는다.
         yield self._render_event()
         # 분할선을 눈에 보이게 — 분할 대상(초록)·분할 제외 부분(빨강)을 조각으로 얹는다.
         # 두 색이 맞닿는 선이 곧 분할 경계다. 건물은 초록(분할 대상) 위에 선다.
@@ -1585,9 +1606,29 @@ class Orchestrator:
         if len(_div_pieces) >= 2:
             # persist=True: 분할 대상(초록)·제외(빨강)·도로 편입(보라) 조각은 지속 레이어에 —
             # 건물 모델을 세워도(clear_mass) 지워지지 않고 경계가 계속 보인다.
-            _overlay_cmds.append(
-                {"type": "show_zone_pieces", "pieces": _div_pieces, "persist": True}
-            )
+            _legend_items = []
+            for _piece in _div_pieces:
+                _legend_items.append({
+                    "label": _piece["zone"], "color": _piece["color"], "symbol": "area",
+                    "share_pct": _piece.get("share_pct"), "area_m2": _piece.get("area_m2"),
+                })
+            if _excluded:
+                _legend_items.append({
+                    "label": "분할 경계선", "color": "#FFFFFF", "symbol": "line",
+                    "note": "초록 분할 대상 면과 빨강 분할 제외 면을 나누는 예정 경계선",
+                })
+            if _setback_dims:
+                for _seg in _setback_dims.get("segments") or []:
+                    if _seg.get("kind") == "setback":
+                        _legend_items.append({
+                            "label": _seg["label"].replace("↔ ", ""),
+                            "color": _seg["color"], "symbol": "line",
+                            "note": "폭 4m에 못 미치는 도로에서 도로 중심선 기준 폭을 확보하기 위해 필지 안쪽으로 물리는 거리",
+                        })
+            _overlay_cmds.append({
+                "type": "show_zone_pieces", "pieces": _div_pieces,
+                "legend_items": _legend_items, "persist": True,
+            })
         # 면에는 면적(㎡) 라벨을, 분할 경계선은 빨간 치수선으로 — '숫자가 보이게'.
         if _excluded:
             _overlay_cmds.append(
@@ -3026,6 +3067,21 @@ class Orchestrator:
         # 진단이 살아 있으면 최신 구조화 데이터로 바로 답하고, 서버 재시작 등으로
         # 진단이 사라진 경우에만 아래 좌표 진단으로 조용히 복구한다.
         if continuation and self.diagnosis:
+            # 분할 전/후 보기 버튼·명시적 자연어는 일반 모델 표시나 LLM 의도 해석보다
+            # 먼저 실행한다. otherwise '건축물 보여줘'가 possible_models/control=show로
+            # 잡혀 분할 상태를 바꾸지 않고 현재 모델만 다시 그리는 문제가 생긴다.
+            _division_view = _division_view_request(original_query)
+            if _division_view == "before":
+                async for _e in self._show_predivision():
+                    yield _e
+                self._selection_changed = False
+                return
+            if _division_view == "after":
+                async for _e in self._execute_division():
+                    yield _e
+                self._selection_changed = False
+                return
+
             interpreted = await self._interpret_followup(original_query)
             intent = interpreted.get("intent") or "followup_explanation"
             # '다른 용도 모델을 보여드릴까요?' 제안(pending_offer)에 사용자가 긍정하면,
@@ -3112,9 +3168,7 @@ class Orchestrator:
                 interpreted["control"] = None
                 self.update_conversation_context(pending_offer="")
             # '분할 전 건축물 보여줘' → 원본(분할 전)으로 되돌린다.
-            if _is_division_request(original_query) and re.search(
-                r"분할\s*전|원본|원래(대로)?|되돌|나누기\s*전", original_query
-            ):
+            if _division_view_request(original_query) == "before":
                 async for _e in self._show_predivision():
                     yield _e
                 self._selection_changed = False

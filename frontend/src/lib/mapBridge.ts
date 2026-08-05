@@ -75,6 +75,14 @@ export type MapCommand =
       type: "show_zone_pieces";
       // 분할 오버레이(분할 대상·제외)면 true — clear_mass 로도 안 지워지는 지속 레이어에 그린다.
       persist?: boolean;
+      legend_items?: Array<{
+        label: string;
+        color: string;
+        symbol: "area" | "line";
+        share_pct?: number | null;
+        area_m2?: number | null;
+        note?: string;
+      }>;
       pieces: Array<{
         zone: string;
         share_pct: number;
@@ -107,8 +115,8 @@ export type MapCommand =
       type: "show_dimensions";
       // 분할선·분할 면적 라벨이면 true — 지속 레이어에 그려 이후 이격선 표시로도 안 지워진다.
       persist?: boolean;
-      segments: Array<{ positions: number[][]; label: string; color?: string; width?: number; onTop?: boolean; height_m?: number }>;
-      labels: Array<{ lon: number; lat: number; text: string; height?: number; offset?: boolean; color?: string }>;
+      segments: Array<{ positions: number[][]; label: string; color?: string; width?: number; onTop?: boolean; height_m?: number; kind?: "setback" | "division" }>;
+      labels: Array<{ lon: number; lat: number; text: string; height?: number; offset?: boolean; color?: string; kind?: "road_area" }>;
     }
   | {
       /** 자연어로 켠/끈 지도 레이어. 지정된 항목만 바꾼다(MapCanvas가 처리). */
@@ -708,11 +716,11 @@ export class MapBridge {
   // 치수선·면적 라벨 (검은 박스 대체)
   private dimensionIds: string[] = [];
   // 세그먼트 라벨(가로·세로·도로접촉·건축선/이격) 겹침 방지용 앵커 + 카메라 리스너.
-  private dimLabelAnchors: { id: string; lon: number; lat: number; w: number; h: number }[] = [];
+  private dimLabelAnchors: { id: string; lon: number; lat: number; w: number; h: number; kind?: string }[] = [];
   private dimLabelDisposer: (() => void) | null = null;
   // 분할 오버레이(persist) 라벨 전용 겹침 방지 채널 — 분할선·분할 대상/제외·도로 편입·
   // 후퇴 라벨을 서로 밀어내고, 정규 치수선 declutter 와 독립적으로 카메라를 따라간다.
-  private persistLabelAnchors: { id: string; lon: number; lat: number; w: number; h: number }[] = [];
+  private persistLabelAnchors: { id: string; lon: number; lat: number; w: number; h: number; kind?: string }[] = [];
   private persistLabelDisposer: (() => void) | null = null;
   // 팝업 접기 시 숨겼다가 펼칠 때 다시 그리기 위해 마지막 치수 명령을 보관
   private lastDimensionsCommand: Extract<MapCommand, { type: "show_dimensions" }> | null = null;
@@ -884,7 +892,10 @@ export class MapBridge {
             this.clearZonePieces();
             this.clearRestrictionPieces();
             this.clearSiteNotes();
-            this.clearDimensions();
+            // 새 진단·분할 전후 전환에서는 화면 객체뿐 아니라 재표시용으로 저장한
+            // 직전 치수 명령도 폐기한다. 남겨두면 팝업을 펼칠 때 분할 전 치수선이
+            // 분할 후 화면에 되살아난다.
+            this.clearDimensions(true);
             this.clearSlopeGrid();
             this.slopeData = null;
             // 분할 오버레이는 지속 레이어라 여기서 지우지 않는다(모델을 세워도 남아야 한다).
@@ -1151,8 +1162,10 @@ export class MapBridge {
           id,
           polygon: {
             hierarchy: ws3d.common.Cartesian3.fromDegreesArray(flat),
-            // 위성영상(들판·숲) 위에서 0.38 은 뭉개져 보였다 — 진하게
-            material: pieceColor.withAlpha(0.5),
+            // 분할 면은 바탕 지도가 비치는 반투명 채움으로, 경계·후퇴선은 아래
+            // showDimensions에서 완전 불투명으로 그린다. 같은 계열 색이어도 면/선의
+            // 시각 문법이 즉시 갈리도록 지속 분할 오버레이만 투명도를 더 낮춘다.
+            material: pieceColor.withAlpha(cmd.persist ? 0.3 : 0.5),
             // 필지 채움(0.2m)보다 살짝 위 — 아래 청록색과 섞여 탁해지지 않게
             height: 0.6,
             heightReference: 2, // RELATIVE_TO_GROUND
@@ -1300,35 +1313,53 @@ export class MapBridge {
         : yellow;
       const isCustom = Boolean(seg.color);
 
-      // 높이 치수선 — 가로·세로가 만나는 모서리에서 매스 높이만큼 수직으로 올린 노란 선.
+      // 높이 치수선은 지형 타일이 아직 도착하지 않아도 보이도록 지면 상대고도로
+      // 만든다. 일반 polyline은 높이 기준을 지정할 수 없어 조회 순간의 절대 지형고를
+      // 쓰면 선이 땅속에 묻힐 수 있으므로, 아주 얇은 수직 프리즘을 선처럼 사용한다.
       if (seg.height_m && seg.height_m > 0) {
         const [hlon, hlat] = seg.positions[0];
-        const base = this.terrainHeight(hlon, hlat) + 0.5;
-        const top = base + seg.height_m;
+        const cosLat = Math.max(0.1, Math.cos((hlat * Math.PI) / 180));
+        // 8cm 폭은 비스듬한 시점에서 1px 아래로 줄어 깜빡여 보인다. 정사각 단면
+        // 30cm면 어느 방위에서도 한쪽 면이 남으면서 건물 치수 막대로 과도하게 굵지 않다.
+        const halfWidthM = 0.15;
+        const dLon = halfWidthM / (111320 * cosLat);
+        const dLat = halfWidthM / 111320;
         const vlineId = `map-dim-vline-${Date.now()}-${rid()}`;
         this.viewer.entities.add({
           id: vlineId,
-          polyline: {
-            positions: [
-              ws3d.common.Cartesian3.fromDegrees(hlon, hlat, base),
-              ws3d.common.Cartesian3.fromDegrees(hlon, hlat, top),
-            ],
-            width: seg.width ?? 6,
+          polygon: {
+            hierarchy: ws3d.common.Cartesian3.fromDegreesArray([
+              hlon - dLon, hlat - dLat,
+              hlon + dLon, hlat - dLat,
+              hlon + dLon, hlat + dLat,
+              hlon - dLon, hlat + dLat,
+            ]),
+            height: 0.5,
+            heightReference: relativeToGround,
+            extrudedHeight: seg.height_m + 0.5,
+            extrudedHeightReference: relativeToGround,
             material: segColor,
-            depthFailMaterial: segColor,
+            outline: false,
+            closeTop: true,
+            closeBottom: true,
           },
         });
         bucket.push(vlineId);
         const vlabelId = `map-dim-vlabel-${Date.now()}-${rid()}`;
         this.viewer.entities.add({
           id: vlabelId,
-          position: ws3d.common.Cartesian3.fromDegrees(hlon, hlat, base + seg.height_m / 2),
+          position: ws3d.common.Cartesian3.fromDegrees(hlon, hlat, seg.height_m / 2 + 0.5),
           label: {
             text: seg.label,
             font: isCustom ? "bold 13px 'Malgun Gothic', sans-serif" : "13px 'Malgun Gothic', sans-serif",
-            fillColor: isCustom ? ws3d.common.Color.WHITE : ws3d.common.Color.BLACK,
+            fillColor: seg.kind === "division"
+              ? ws3d.common.Color.BLACK
+              : isCustom
+                ? ws3d.common.Color.WHITE
+                : ws3d.common.Color.BLACK,
             showBackground: true,
             backgroundColor: isCustom ? segColor.withAlpha(0.95) : yellow.withAlpha(0.98),
+            heightReference: relativeToGround,
             disableDepthTestDistance: Number.POSITIVE_INFINITY,
           },
         });
@@ -1345,6 +1376,15 @@ export class MapBridge {
         material: segColor,
         depthFailMaterial: segColor,
       };
+      // 분할 경계는 빨강 면과 같은 실선이면 면/선 구분이 안 된다. 흰 점선으로
+      // 렌더링해 어느 배경색 위에서도 '경계선'임을 즉시 읽을 수 있게 한다.
+      if (seg.kind === "division") {
+        const Dash = (window as any).Cesium?.PolylineDashMaterialProperty;
+        if (Dash) {
+          linePoly.material = new Dash({ color: segColor, dashLength: 18 });
+          linePoly.depthFailMaterial = linePoly.material;
+        }
+      }
       // onTop: 지적 경계선(청록)보다 위에 그려 선면 전체가 그 색으로 보이게 한다.
       if (seg.onTop) linePoly.zIndex = 1000;
       this.viewer.entities.add({ id: lineId, polyline: linePoly });
@@ -1364,9 +1404,18 @@ export class MapBridge {
           label: {
             text: seg.label,
             font: isCustom ? "bold 13px 'Malgun Gothic', sans-serif" : "13px 'Malgun Gothic', sans-serif",
-            fillColor: isCustom ? ws3d.common.Color.WHITE : ws3d.common.Color.BLACK,
+            fillColor: seg.kind === "division"
+              ? ws3d.common.Color.fromCssColorString("#111111")
+              : isCustom
+                ? ws3d.common.Color.WHITE
+                : ws3d.common.Color.BLACK,
             showBackground: true,
-            backgroundColor: isCustom ? segColor.withAlpha(0.95) : yellow.withAlpha(0.98),
+            // 흰 점선 분할 경계는 같은 흰 배경 + 검정 글씨로 단순하게 읽힌다.
+            backgroundColor: seg.kind === "division"
+              ? ws3d.common.Color.WHITE.withAlpha(0.96)
+              : isCustom
+                ? segColor.withAlpha(0.95)
+                : yellow.withAlpha(0.98),
             // 치수선 라벨(가로/세로)은 살짝 위로 올려, 같은 지면의 '도로 접촉'
             // 라벨과 겹치지 않게 한다.
             pixelOffset: new ws3d.common.Cartesian2(0, -20),
@@ -1382,7 +1431,8 @@ export class MapBridge {
           lon: midLon,
           lat: midLat,
           w: seg.label.length * 9 + 14,
-          h: 22,
+          h: 30,
+          kind: seg.kind,
         });
       }
       void mid;
@@ -1429,14 +1479,15 @@ export class MapBridge {
       // 오프셋을 쓰므로 대상에서 제외한다(기존 동작 유지).
       if (persist) {
         this.persistLabelAnchors.push({
-          id, lon: lab.lon, lat: lab.lat, w: lab.text.length * 11 + 18, h: 22,
+          id, lon: lab.lon, lat: lab.lat, w: lab.text.length * 11 + 18, h: 30,
+          kind: lab.kind,
         });
       }
     }
     // 세그먼트 라벨(가로·세로·도로접촉·건축선/이격) 겹침 방지 — 카메라가 움직일
     // 때마다 화면좌표로 겹침을 검사해 라벨을 화면상에서 밀어낸다. 회전·줌아웃에도
     // 안 붙는다. 면적 라벨(건축/대지면적)은 대상에서 제외한다.
-    const declutter = (anchorList: { id: string; lon: number; lat: number; w: number; h: number }[]) => {
+    const declutter = (anchorList: { id: string; lon: number; lat: number; w: number; h: number; kind?: string }[]) => {
       const C = (window as any).Cesium;
       const scene: any = this.viewer.scene;
       if (!C?.SceneTransforms || !scene?.camera) return;
@@ -1446,11 +1497,18 @@ export class MapBridge {
       const camera = scene.camera;
       // 화면에 나타나는 순서(가까운 것 우선)로 자리를 먼저 잡는다.
       const placed: { x: number; y: number; w: number; h: number }[] = [];
-      // 후보 오프셋(화면 px): 라벨이 길어서 세로로 쌓아 확실히 떨어뜨린다.
-      const cands: [number, number][] = [
-        [0, -22], [0, 22], [0, -48], [0, 48], [0, -74], [0, 74],
-        [0, -100], [0, 100], [0, -126], [0, 126], [0, -152], [0, 152],
-      ];
+      // 분할·후퇴 라벨은 작은 조각 한가운데를 가리지 않도록 먼저 좌우 바깥으로
+      // 뺀다. 일반 치수 라벨은 기존처럼 선 가까운 위·아래 자리를 우선한다.
+      const defaultCands: [number, number][] = persist
+        ? [
+            [92, -30], [-92, 30], [92, 30], [-92, -30],
+            [118, -56], [-118, 56], [118, 56], [-118, -56],
+            [0, -74], [0, 74], [0, -108], [0, 108],
+          ]
+        : [
+            [0, -22], [0, 22], [0, -48], [0, 48], [0, -74], [0, 74],
+            [0, -100], [0, 100], [0, -126], [0, 126], [0, -152], [0, 152],
+          ];
       const anchors = anchorList
         .map((a) => {
           const gh = this.terrainHeight(a.lon, a.lat);
@@ -1466,6 +1524,13 @@ export class MapBridge {
       for (const { a, win } of anchors) {
         const ent = this.viewer.entities.getById(a.id);
         if (!ent?.label) continue;
+        // 도로 관련 라벨은 같은 색 도형에 붙어 읽히는 것이 우선이다. 보라 후퇴선은
+        // 선 바로 위, 파란 편입면적은 면 중심 바로 아래에서 시작하고 가까운 자리만 쓴다.
+        const cands: [number, number][] = a.kind === "setback"
+          ? [[0, -36], [48, -36], [-48, -36], [0, 36], [48, 36], [-48, 36]]
+          : a.kind === "road_area"
+            ? [[0, 36], [52, 36], [-52, 36], [0, -36], [52, -36], [-52, -36]]
+            : defaultCands;
         let chosen = cands[0];
         for (const [cx, cy] of cands) {
           const rect = { x: win.x + cx - a.w / 2, y: win.y + cy - a.h / 2, w: a.w, h: a.h };
@@ -1493,11 +1558,12 @@ export class MapBridge {
     this.note(`✓ 치수선 ${cmd.segments.length}개 · 라벨 ${cmd.labels.length}개 표시`);
   }
 
-  clearDimensions(): void {
+  clearDimensions(forgetLast = false): void {
     this.dimLabelDisposer?.();
     this.dimLabelDisposer = null;
     this.dimLabelAnchors = [];
     this.removeAll(this.dimensionIds);
+    if (forgetLast) this.lastDimensionsCommand = null;
   }
 
   /** 팝업 접기/펼치기에 맞춰 치수선·라벨을 숨기거나 다시 그린다. */
@@ -1529,22 +1595,18 @@ export class MapBridge {
     const baseAboveGround = 0.5;
     const topAboveGround = baseAboveGround + cmd.height_m;
 
-    // vw.geom.PolygonZ 래퍼는 height와 extrudedHeight를 다시 합산해 지형 표고가
-    // 이중 적용된다. VWorld 내부 Cesium Entity를 사용하고 양쪽 높이 기준을
-    // RELATIVE_TO_GROUND로 고정하면 지형 표고와 무관하게 정확히 지면에 붙는다.
+    // RELATIVE_TO_GROUND 폴리곤은 상세 지형 LOD가 들어오는 동안 엔진이 높이를
+    // 계속 보정해 건물이 위에서 아래로 천천히 내려오는 것처럼 보인다. 현재
+    // 지형고에 즉시 고정하고 상세 타일이 도착한 뒤 한 번만 다시 맞춘다.
     const ws3d = window.ws3d;
     const flat = footprint.flatMap(([lon, lat]) => [lon, lat]);
     const cesiumColor = ws3d.common.Color.fromCssColorString(cmd.color);
-    // VWorld는 Cesium HeightReference를 ws3d.common에 재노출하지 않는 버전이
-    // 있다. 이 번들 내부 enum에서 RELATIVE_TO_GROUND는 2이므로 전역 export가
-    // 없을 때도 같은 값으로 동작하게 한다.
-    const relativeToGround =
-      (window as any).Cesium?.HeightReference?.RELATIVE_TO_GROUND ?? 2;
+    const heightNone = (window as any).Cesium?.HeightReference?.NONE ?? 0;
     const entityId = `map-mass-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const polygon: any = {
       hierarchy: ws3d.common.Cartesian3.fromDegreesArray(flat),
-      height: cmd.flat_only ? baseAboveGround : topAboveGround,
-      heightReference: relativeToGround,
+      height: ground + (cmd.flat_only ? baseAboveGround : topAboveGround),
+      heightReference: heightNone,
       material: cesiumColor.withAlpha(cmd.opacity),
       outline: true,
       outlineColor: cesiumColor,
@@ -1552,8 +1614,8 @@ export class MapBridge {
       closeBottom: true,
     };
     if (!cmd.flat_only) {
-      polygon.extrudedHeight = baseAboveGround;
-      polygon.extrudedHeightReference = relativeToGround;
+      polygon.extrudedHeight = ground + baseAboveGround;
+      polygon.extrudedHeightReference = heightNone;
     }
     const massEntity = this.viewer.entities.add({
       id: entityId,
@@ -1564,34 +1626,53 @@ export class MapBridge {
     this.note(
       cmd.flat_only
         ? "✓ 용적률 초과: 최대 건축면적 평면 표시"
-        : "✓ 건물 매스 생성됨 (지형 상대고도 Entity)",
+        : "✓ 건물 매스 생성됨 (즉시 절대고도 Entity)",
     );
     this.note(
       `매스: 지형 ${Math.round(ground)}m 위 ${baseAboveGround}m 부터 ` +
-        `${cmd.height_m}m (${cmd.floors}층) · RELATIVE_TO_GROUND`,
+        `${cmd.height_m}m (${cmd.floors}층) · 상세 지형 후 1회 보정`,
     );
 
-    // VWorld PointZ는 절대고도라 지형 상대 매스와 따로 움직인다. 마커도 같은
-    // RELATIVE_TO_GROUND Entity로 만들어 항상 건물 지붕 중앙을 따라가게 한다.
+    // 마커도 매스와 같은 절대고도로 두고 아래의 1회 보정에서 함께 이동한다.
     const markerId = `map-mass-marker-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     this.viewer.entities.add({
       id: markerId,
       position: ws3d.common.Cartesian3.fromDegrees(
         px,
         py,
-        (cmd.flat_only ? 0 : cmd.height_m) + 2,
+        ground + (cmd.flat_only ? 0 : cmd.height_m) + 2,
       ),
       point: {
         pixelSize: 11,
         color: cesiumColor,
         outlineColor: ws3d.common.Color.WHITE,
         outlineWidth: 2,
-        heightReference: relativeToGround,
+        heightReference: heightNone,
         disableDepthTestDistance: Number.POSITIVE_INFINITY,
       },
     });
     this.massIds.push(markerId);
-    this.note("✓ 매스 지붕 상대고도 마커 생성됨");
+    this.note("✓ 매스 지붕 절대고도 마커 생성됨");
+
+    window.setTimeout(() => {
+      const correctedGround = this.terrainHeight(px, py);
+      if (!Number.isFinite(correctedGround) || Math.abs(correctedGround - ground) < 0.2) return;
+      const currentMass = this.viewer.entities.getById?.(entityId);
+      if (currentMass?.polygon) {
+        currentMass.polygon.height = correctedGround + (cmd.flat_only ? baseAboveGround : topAboveGround);
+        if (!cmd.flat_only) currentMass.polygon.extrudedHeight = correctedGround + baseAboveGround;
+      }
+      const currentMarker = this.viewer.entities.getById?.(markerId);
+      if (currentMarker) {
+        currentMarker.position = ws3d.common.Cartesian3.fromDegrees(
+          px,
+          py,
+          correctedGround + (cmd.flat_only ? 0 : cmd.height_m) + 2,
+        );
+      }
+      this.viewer.scene?.requestRender?.();
+      this.note(`✓ 상세 지형고 ${Math.round(correctedGround)}m로 매스 1회 보정`);
+    }, 3200);
   }
 
   /** 추천 주택을 법정 한계 매스 내부에 개념 모델로 배치한다. */

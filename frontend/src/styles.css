@@ -779,6 +779,11 @@ body {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
   pointer-events: auto;
 }
+.zone-legend:not(.is-division) {
+  min-width: 0;
+  width: max-content;
+  max-width: 280px;
+}
 .zone-legend-title {
   font-weight: 700;
   margin-bottom: 9px;
@@ -817,6 +822,14 @@ body {
   flex: none;
   border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+.zone-legend-line {
+  width: 22px;
+  height: 5px;
+  border-radius: 999px;
+  flex: none;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3);
 }
 .zone-legend-name { flex: 1; white-space: nowrap; } /* 두 줄로 접히지 않게 — 박스가 왼쪽으로 늘어난다 */
 .zone-legend-pct { color: var(--muted); font-size: 11px; white-space: nowrap; padding-left: 14px; }
