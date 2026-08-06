@@ -12,13 +12,21 @@ from functools import lru_cache
 from pathlib import Path
 
 _DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "setbacks.json"
+_VERIFIED_PATH = Path(__file__).resolve().parent.parent / "data" / "setbacks_verified.json"
 
 
 @lru_cache(maxsize=1)
 def _load() -> dict:
     try:
         with _DATA_PATH.open(encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
+        # 자동 표 파싱은 병합 셀을 잘못 연결할 수 있다. 원문 이미지/HWP를 사람이
+        # 대조한 관할은 별도 파일의 검수본으로 통째로 덮어써 재수집에도 보존한다.
+        if _VERIFIED_PATH.exists():
+            with _VERIFIED_PATH.open(encoding="utf-8") as f:
+                verified = json.load(f)
+            data.update({k: v for k, v in verified.items() if not k.startswith("_")})
+        return data
     except (OSError, ValueError):
         return {}
 

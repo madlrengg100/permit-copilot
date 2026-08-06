@@ -1,0 +1,179 @@
+{
+  "_meta": {
+    "note": "건축조례 원문 표를 사람이 대조한 관할별 검수본. setbacks.json 자동 파싱값보다 우선 적용한다.",
+    "updated_at": "2026-08-06"
+  },
+  "충청북도 음성군": {
+    "source": "음성군 건축 조례 제30조·별표 3(대지안의 공지 기준, 시행 20251002)",
+    "source_file": "https://www.law.go.kr/flDownload.do?gubun=ELIS&flSeq=157598433",
+    "review_status": "hwp_manually_verified",
+    "rules": [
+      {
+        "use": "단독주택",
+        "when": {"zone_contains": "전용주거지역"},
+        "front_m": 0.0,
+        "adjacent_m": 1.0,
+        "note": "별표 3: 전용주거지역 건축물(공동주택 제외) 기준"
+      },
+      {
+        "use": "단독주택",
+        "front_m": 0.0,
+        "adjacent_m": 0.5,
+        "note": "별표 3: 그 밖의 건축물 기준"
+      },
+      {
+        "use": "제1종근린생활시설",
+        "when": {"zone_contains": "전용주거지역"},
+        "front_m": 0.0,
+        "adjacent_m": 1.0
+      },
+      {
+        "use": "제1종근린생활시설",
+        "front_m": 0.0,
+        "adjacent_m": 0.5
+      },
+      {
+        "use": "제2종근린생활시설",
+        "when": {"zone_contains": "전용주거지역"},
+        "front_m": 0.0,
+        "adjacent_m": 1.0
+      },
+      {
+        "use": "제2종근린생활시설",
+        "front_m": 0.0,
+        "adjacent_m": 0.5
+      },
+      {
+        "use": "시설물",
+        "when": {"zone_contains": "전용주거지역"},
+        "front_m": 0.0,
+        "adjacent_m": 1.0
+      },
+      {
+        "use": "시설물",
+        "front_m": 0.0,
+        "adjacent_m": 0.5
+      },
+      {
+        "use": "공장",
+        "when": {"min_gross": 500, "zone": "준공업지역"},
+        "front_m": 1.5,
+        "adjacent_m": 1.0
+      },
+      {
+        "use": "공장",
+        "when": {
+          "min_gross": 500,
+          "not_zone_in": ["전용공업지역", "일반공업지역", "준공업지역"]
+        },
+        "front_m": 3.0,
+        "adjacent_m": 1.5
+      },
+      {
+        "use": "창고시설",
+        "when": {"min_gross": 500, "zone": "준공업지역"},
+        "front_m": 1.5,
+        "adjacent_m": 0.5
+      },
+      {
+        "use": "창고시설",
+        "when": {
+          "min_gross": 500,
+          "not_zone_in": ["전용공업지역", "일반공업지역", "준공업지역"]
+        },
+        "front_m": 3.0,
+        "adjacent_m": 0.5
+      },
+      {
+        "use": "판매시설",
+        "when": {"min_gross": 1000, "zone_not_contains": "상업지역"},
+        "front_m": 3.0,
+        "adjacent_m": 1.5
+      },
+      {
+        "use": "판매시설",
+        "when": {"min_gross": 1000, "zone_contains": "상업지역"},
+        "front_m": 3.0,
+        "adjacent_m": 0.5
+      },
+      {
+        "use": "문화 및 집회시설",
+        "when": {"min_gross": 1000, "zone_not_contains": "상업지역"},
+        "front_m": 3.0,
+        "adjacent_m": 1.5,
+        "note": "전시장 및 동·식물원 제외"
+      },
+      {
+        "use": "종교시설",
+        "when": {"min_gross": 1000, "zone_not_contains": "상업지역"},
+        "front_m": 3.0,
+        "adjacent_m": 1.5
+      },
+      {
+        "use": "숙박시설",
+        "needs_subtype": true,
+        "note": "일반숙박시설 여부와 연면적에 따라 전면 2~3m, 인접 0.5~1.5m로 달라 세부유형 확인이 필요합니다."
+      },
+      {
+        "use": "공동주택",
+        "needs_subtype": true,
+        "note": "아파트·연립주택·다세대주택별 전면 1~6m, 인접 1~6m로 달라 세부유형 확인이 필요합니다."
+      },
+      {
+        "use": "업무시설",
+        "when": {"min_gross": 1500},
+        "front_m": 2.0,
+        "adjacent_m": 0.5
+      },
+      {
+        "use": "위험물 저장 및 처리시설",
+        "when": {"zone_contains": "주거지역"},
+        "front_m": 4.0,
+        "adjacent_m": 4.0
+      },
+      {
+        "use": "위험물 저장 및 처리시설",
+        "front_m": 2.0,
+        "adjacent_m": 2.0
+      },
+      {
+        "use": "자동차 관련 시설",
+        "when": {"zone_contains": "주거지역"},
+        "front_m": 3.0,
+        "adjacent_m": 3.0
+      },
+      {
+        "use": "자동차 관련 시설",
+        "front_m": 1.0,
+        "adjacent_m": 2.0,
+        "note": "인접 이격은 상업지역 건축물 제외"
+      },
+      {
+        "use": "동물 및 식물 관련 시설",
+        "front_m": 1.0,
+        "adjacent_m": 1.0
+      },
+      {
+        "use": "자원순환 관련 시설",
+        "when": {"zone_contains": "공업지역"},
+        "front_m": 3.0,
+        "adjacent_m": 4.0
+      },
+      {
+        "use": "자원순환 관련 시설",
+        "front_m": 6.0,
+        "adjacent_m": 6.0
+      },
+      {
+        "use": "묘지 관련 시설",
+        "front_m": 6.0,
+        "adjacent_m": 6.0
+      },
+      {
+        "use": "장례시설",
+        "front_m": 6.0,
+        "adjacent_m": 6.0
+      }
+    ]
+  }
+}
