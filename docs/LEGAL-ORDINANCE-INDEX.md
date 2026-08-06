@@ -70,8 +70,21 @@ LLM이나 검색 청크가 건폐율·용적률·이격거리 같은 수치를 �
 - `setback_rules.lookup()`가 `지자체 + 용도 + 용도지역 + 연면적` 조건을 순서대로
   평가한다.
 
-현재 `setbacks.json`은 119개 지자체를 포함한다. 자동 파싱값은 표본 검수가
+현재 `setbacks.json`은 120개 지자체를 포함한다. 자동 파싱값은 표본 검수가
 필요하며, 원문 검색 청크 자체를 수치 계산에 사용하지 않는다.
+
+### 별표가 없는 관할(no_appendix)과 조문 내 이미지 표
+
+일부 지자체(전국 44곳: 양평·가평·광주·여주 등)는 `collect_setback_tables.py`가
+`no_appendix`로 표시된다 — 건축조례 '대지 안의 공지' 조문이 거리 값을 **본문·HWP
+별표가 아니라 조문 안 이미지(표)로** 담고 있어 XML/HWP 수집이 못 잡기 때문이다.
+이 경우 수치를 지어내지 않고, **원문 이미지(ELISIMG)를 사람이 확인해** `setbacks.json`에
+`review_status: "image_manually_verified"` + `source_images`(front/adjacent URL)로
+반영한다. 예: 경기도 양평군 제23조(단독주택 전용주거 1/1m, 그 밖 1/0.5m 등).
+
+상위 근거인 「건축법 시행령」 제80조의2·[별표 2] 대지의 공지 기준(전국 공통, 범위값을
+건축조례에 위임)은 `ordinance_index_chunks.json`에 원문 청크로 있으나 정형
+`setback_rules`에는 아직 fallback으로 반영되지 않았다(조례 미규정 관할의 잔여 gap).
 
 ## 국가 법령 수집과 청킹
 

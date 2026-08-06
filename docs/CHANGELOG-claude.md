@@ -9,6 +9,14 @@
 > 항목(안쪽 밀기·경계선 위 띄우기·화이트 범례·도로 편입 #AD1457/후퇴선 표기 등)은
 > 이후 되돌리거나 아래 내용으로 대체됐으니 최신 코드 기준으로 이 항목을 따를 것.
 
+### 양평군 이격(대지 안의 공지) 반영 — 조문 내 이미지 표 (Codex 병행)
+- 양평군 건축조례 제23조는 거리 값을 본문·HWP 별표가 아니라 **조문 안 이미지 표**로 담아
+  자동수집이 `no_appendix`였다(전국 44곳 동일 유형). 원문 이미지(ELISIMG)를 사람이 확인해
+  `setbacks.json`에 반영: 단독주택 전용주거 1/1m, 그 밖 1/0.5m 등. `review_status:
+  "image_manually_verified"` + `source_images`(front/adjacent URL)로 출처 명시(수치 미생성).
+  테스트 test_yangpyeong_setbacks.py 추가(총 116). LEGAL-ORDINANCE-INDEX 에 no_appendix·
+  이미지 표 처리와 시행령 별표2 잔여 gap 문서화. `.cache_setback_images/` gitignore 처리.
+
 ### 분할 방법별 법령 근거 구조화 + 접이식 (Codex 병행)
 - `_division_scenario_answer` 가 분할 방법마다 근거 조문을 붙인다: 규제 분리 → 건축법
   제57조·시행령 제80조(최소 분할면적)[+녹지 개발행위 시 국토계획법 제56조·시행령 제51조],

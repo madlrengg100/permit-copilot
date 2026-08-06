@@ -35,3 +35,4 @@ frontend/.server5173.log
 frontend/.stable5174.log
 backend/.server5173.log
 *.log
+backend/scripts/.cache_setback_images/

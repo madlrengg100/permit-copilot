@@ -4033,6 +4033,97 @@
       }
     ]
   },
+  "경기도 양평군": {
+    "source": "양평군 건축 조례 제23조(대지안의 공지) 조문 내 이미지 표 (시행 20251117)",
+    "source_images": {
+      "front": "https://www.law.go.kr/flDownload.do?flSeq=158212157&gubun=ELISIMG",
+      "adjacent": "https://www.law.go.kr/flDownload.do?flSeq=158212159&gubun=ELISIMG"
+    },
+    "review_status": "image_manually_verified",
+    "rules": [
+      {
+        "use": "단독주택",
+        "when": {
+          "zone_contains": "전용주거지역"
+        },
+        "front_m": 1.0,
+        "adjacent_m": 1.0,
+        "note": "제23조 이미지 표: 전용주거지역 건축물(공동주택 제외) 기준"
+      },
+      {
+        "use": "단독주택",
+        "front_m": 1.0,
+        "adjacent_m": 0.5,
+        "note": "제23조 이미지 표: 별도 항목에서 정하지 않은 모든 건축물 기준"
+      },
+      {
+        "use": "제1종근린생활시설",
+        "front_m": 1.0,
+        "adjacent_m": 0.5,
+        "note": "제23조 이미지 표: 별도 항목에서 정하지 않은 모든 건축물 기준"
+      },
+      {
+        "use": "제2종근린생활시설",
+        "front_m": 1.0,
+        "adjacent_m": 0.5,
+        "note": "제23조 이미지 표: 별도 항목에서 정하지 않은 모든 건축물 기준"
+      },
+      {
+        "use": "공장",
+        "when": {
+          "min_gross": 1000,
+          "not_zone_in": [
+            "전용공업지역",
+            "일반공업지역"
+          ]
+        },
+        "front_m": 3.0,
+        "adjacent_m": 1.5,
+        "note": "제23조 이미지 표: 바닥면적 합계 1,000㎡ 이상 공장 기준"
+      },
+      {
+        "use": "공장",
+        "when": {
+          "min_gross": 500,
+          "zone": "준공업지역"
+        },
+        "front_m": 1.5,
+        "adjacent_m": 1.0,
+        "note": "제23조 이미지 표: 바닥면적 합계 500㎡ 이상 준공업지역 공장 기준"
+      },
+      {
+        "use": "공장",
+        "when": {
+          "min_gross": 500,
+          "not_zone_in": [
+            "전용공업지역",
+            "일반공업지역",
+            "준공업지역"
+          ]
+        },
+        "front_m": 3.0,
+        "adjacent_m": 3.0,
+        "note": "제23조 이미지 표: 바닥면적 합계 500㎡ 이상 공장 기준"
+      },
+      {
+        "use": "공동주택",
+        "needs_subtype": true,
+        "note": "제23조 이미지 표상 아파트·연립주택·다세대주택 및 개구부 유무에 따라 전면 1~3m, 인접 1~6m로 달라 세부유형 확인이 필요합니다."
+      },
+      {
+        "use": "문화 및 집회시설",
+        "front_m": 3.0,
+        "adjacent_m": 1.5,
+        "note": "제23조 이미지 표 기준(전시장 및 동·식물원 제외)"
+      },
+      {
+        "use": "종교시설",
+        "front_m": 3.0,
+        "adjacent_m": 1.5,
+        "note": "제23조 이미지 표 기준"
+      }
+    ]
+  },
   "경기도 연천군": {
     "source": "연천군 건축조례 별표(대지 안의 공지) (시행 20240502)",
     "review_status": "auto_parsed",
