@@ -1346,6 +1346,24 @@ class Orchestrator:
             self.control_glossary = {}
         if not hasattr(self, "nav_glossary"):
             self.nav_glossary = []
+        # 구버전은 기존 건축물 1동만 있어도 필지 전체를 '실질 배치 불가'로 저장했다.
+        # 협소 대지가 아닌 경우 그 오래된 표현만 제거해, 재접속해도 새 판정 규칙을 쓴다.
+        restored_diagnoses = [self.diagnosis] if self.diagnosis else []
+        restored_diagnoses.extend((self._diagnosis_by_pnu or {}).values())
+        for diagnosis in restored_diagnoses:
+            if not isinstance(diagnosis, dict):
+                continue
+            existing = diagnosis.get("existing_buildings") or {}
+            presentation = (diagnosis.get("regulation") or {}).get("map_presentation") or {}
+            if (
+                diagnosis.get("placement_restricted")
+                and existing.get("has_buildings")
+                and not diagnosis.get("min_lot_area")
+                and presentation.get("label") == "실질 배치 불가"
+            ):
+                diagnosis["placement_restricted"] = False
+                diagnosis["existing_building_layout_review"] = True
+                (diagnosis.get("regulation") or {}).pop("map_presentation", None)
 
     def _active_pnu(self) -> str:
         return (

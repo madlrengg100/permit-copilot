@@ -735,7 +735,15 @@ def format_diagnosis_answer(d: dict) -> str:
             (c.get("name", "") + c.get("note", "")) if isinstance(c, dict) else str(c)
             for c in (reg.get("constraints") or [])
         )
-        if "개발제한" in _cnames or "보전산지" in _cnames or "보전" in _cnames:
+        # '준보전산지'는 보전산지가 아니라 산지전용허가를 거쳐 이용을 검토하는
+        # 별도 분류다. 단순 부분문자열("보전산지")로 강한 보전규제로 읽지 않는다.
+        _protected_cnames = _cnames.replace("준보전산지", "")
+        if (
+            "개발제한" in _protected_cnames
+            or "보전산지" in _protected_cnames
+            or "공익용산지" in _protected_cnames
+            or "임업용산지" in _protected_cnames
+        ):
             out.append(
                 "- 이 필지엔 기존 건축물이 있고 개발제한·보전 규제가 감지됩니다 — 이런 "
                 "구역은 기존 건축물의 개축·재축만 허용되고 신축은 제한·불가할 수 있습니다. "
@@ -1361,9 +1369,11 @@ async def run_prediagnosis(
 
     state["min_lot_area"] = min_lot_area.check(zone, state["parcel"].get("area_m2"))
 
-    # 신축 배치 제한 — 협소(위) 또는 기존 건축물이 있어 멸실 없이는 신축을 배치할 수
-    # 없는 경우. 배지·매스·모델을 '실질 배치 불가'로 통일하는 단일 신호다.
-    state["placement_restricted"] = bool(state["min_lot_area"]) or bool(
+    # 신축 배치 제한은 법정 최소 대지면적 미달처럼 필지 전체에 걸리는 사유만 뜻한다.
+    # 기존 건축물 1동이 있다는 이유만으로 큰 필지 전체의 별동·증축·재배치 가능성까지
+    # 막을 수는 없다. 기존 건물은 별도 배치 검토사항으로 보존한다.
+    state["placement_restricted"] = bool(state["min_lot_area"])
+    state["existing_building_layout_review"] = bool(
         (state["existing_buildings"] or {}).get("has_buildings")
     )
 
@@ -1441,7 +1451,7 @@ async def run_prediagnosis(
             "reason": reg["reason"],
         }
 
-    # 협소·기존건물(placement_restricted)은 멸실 없이 신축을 배치할 수 없으므로,
+    # 협소 대지(placement_restricted)는 신축을 배치할 수 없으므로,
     # 건축 불가와 같은 map_presentation으로 카드·팝업·규모·매스·치수·모델을 억제한다
     # (배지 문구만 '실질 배치 불가'). 위 표현이 이미 있으면 그대로 둔다.
     if state["placement_restricted"] and not reg.get("map_presentation"):

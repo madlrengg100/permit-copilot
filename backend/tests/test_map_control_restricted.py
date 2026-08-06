@@ -1,11 +1,15 @@
 import copy
 import unittest
 
-from app.agents.map_control import build_map_commands
+from app.agents.map_control import _restriction_color, build_map_commands
 from app.agents.prediagnosis import format_diagnosis_answer
 
 
 class RestrictedMapRenderingTest(unittest.TestCase):
+    def test_semi_conservation_forest_is_conditional_not_red(self):
+        self.assertEqual(_restriction_color("준보전산지"), "#F9A825")
+        self.assertEqual(_restriction_color("보전산지"), "#C62828")
+
     def test_requested_use_restriction_suppresses_computed_mass(self):
         diagnosis = {
             "verdict": "conditional",

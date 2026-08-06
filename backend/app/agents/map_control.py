@@ -296,6 +296,10 @@ def _restriction_color(label: str) -> str:
     RED, ORANGE, GRAY = "#C62828", "#F9A825", "#9E9E9E"
     if "3등급" in s:  # 생태·자연도 3등급은 참고정보
         return GRAY
+    # 준보전산지는 이름에 '보전산지'가 들어가지만 법적으로 보전산지가 아니다.
+    # 산지전용허가를 거쳐 이용을 검토하는 조건부 항목이므로 빨강으로 분류하지 않는다.
+    if "준보전산지" in s:
+        return ORANGE
     # 원칙 불가/강한 제한 — 개발제한, 맹지(접도 미충족), 보전산지·농업진흥(전용 제한),
     # 상수원보호, 생태 1등급, 재해위험지구.
     if any(k in s for k in (
