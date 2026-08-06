@@ -4,6 +4,17 @@
 > 중복 구현하지 말 것.** 규제 수치는 데이터파일에서만(하드코딩 금지),
 > 가능 모델 목록은 `orchestrator._model_options_for_diagnosis()`만 — CLAUDE.md 준수.
 
+## 2026-08-06
+### '검토 의견 작성 중' 무한 대기 수정 — all-uses 판단 fallback 복구
+- 용도 미지정(all-uses) 검토 의견 경로가 timeout 60s + TimeoutError 만 포착 + 결정적
+  fallback 제거 상태라, LLM 이 지연/503/에러면 judgment 가 빈 채 render_pending_judgment
+  가 None 을 반환 → main.py 소비부가 message 를 안 내보내 프런트가 '검토 의견 작성 중'
+  에서 무한 대기했다(Codex 가 원인 못 찾던 증상).
+- 수정: (1) all-uses 경로 timeout 60s→14s + Exception 광범위 포착 + `_all_uses_verdict_judgment`
+  결정적 fallback 복구(빈 응답이면 반드시 채움). (2) main.py 소비부는 judgment 가 None 이어도
+  '작성 중' 스피너가 남지 않게 최소 안내 message 를 반드시 방출. 검증: 425-4(all-uses)에서
+  4.2s 작성중 후 6.4s 검토의견 방출.
+
 ## 2026-08-05
 > 이 날짜 항목이 분할 뷰·범례·주제도 로딩의 **최종 상태**다. 아래 2026-08-03 의 일부
 > 항목(안쪽 밀기·경계선 위 띄우기·화이트 범례·도로 편입 #AD1457/후퇴선 표기 등)은
