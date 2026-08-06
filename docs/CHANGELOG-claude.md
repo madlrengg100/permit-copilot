@@ -5,6 +5,11 @@
 > 가능 모델 목록은 `orchestrator._model_options_for_diagnosis()`만 — CLAUDE.md 준수.
 
 ## 2026-08-06
+### '검토 의견 작성 중' 진행 표시 제거
+- 검토 의견 계산 전 흘리던 tool_start{judgment}('검토 의견 작성 중') 진행 표시가 작성
+  완료 후에도 화면에 남아 지저분했다. main.py 소비부에서 그 emission 을 제거 — 검토
+  의견 message 는 그대로 방출된다(검증: 진행표시 없음·검토의견 방출 확인).
+
 ### '검토 의견 작성 중' 무한 대기 수정 — all-uses 판단 fallback 복구
 - 용도 미지정(all-uses) 검토 의견 경로가 timeout 60s + TimeoutError 만 포착 + 결정적
   fallback 제거 상태라, LLM 이 지연/503/에러면 judgment 가 빈 채 render_pending_judgment

@@ -364,16 +364,9 @@ async def chat(
                         ):
                             # 최초 진단 카드의 '검토 의견'은 무거운 LLM이라, 카드·지도를
                             # 먼저 흘려보낸 뒤 여기서 이어 계산·방출한다(체감 속도 개선).
-                            # 그 사이 6~8초 빈 구간이 멈춘 것처럼 보이지 않도록 '작성 중'
-                            # 진행 표시를 먼저 흘린다(프론트 TOOL_LABEL.judgment).
+                            # '검토 의견 작성 중' 진행 표시는 넣지 않는다 — 작성 후에도 남아
+                            # 지저분해서 뺐다(뒤이어 '검토 의견' message 가 곧 붙는다).
                             if event.get("event") == "pending_judgment":
-                                await queue.put((
-                                    "event",
-                                    {"event": "tool_start", "data": {"tool": "judgment"}},
-                                ))
-                                # 상태 이벤트가 Gemini 호출보다 먼저 SSE로 전달되도록
-                                # 소비 코루틴에 실행 기회를 준다.
-                                await asyncio.sleep(0)
                                 try:
                                     judgment_event = await orch.render_pending_judgment(
                                         str((event.get("data") or {}).get("query", ""))
@@ -381,8 +374,7 @@ async def chat(
                                 except Exception:  # noqa: BLE001
                                     logger.warning("render_pending_judgment 실패", exc_info=True)
                                     judgment_event = None
-                                # '검토 의견 작성 중'(tool_start)을 이미 흘렸으므로, 실패·None
-                                # 이어도 반드시 message 를 방출해 스피너가 무한히 남지 않게 한다.
+                                # 실패·None 이어도 반드시 message 를 방출한다(검토 의견 누락 방지).
                                 if not judgment_event:
                                     judgment_event = {
                                         "event": "message",
