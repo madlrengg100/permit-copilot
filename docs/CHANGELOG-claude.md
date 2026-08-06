@@ -14,6 +14,14 @@
   `setbacks_verified.json`(검수본)에 담고 `setback_rules._load()`가 자동파싱값보다 우선
   적용한다(재수집에도 보존). 음성군을 검수본으로 추가, test_eumseong_setbacks.py(총 119).
 
+### 지구단위계획 문서 파서 + 진단/치수선 테스트 보강 (Codex 병행)
+- `scripts/parse_district_plan_documents.py`: 지구단위계획 PDF/HWP/HWPX를 페이지 단위로
+  추출하고 스캔 페이지만 OCR(PyMuPDF·Pillow, requirements 추가). 대상 목록은
+  `district_plan_sources.json`. 원문→processed JSON 파이프라인(런타임 아닌 오프라인 수집).
+- 테스트 추가: test_district_plan_parser, test_map_height_dimension(높이 치수선),
+  test_placement_exclusion(기존 건축물 배치제외 완화). 세션 마이그레이션 테스트는 대체·정리.
+  전체 125 테스트 통과.
+
 ### 양평군 이격(대지 안의 공지) 반영 — 조문 내 이미지 표 (Codex 병행)
 - 양평군 건축조례 제23조는 거리 값을 본문·HWP 별표가 아니라 **조문 안 이미지 표**로 담아
   자동수집이 `no_appendix`였다(전국 44곳 동일 유형). 원문 이미지(ELISIMG)를 사람이 확인해

@@ -126,6 +126,16 @@ def _division_view_request(query: str) -> str | None:
     return None
 
 
+def _ignores_placement_restriction(query: str) -> bool:
+    """기존 건축물 때문에 생긴 '실질 배치 불가'를 제외한 법적 가부 질문인지."""
+    compact = re.sub(r"\s+", "", query or "")
+    return bool(
+        re.search(r"실질배치불가|배치불가|기존건축물|기존건물", compact)
+        and re.search(r"배제|제외|빼고|무시|없다고|없는것으로|고려하지", compact)
+        and re.search(r"건축|건물|지을|가능|허용", compact)
+    )
+
+
 def _is_affirmation(query: str) -> bool:
     """시스템 제안('보여드릴까요?')에 대한 긍정 화답인지 판단한다.
 
@@ -1346,24 +1356,70 @@ class Orchestrator:
             self.control_glossary = {}
         if not hasattr(self, "nav_glossary"):
             self.nav_glossary = []
-        # 구버전은 기존 건축물 1동만 있어도 필지 전체를 '실질 배치 불가'로 저장했다.
-        # 협소 대지가 아닌 경우 그 오래된 표현만 제거해, 재접속해도 새 판정 규칙을 쓴다.
-        restored_diagnoses = [self.diagnosis] if self.diagnosis else []
-        restored_diagnoses.extend((self._diagnosis_by_pnu or {}).values())
-        for diagnosis in restored_diagnoses:
-            if not isinstance(diagnosis, dict):
-                continue
-            existing = diagnosis.get("existing_buildings") or {}
-            presentation = (diagnosis.get("regulation") or {}).get("map_presentation") or {}
-            if (
-                diagnosis.get("placement_restricted")
-                and existing.get("has_buildings")
-                and not diagnosis.get("min_lot_area")
-                and presentation.get("label") == "실질 배치 불가"
-            ):
-                diagnosis["placement_restricted"] = False
-                diagnosis["existing_building_layout_review"] = True
-                (diagnosis.get("regulation") or {}).pop("map_presentation", None)
+
+    def _answer_ignoring_placement_restriction(self) -> str:
+        """기존 건물 배치 사유만 제외하고 구조화된 규제 판정을 설명한다."""
+        d = self.diagnosis or {}
+        reg = d.get("regulation") or {}
+        address = (
+            (d.get("location") or {}).get("matched_address")
+            or (d.get("parcel") or {}).get("jibun")
+            or "이 필지"
+        )
+        use = (d.get("request") or {}).get("building_use") or "건축물"
+        verdict = reg.get("verdict")
+        verdict_text = {
+            "allowed": "가능합니다",
+            "conditional": "조건부로 가능합니다",
+            "unknown": "추가 확인이 필요합니다",
+            "not_allowed": "용도지역상 허용되지 않습니다",
+        }.get(verdict, "추가 확인이 필요합니다")
+        lines = [
+            f"기존 건축물로 인한 ‘실질 배치 불가’를 배제하면, {address}의 {use} 건축은 "
+            f"{verdict_text}"
+        ]
+        conversion = d.get("land_conversion") or {}
+        if conversion.get("status") == "PERMIT_REQUIRED":
+            lines.append(
+                f"{conversion.get('summary') or '산지전용허가 등 전용 절차가 필요합니다.'}"
+            )
+        road = d.get("road_access") or {}
+        if road.get("status") in {"PLANNED_ROAD_ABUTS", "NO_CADASTRAL_ROAD", "UNAVAILABLE"}:
+            lines.append(road.get("summary") or "실제 접도·진입로 확보 여부를 확인해야 합니다.")
+        lines.append(
+            "이 답은 기존 건축물의 점유·철거·별동 배치 문제만 제외한 법적 입지 검토이며, "
+            "산지전용·개발행위·건축허가 요건은 그대로 적용됩니다."
+        )
+        return "\n\n".join(lines)
+
+    def _apply_placement_exclusion(self) -> bool:
+        """기존 건축물로 인한 배치 차단만 해제하고 지도 결과를 조건부로 전환한다.
+
+        최소 대지면적 미달 등 기존 건물과 무관한 차단은 사용자가 '배제'라고 해도
+        해제하지 않는다. 산지전용·접도 등 다른 조건 역시 진단에 그대로 남는다.
+        """
+        d = self.diagnosis or {}
+        existing = d.get("existing_buildings") or {}
+        if not (
+            d.get("placement_restricted")
+            and existing.get("has_buildings")
+            and not d.get("min_lot_area")
+        ):
+            return False
+        d["assume_demolished"] = True
+        d["placement_restricted"] = False
+        (d.setdefault("regulation", {}))["map_presentation"] = {
+            "verdict": "conditional",
+            "label": "조건부 가능(배치 불가 배제)",
+            "color": "#F9A825",
+            "show_building_mass": True,
+            "show_building_dimensions": True,
+            "reason": (
+                "기존 건축물로 인한 실질 배치 불가만 제외한 검토입니다. 산지전용·"
+                "개발행위·접도·건축허가 요건은 그대로 적용됩니다."
+            ),
+        }
+        return True
 
     def _active_pnu(self) -> str:
         return (
@@ -3106,6 +3162,56 @@ class Orchestrator:
         # 진단이 살아 있으면 최신 구조화 데이터로 바로 답하고, 서버 재시작 등으로
         # 진단이 사라진 경우에만 아래 좌표 진단으로 조용히 복구한다.
         if continuation and self.diagnosis:
+            # 기본 판정의 '실질 배치 불가'는 유지하되, 사용자가 그 사유를 명시적으로
+            # 제외해 물으면 기존 건물만 빼고 용도지역·산지·접도 조건의 가부를 답한다.
+            if _ignores_placement_restriction(original_query):
+                _exclusion_applied = self._apply_placement_exclusion()
+                if _exclusion_applied:
+                    # 문장만 바꾸지 않고 팝업 배지·가능 규모·건물 매스도 같은 조건부
+                    # 상태로 다시 그려 사용자가 보는 결과 전체를 일치시킨다.
+                    yield self._render_event()
+                _requested_use = str(
+                    ((self.diagnosis or {}).get("request") or {}).get("building_use")
+                    or "시설물"
+                )
+                if _requested_use == "시설물":
+                    # '시설물'은 특정 한 동이 아니라 전체 건축물 용도 검토다. 배치 제한을
+                    # 제외한 뒤에는 용도지역상 가능한/조건부 용도를 요약하고, 그중 실제
+                    # 준비된 3D 모델을 사용자가 고를 수 있게 함께 낸다.
+                    _answer = _all_uses_verdict_judgment(self.diagnosis)
+                    _options = _model_options_for_diagnosis(
+                        self.diagnosis, include_alternatives=True,
+                    )
+                    if _options:
+                        _answer += (
+                            "\n\n**가능한 건축물 모델**\n"
+                            "아래 모델은 이 필지에서 가능하거나 조건부인 용도만 표시합니다."
+                        )
+                    self.update_conversation_context(
+                        last_intent="possible_models",
+                        last_subject="배치 불가를 제외한 전체 건축물·모델",
+                        active_building_use="가능한 건축물 전체",
+                    )
+                    yield {
+                        "event": "map_commands",
+                        "data": {"commands": [{
+                            "type": "set_panel_context",
+                            "building_use": "가능한 건축물 전체",
+                            "verdict": "conditional",
+                            "verdict_label": "조건부 가능(배치 불가 배제)",
+                            "verdict_color": "#F9A825",
+                        }]},
+                    }
+                else:
+                    _answer = self._answer_ignoring_placement_restriction()
+                    _options = []
+                _message_data = {"text": _answer}
+                if _options:
+                    _message_data["options"] = _options
+                yield {"event": "message", "data": _message_data}
+                self.messages.append({"role": "assistant", "content": _answer})
+                self._selection_changed = False
+                return
             # 분할 전/후 보기 버튼·명시적 자연어는 일반 모델 표시나 LLM 의도 해석보다
             # 먼저 실행한다. otherwise '건축물 보여줘'가 possible_models/control=show로
             # 잡혀 분할 상태를 바꾸지 않고 현재 모델만 다시 그리는 문제가 생긴다.

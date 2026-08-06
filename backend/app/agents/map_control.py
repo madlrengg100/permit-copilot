@@ -389,7 +389,9 @@ def _meters_ns(dlat: float) -> float:
 
 
 def _build_dimensions(
-    diagnosis: dict, anchor_lon: float, anchor_lat: float
+    diagnosis: dict,
+    anchor_lon: float,
+    anchor_lat: float,
 ) -> dict | None:
     """필지 가로·세로, 이격, 면적을 지도에 그릴 치수선/라벨로 만든다.
     검은 텍스트 박스를 대신해 VWorld 측정선 모양으로 지도에 직접 얹는다.
@@ -408,13 +410,16 @@ def _build_dimensions(
     pad_lat = (maxlat - minlat) * 0.06
     pad_lon = (maxlon - minlon) * 0.06
 
+    # 세 축이 정확히 만나는 공통 원점. 가로·세로 선도 이 좌표까지 이어져야
+    # 높이선이 별도로 떠 있지 않고 하나의 3축 치수처럼 읽힌다.
+    dimension_origin = [minlon - pad_lon, minlat - pad_lat]
     segments = [
         {  # 가로(동서) — 남쪽 변 아래에
-            "positions": [[minlon, minlat - pad_lat], [maxlon, minlat - pad_lat]],
+            "positions": [dimension_origin, [maxlon, minlat - pad_lat]],
             "label": f"가로 약 {width_m:,.0f}m",
         },
         {  # 세로(남북) — 서쪽 변 왼쪽에
-            "positions": [[minlon - pad_lon, minlat], [minlon - pad_lon, maxlat]],
+            "positions": [dimension_origin, [minlon - pad_lon, maxlat]],
             "label": f"세로 약 {depth_m:,.0f}m",
         },
     ]
@@ -455,14 +460,12 @@ def _build_dimensions(
             }
         )
 
-    # 높이 — 가로·세로 치수선이 만나는 모서리(남서)에서 수직으로 올려 3축을 이룬다.
-    # 프론트가 height_m 을 보고 그 모서리에서 매스와 같은 기준으로 수직선을 그린다.
+    # 높이 — 가로·세로 치수선의 공통 원점에서 수직으로 올려 3축을 이룬다.
     if _mass_top > 0:
         _floors = mass.get("floors")
-        _corner = [minlon - pad_lon, minlat - pad_lat]
         segments.append(
             {
-                "positions": [_corner, _corner],
+                "positions": [dimension_origin, dimension_origin],
                 "height_m": round(_mass_top, 1),
                 "label": (
                     f"높이 약 {_mass_top:,.1f}m"

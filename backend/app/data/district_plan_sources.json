@@ -1,0 +1,33 @@
+{
+  "_meta": {
+    "schema_version": 1,
+    "note": "지구단위계획 공식 원문 수집 목록. source_page와 첨부파일을 함께 보존하며 최신 변경고시 검증 전에는 판정에 사용하지 않는다."
+  },
+  "jurisdictions": {
+    "경산시": {"sigungu_code": "47290", "sources": [], "status": "collecting"},
+    "아산시": {
+      "sigungu_code": "44200",
+      "status": "collecting",
+      "sources": [
+        {"plan_name": "아산 탕정 택지개발지구", "source_page": "https://www.asan.go.kr/main/cms/?m_mode=view&no=59&pds_no=2017080915162998284&tb_nm=administrator_info", "publisher": "아산시", "document_types": ["결정조서", "시행지침", "획지계획도", "건축물결정도"], "needs_latest_notice_check": true},
+        {"plan_name": "아산 동암지구", "source_page": "https://www.asan.go.kr/main/cms/?m_mode=view&no=131&pds_no=2019061115350612798&tb_nm=city_news_notice", "publisher": "아산시", "document_types": ["결정조서", "시행지침", "결정도"], "needs_latest_notice_check": true},
+        {"plan_name": "배방 월천지구", "source_page": "https://www.asan.go.kr/main/cms/?m_mode=view&no=59&pds_no=2020080316232566352&tb_nm=administrator_info", "publisher": "아산시", "notice_no": "아산시 고시 제2020-320호", "document_types": ["고시문", "시행지침", "총괄도"], "needs_latest_notice_check": true}
+      ]
+    },
+    "음성군": {
+      "sigungu_code": "43770",
+      "status": "collecting",
+      "sources": [
+        {"plan_name": "충북 혁신도시", "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=562306", "publisher": "음성군", "notice_no": "음성군 고시 제2023-72호", "notice_date": "2023-03-24", "document_types": ["고시문", "총괄도", "결정도", "시행지침"], "needs_latest_notice_check": true}
+      ]
+    },
+    "계양구": {"sigungu_code": "28245", "sources": [], "status": "collecting"},
+    "영천시": {
+      "sigungu_code": "47230",
+      "status": "collecting",
+      "sources": [
+        {"plan_name": "화룡지구", "source_page": "https://www.gbdc.co.kr/privatefiles/BOARD/eedc461f-48cb-4b84-ba0f-f684a9e34581/0030f3aa-1378-43aa-a2ca-dce3686a4317.pdf", "publisher": "영천시", "notice_no": "영천시 고시 제2025-89호", "notice_date": "2025", "document_types": ["고시문", "결정조서", "획지표", "건축물기준"], "needs_latest_notice_check": true}
+      ]
+    }
+  }
+}

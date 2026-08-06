@@ -1369,11 +1369,10 @@ async def run_prediagnosis(
 
     state["min_lot_area"] = min_lot_area.check(zone, state["parcel"].get("area_m2"))
 
-    # 신축 배치 제한은 법정 최소 대지면적 미달처럼 필지 전체에 걸리는 사유만 뜻한다.
-    # 기존 건축물 1동이 있다는 이유만으로 큰 필지 전체의 별동·증축·재배치 가능성까지
-    # 막을 수는 없다. 기존 건물은 별도 배치 검토사항으로 보존한다.
-    state["placement_restricted"] = bool(state["min_lot_area"])
-    state["existing_building_layout_review"] = bool(
+    # 기본 진단은 기존 건축물을 그대로 둔 신축을 가정한다. 협소하거나 기존 건물이
+    # 확인되면 '실질 배치 불가'로 막고, 사용자가 후속으로 이 사유를 배제해 달라고 할
+    # 때만 용도지역·규제 기준의 가능성을 별도로 답한다.
+    state["placement_restricted"] = bool(state["min_lot_area"]) or bool(
         (state["existing_buildings"] or {}).get("has_buildings")
     )
 
@@ -1451,7 +1450,7 @@ async def run_prediagnosis(
             "reason": reg["reason"],
         }
 
-    # 협소 대지(placement_restricted)는 신축을 배치할 수 없으므로,
+    # 협소·기존건물(placement_restricted)은 신축을 배치할 수 없으므로,
     # 건축 불가와 같은 map_presentation으로 카드·팝업·규모·매스·치수·모델을 억제한다
     # (배지 문구만 '실질 배치 불가'). 위 표현이 이미 있으면 그대로 둔다.
     if state["placement_restricted"] and not reg.get("map_presentation"):
