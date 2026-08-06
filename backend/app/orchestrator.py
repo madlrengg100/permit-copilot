@@ -778,6 +778,56 @@ def _query_evidence(diagnosis: dict | None, query: str) -> str:
     return " ".join(dict.fromkeys(part for part in parts if part))
 
 
+def _setback_fact_answer(diagnosis: dict | None, query: str) -> str:
+    """이격 단순질문은 LLM이 아니라 현재 PNU의 계산 결과에서 직접 답한다."""
+    if not re.search(r"이격|후퇴|건축선|정북|일조", query):
+        return ""
+    diagnosis = diagnosis or {}
+    site = diagnosis.get("site_constraints") or {}
+    rule = site.get("setback_rule") or {}
+    address = (
+        (diagnosis.get("parcel") or {}).get("jibun")
+        or (diagnosis.get("location") or {}).get("matched_address")
+        or "선택한 필지"
+    )
+    use = (
+        (diagnosis.get("request") or {}).get("building_use")
+        or (diagnosis.get("regulation") or {}).get("building_use")
+        or "현재 검토 용도"
+    )
+    requested: list[tuple[str, str]] = []
+    if re.search(r"인접|대지\s*경계", query):
+        requested.append(("인접 대지경계 이격", "adjacent_setback_m"))
+    if re.search(r"전면|도로.*(?:이격|후퇴)|건축선\s*후퇴", query):
+        requested.append(("전면 건축선 이격", "front_setback_m"))
+    if re.search(r"정북|일조", query):
+        requested.append(("정북 일조 이격", "north_setback_m"))
+    if not requested:
+        requested = [
+            ("전면 건축선 이격", "front_setback_m"),
+            ("인접 대지경계 이격", "adjacent_setback_m"),
+            ("정북 일조 이격", "north_setback_m"),
+        ]
+
+    if rule.get("status") in {"NOT_COLLECTED", "NEEDS_SUBTYPE"} and any(
+        key in {"front_setback_m", "adjacent_setback_m"} for _, key in requested
+    ):
+        note = rule.get("note") or "관할 건축조례의 적용값이 수집되지 않았습니다."
+        return (
+            f"{address}의 {use} 기준 이격은 아직 확정할 수 없습니다. {note} "
+            "따라서 화면 계산용 0m를 법적 이격거리로 해석하면 안 되며, 조례 별표와 설계 조건을 확인해야 합니다."
+        )
+
+    values = [(label, site.get(key)) for label, key in requested]
+    if any(value is None for _, value in values):
+        return f"{address}의 해당 이격거리는 현재 진단 데이터에 없어 확정할 수 없습니다."
+    result = "·".join(f"{label} {float(value):g}m" for label, value in values)
+    definition = ""
+    if re.search(r"뭐(?:야|예요|에요)|뜻|의미|무엇", query):
+        definition = " 인접 이격은 건축물 외벽을 인접 대지경계선에서 띄우는 거리입니다."
+    return f"{address}의 {use} 기준은 {result}입니다.{definition} 최종 배치는 현황측량과 건축설계로 확정합니다."
+
+
 def _ensure_query_evidence(text: str, diagnosis: dict | None, query: str) -> str:
     """관련 실제 값이 하나도 없는 일반론 응답에 결정적 근거를 보충한다."""
     evidence = _query_evidence(diagnosis, query)
@@ -4248,6 +4298,9 @@ class Orchestrator:
         recent_context = "\n".join(
             f"- {question}" for question in recent_user_questions
         )
+        setback_answer = _setback_fact_answer(diagnosis, user_query)
+        if setback_answer:
+            return setback_answer
         # "가능한 건물 뭐야?"는 LLM이 직전 용도를 임의로 단독주택으로 정해
         # "단독주택 외에"라고 답하지 않도록 판정표 목록에서 결정적으로 조립한다.
         # 특정 제외 용도를 사용자가 직접 말한 경우에만 그 용도를 제외한다.
@@ -4308,8 +4361,8 @@ class Orchestrator:
                     "이격거리를 물으면 진단 데이터의 전면 건축선 이격, 인접 대지경계 이격, "
                     "정북 일조 이격 계산값을 그대로 근거로 제시하라. 값이 0이면 '0m로 "
                     "확인됩니다'처럼 명확히 답하되, '시스템 계산상' 같은 표현은 쓰지 마라. "
-                    "조례 별표를 아직 수집하지 못해 0m인 경우에는 '관할 건축조례 대지 안의 공지 "
-                    "별표가 아직 수집되지 않아 0m로 확인됩니다'라고 사유를 밝혀라. 일반적인 "
+                    "조례 별표를 아직 수집하지 못한 경우에는 0m라고 확정하지 말고 '값을 확인할 "
+                    "수 없어 미확정'이라고 밝혀라. 일반적인 "
                     "건축법 시행령 수치(1m, 50cm 등)를 진단값 대신 임의로 지어내지 마라. "
                     # 용어의 뜻·개념을 물으면 사전적 의미 + 현황 + 실질적 함의까지 해석한다.
                     "용어의 뜻·개념을 물으면(예: '건축선 후퇴가 이격거리야?', '이격거리가 뭐야', "
@@ -4531,6 +4584,12 @@ class Orchestrator:
                     "허가·신고) 신청하고 어느 부서와 협의하며, 어떤 심의가 필요한지'를 permit_requirements "
                     "데이터에서 읽어 구체적으로 짚어라(예: 농지 담당 부서의 농지전용허가·협의, 개발행위 "
                     "담당 부서의 개발행위허가, 건축 담당 부서의 건축허가, 필요 시 심의). 셋째 문장에는 "
+                    "도로 폭·접도 요건을 확인해야 하는 경우에는 그 내용을 설명하는 문장 안에서 "
+                    "토목 설계사무소에 문의해 현황측량을 진행하도록 자연스럽게 안내하라. 건축물의 "
+                    "배치·이격 또는 허가도서 작성이 필요한 경우에는 그 내용을 설명하는 문장 안에서 "
+                    "건축 설계사무소에 문의하도록 안내하고, 이어서 관할 건축 담당 부서에 건축허가 "
+                    "또는 신고를 신청하는 흐름으로 연결하라. 이 안내를 본문과 분리된 별도 문단이나 "
+                    "반복 문구로 덧붙이지 말고, 해당 절차를 설명하는 문장 속에 자연스럽게 포함하라. "
                     "최종 허가를 위해 모두 충족할 조건만 요약하라. 다만 제출서류·조사서 목록은 후속 "
                     "질문용이니 여기서 나열하지 마라. 실제 데이터가 법적 충돌을 명시하지 않으면 '충돌한다'고 "
                     "지어내지 말고 '요건이 함께 적용된다'고 표현하라. 상세 보고서에 이미 있는 "
@@ -4585,6 +4644,7 @@ class Orchestrator:
                 max_tokens=3000,
                 model=LLM_MODEL_HEAVY,  # 검토 의견은 판독·추론이 무거워 상위(flash) 모델
                 reasoning_effort="low",  # thinking 최소화로 지연 제어(6~8s)
+                request_timeout=50.0,
             )
             text = _strip_internal_field_names(" ".join(response.texts).strip())
             return _limit_review_length(text, max_sentences=4)
@@ -4620,10 +4680,14 @@ class Orchestrator:
                     self._all_uses_verdict_judgment_with_llm(query), timeout=14.0
                 )
             except asyncio.TimeoutError:
-                logger.warning(
-                    "all-uses verdict judgment timeout; using deterministic fallback"
-                )
+                logger.warning("all-uses verdict judgment timeout; 결정적 fallback 사용")
+            except Exception:
+                # LLM 503·연결오류 등 TimeoutError 외 예외도 삼켜 fallback 으로 간다.
+                # 안 그러면 예외가 위로 튀어 '검토 의견' message 자체가 방출되지 않아
+                # 프런트가 '검토 의견 작성 중'에서 무한 대기한다.
+                logger.warning("all-uses verdict judgment 실패; 결정적 fallback 사용", exc_info=True)
             if not judgment:
+                # 타임아웃·오류·빈 응답이면 결정적 판단으로 반드시 채운다(무한 '작성 중' 방지).
                 judgment = _all_uses_verdict_judgment(diagnosis)
         # 검토 용도(요청 시설)·맹지·규제 지구는 이제 프롬프트가 진단 데이터(requested_facility·
         # road_access·regulation.constraints)를 읽어 제미나이가 첫 문장부터 자연스럽게 판단·설명
@@ -4655,9 +4719,16 @@ class Orchestrator:
         # 붙이고 버튼을 단다(클릭·긍정 화답 모두 분할 실행으로 이어진다).
         _ld = diagnosis.get("land_division") or {}
         if _ld.get("status") == "FEASIBLE" and not diagnosis.get("assume_divided"):
+            required = _ld.get("division_recommendation") == "REQUIRED"
             data["text"] += (
-                "\n\n이 필지는 필지 분할이 성립할 수 있습니다. "
-                "분할해서 건축 규모를 다시 계산해 보여드릴까요?"
+                (
+                    "\n\n필지 내부 편입 등으로 분할 검토가 필요합니다. "
+                    "분할해서 건축 규모를 다시 계산해 보여드릴까요?"
+                )
+                if required
+                else (
+                    "\n\n필지 분할 후 건축 규모도 확인해 보시겠습니까?"
+                )
             )
             data["options"] = [{
                 "label": "필지 분할해서 규모 보기",

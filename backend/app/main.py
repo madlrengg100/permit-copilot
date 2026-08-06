@@ -371,14 +371,29 @@ async def chat(
                                     "event",
                                     {"event": "tool_start", "data": {"tool": "judgment"}},
                                 ))
+                                # 상태 이벤트가 Gemini 호출보다 먼저 SSE로 전달되도록
+                                # 소비 코루틴에 실행 기회를 준다.
+                                await asyncio.sleep(0)
                                 try:
                                     judgment_event = await orch.render_pending_judgment(
                                         str((event.get("data") or {}).get("query", ""))
                                     )
                                 except Exception:  # noqa: BLE001
+                                    logger.warning("render_pending_judgment 실패", exc_info=True)
                                     judgment_event = None
-                                if judgment_event:
-                                    await queue.put(("event", judgment_event))
+                                # '검토 의견 작성 중'(tool_start)을 이미 흘렸으므로, 실패·None
+                                # 이어도 반드시 message 를 방출해 스피너가 무한히 남지 않게 한다.
+                                if not judgment_event:
+                                    judgment_event = {
+                                        "event": "message",
+                                        "data": {"text": (
+                                            "## 검토 의견\n검토 의견 생성이 지연되어 자동 요약을 "
+                                            "표시하지 못했습니다. 위 진단 카드의 판정·건폐율·용적률·"
+                                            "이격·규제 항목을 근거로 검토하시고, 필요하면 다시 질문해 "
+                                            "주세요."
+                                        )},
+                                    }
+                                await queue.put(("event", judgment_event))
                                 continue
                             if (
                                 event.get("event") == "error"
@@ -490,8 +505,12 @@ async def setback_for_use(
     모델 버튼별로 그 용도의 실제 이격을 보여주기 위한 것(재진단·카드 없이)."""
     if APP_TOKEN and x_app_token != APP_TOKEN:
         raise HTTPException(status_code=401, detail="유효하지 않은 앱 토큰입니다.")
-    orch = _sessions.get(session_id)
-    diag = (orch.diagnosis if orch else None) or {}
+    # Chat/selection endpoints와 동일한 복원 경로를 사용한다. 프런트에 모델 버튼이
+    # 남아 있는 상태에서 백엔드가 재시작되면 메모리 캐시는 비어 있어도 디스크에는
+    # PNU별 진단이 보존되어 있다. 여기서 _sessions만 직접 읽으면 그 경우에만
+    # "먼저 이 필지를 진단"이라는 잘못된 응답이 발생한다.
+    orch = _get_session(session_id)
+    diag = orch.diagnosis or {}
     if not diag:
         return {"ok": False, "reason": "진단된 필지가 없습니다."}
     from .tools import setback_rules
@@ -502,8 +521,15 @@ async def setback_for_use(
     site = diag.get("site_constraints") or {}
     gross = float((diag.get("massing") or {}).get("gross_floor_area_m2") or 0)
     rule = setback_rules.lookup(jurisdiction, req.use, zone or "", gross)
-    front = rule.get("front_m") or 0
-    adjacent = rule.get("adjacent_m") or 0
+    # 세부유형이 필요한 공동주택 등은 확정값을 만들지 않는다. 다만 조례 데이터에
+    # 구조화된 최대범위가 있으면 모델 버튼에서 보수적 미리보기 건축선을 다시 그린다.
+    provisional = rule.get("status") == "NEEDS_SUBTYPE"
+    front = (
+        rule.get("preview_front_m") if provisional else rule.get("front_m")
+    ) or 0
+    adjacent = (
+        rule.get("preview_adjacent_m") if provisional else rule.get("adjacent_m")
+    ) or 0
 
     # 이 용도의 이격을 반영한 치수선(전면/인접 건축선 등)을 지도에 다시 그리도록,
     # site_constraints 를 그 용도값으로 바꾼 사본으로 치수선을 만들어 함께 돌려준다.
@@ -513,7 +539,9 @@ async def setback_for_use(
     site2 = dict(site)
     site2["front_setback_m"] = front
     site2["adjacent_setback_m"] = adjacent
+    site2["setback_rule"] = dict(rule)
     diag2["site_constraints"] = site2
+    diag2["active_model_selected"] = True
     loc = diag.get("location") or {}
     map_commands: list[dict] = []
     if loc.get("lon") is not None and loc.get("lat") is not None:
@@ -529,6 +557,19 @@ async def setback_for_use(
     districts = (diag.get("land_use") or {}).get("districts") or []
     zr = zoning_tool.lookup_zoning_rules(zone or "", req.use, districts, jurisdiction)
     use_verdict = zr.get("verdict", "unknown")
+    # 모델 클릭은 화면만 바꾸는 동작이 아니라 현재 PNU의 실제 검토 용도를 바꾼다.
+    # 지도·팝업에 보낸 이격값을 후속 대화용 진단에도 같은 단일 값으로 저장하지 않으면,
+    # 지도에는 0.5m가 보이는데 "인접 이격은 뭐야?"에는 이전 시설물 0m라고 답한다.
+    request2 = dict(diag2.get("request") or {})
+    request2["building_use"] = req.use
+    request2["inferred"] = False
+    diag2["request"] = request2
+    regulation2 = dict(diag2.get("regulation") or {})
+    regulation2["building_use"] = req.use
+    regulation2["verdict"] = use_verdict
+    diag2["regulation"] = regulation2
+    diag2["verdict"] = use_verdict
+    orch.diagnosis = diag2
     # 모델 버튼 선택은 프런트 화면 변화로 끝내지 않고 현재 PNU의 후속 대화
     # 상태로 저장한다. 이후 "다른 것도?", "다시 보여줘" 같은 질문에서
     # 제미나이가 직전에 보던 용도와 기능을 복원할 수 있다.
@@ -550,6 +591,9 @@ async def setback_for_use(
         "verdict_color": VERDICT_COLOR.get(use_verdict, "#616161"),
         "front_setback_m": rule.get("front_m"),
         "adjacent_setback_m": rule.get("adjacent_m"),
+        "preview_front_setback_m": front if provisional else None,
+        "preview_adjacent_setback_m": adjacent if provisional else None,
+        "provisional": provisional,
         # 정북 일조 이격은 용도지역 기준(용도 무관)이라 현재 진단값을 그대로 쓴다.
         "north_setback_m": site.get("north_setback_m") or 0,
         "source": rule.get("source"),
