@@ -33,6 +33,7 @@ from ..tools import (
     development_charge,
     law_open,
     legal_conflicts,
+    district_plan,
     facility_rules,
     land_conversion,
     massing,
@@ -687,7 +688,7 @@ def format_diagnosis_answer(d: dict) -> str:
     legal_evidence = d.get("legal_evidence") or legal.get("evidence") or []
     if legal_evidence:
         out.append("")
-        out.append(f"## {n}. 인허가 단계 관련 법령 조문(근거)")
+        out.append(f"## {n}. 전국 공통 인허가 법령 조문(근거)")
         n += 1
         for evidence in legal_evidence[:6]:
             label = " ".join(
@@ -703,9 +704,16 @@ def format_diagnosis_answer(d: dict) -> str:
 
     # 관할 조례 근거 조문 (벡터 검색으로 찾은 실제 조문 — 판정 근거 추적용)
     evidence = d.get("ordinance_evidence") or []
-    if evidence:
+    district_plan_evidence = d.get("district_plan_evidence") or []
+    if evidence or district_plan_evidence:
         out.append("")
-        out.append(f"## {n}. 지자체 관련 조례 조문(근거)")
+        if evidence and district_plan_evidence:
+            local_evidence_title = "지자체 조례·지구단위계획 근거자료"
+        elif district_plan_evidence:
+            local_evidence_title = "지구단위계획 근거자료"
+        else:
+            local_evidence_title = "지자체 조례 근거자료"
+        out.append(f"## {n}. {local_evidence_title}")
         n += 1
         for ev in evidence[:3]:
             eff = ev.get("effective_date") or ""
@@ -717,6 +725,17 @@ def format_diagnosis_answer(d: dict) -> str:
             label = f"{ev.get('ordinance', '조례')} {art}({title})".strip()
             url = ev.get("url")
             out.append(f"- [{label}]({url}){suffix}" if url else f"- {label}{suffix}")
+        for ev in district_plan_evidence:
+            plan = ev.get("plan_name") or "지구단위계획"
+            notice = ev.get("notice_no") or "관련 고시"
+            docs = "·".join(ev.get("document_types") or [])
+            suffix = f" — {docs}" if docs else ""
+            if ev.get("verification_status") == "LATEST_NOTICE_CHECK_REQUIRED":
+                suffix += " (최신 변경고시 확인 필요)"
+            out.append(f"- [{plan} {notice} 원문·첨부자료]({ev.get('url')}){suffix}")
+            for document in ev.get("documents") or []:
+                if document.get("url"):
+                    out.append(f"  - [{document.get('label', '첨부자료')}]({document['url']})")
 
     # 유의사항
     out.append("")
@@ -1001,6 +1020,43 @@ async def extract_request(client, query: str) -> dict:
     return {"address": "", "building_use": _guess_use(query), "inferred": True, "parking_strategy": "unspecified"}
 
 
+def _merge_permit_legal_evidence(
+    permit_items: list[dict], semantic_evidence: list[dict] | None
+) -> list[dict]:
+    """전국 공통 인허가 근거를 검색 순위와 무관하게 우선 보존한다."""
+    result: list[dict] = []
+    seen: set[tuple[str, str]] = set()
+
+    def add(evidence: dict) -> None:
+        law = str(evidence.get("law") or evidence.get("ordinance") or "").strip()
+        article = str(evidence.get("article") or "").strip()
+        key = (law, article)
+        if not law or key in seen:
+            return
+        seen.add(key)
+        result.append(evidence)
+
+    # permit_rules.json에서 실제 선택된 단계에 연결된 법령은 결정적 근거다.
+    # 도로·접도 조문 등이 벡터 검색 상위 건수에서 밀려 사라지면 안 된다.
+    for item in permit_items:
+        for reference in item.get("legal_references") or []:
+            if not isinstance(reference, dict):
+                continue
+            add({
+                "jurisdiction": reference.get("jurisdiction") or "전국",
+                "law": reference.get("law"),
+                "article": reference.get("article"),
+                "title": reference.get("title"),
+                "kind": "인허가 규칙 직접 근거",
+                "url": reference.get("source_url"),
+                "ref_id": reference.get("ref_id"),
+            })
+    for evidence in semantic_evidence or []:
+        if isinstance(evidence, dict):
+            add(evidence)
+    return result
+
+
 def _summarize(state: dict) -> str:
     """판정 결과를 사람이 읽을 요약으로. LLM 없이 값에서 조립한다."""
     reg = state["regulation"]
@@ -1206,6 +1262,14 @@ async def run_prediagnosis(
     landuse_designations = await landuse_tool.get_landuse_designations(
         state["parcel"].get("pnu", "")
     )
+    if not isinstance(landuse_designations, dict):
+        landuse_designations = {
+            "status": "UNAVAILABLE",
+            "source": "VWorld NED 토지이용계획정보",
+            "records": [],
+            "active_records": [],
+            "error": "INVALID_RESPONSE_TYPE",
+        }
     state["land_use"]["designation_lookup"] = landuse_designations
     extra_districts = list(dict.fromkeys(
         record["name"]
@@ -1598,6 +1662,16 @@ async def run_prediagnosis(
     else:
         state["ordinance_evidence"] = []
 
+    # 토지이용계획에서 지구단위계획구역이 실제 확인된 필지는 조례 링크만 보여주지
+    # 않고, 수집한 관할 고시문·결정조서·시행지침 원문도 함께 제공한다. 획지/PNU
+    # 검증 전 자료는 링크로만 노출하며 계산값을 덮어쓰지는 않는다.
+    state["district_plan_evidence"] = district_plan.evidence_for(
+        jurisdiction,
+        state.get("land_use", {}).get("districts", []),
+        address=state.get("location", {}).get("matched_address"),
+        pnu=state.get("parcel", {}).get("pnu"),
+    )
+
     # 정형 인허가 규칙이 선택한 단계명·근거만으로 전국 법령 corpus를 검색한다.
     # 조례 검색과 범위를 분리해 다른 지자체 조례나 일반론이 섞이지 않게 한다.
     permit_items = (state.get("permit_requirements") or {}).get("items", [])
@@ -1605,15 +1679,18 @@ async def run_prediagnosis(
         f"{item.get('name', '')} {item.get('basis', '')}"
         for item in permit_items
     ).strip()
-    state["legal_evidence"] = (
+    semantic_legal_evidence = (
         ordinance_index.search(
             query=legal_query,
             jurisdiction=jurisdiction,
-            top_k=6,
+            top_k=8,
             scope="law",
         )
         if legal_query and ordinance_index.available()
         else []
+    )
+    state["legal_evidence"] = _merge_permit_legal_evidence(
+        permit_items, semantic_legal_evidence
     )
     if isinstance(state.get("legal_sources"), dict):
         state["legal_sources"]["evidence"] = state["legal_evidence"]

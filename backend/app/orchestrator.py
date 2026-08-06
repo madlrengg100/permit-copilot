@@ -931,6 +931,51 @@ def _deterministic_verdict_judgment(diagnosis: dict | None) -> str:
     return f"{first} {second} {third}"
 
 
+def _concise_verdict_judgment(diagnosis: dict | None) -> str:
+    """상세 보고서 아래에는 결론과 핵심 선행조건만 중복 없이 표시한다."""
+    diagnosis = diagnosis or {}
+    parcel = diagnosis.get("parcel") or {}
+    regulation = diagnosis.get("regulation") or {}
+    request = diagnosis.get("request") or {}
+    address = (
+        parcel.get("jibun")
+        or (diagnosis.get("location") or {}).get("matched_address")
+        or "선택한 필지"
+    )
+    use = request.get("building_use") or regulation.get("building_use") or "요청 용도"
+    verdict = diagnosis.get("verdict") or regulation.get("verdict") or "unknown"
+    conclusion = {
+        "allowed": "건축 가능합니다",
+        "conditional": "조건부로 건축 가능합니다",
+        "not_allowed": "현재 기준으로 건축이 불가합니다",
+        "unknown": "추가 확인 전에는 건축 가능 여부를 확정할 수 없습니다",
+    }.get(verdict, "추가 확인이 필요합니다")
+    first = f"{address}의 {use}은 {conclusion}."
+
+    if verdict == "conditional":
+        names = [
+            str(item.get("name") or "").strip()
+            for item in ((diagnosis.get("permit_requirements") or {}).get("items") or [])
+            if isinstance(item, dict) and item.get("name")
+        ]
+        core = "·".join(names[:3])
+        suffix = " 등" if len(names) > 3 else ""
+        second = (
+            f"핵심 선행조건은 {core}{suffix}이며, 세부 기준은 위 진단 항목에서 확인할 수 있습니다."
+            if core
+            else "위 진단에 표시된 선행조건을 충족한 뒤 인허가를 진행해야 합니다."
+        )
+    elif verdict == "not_allowed":
+        restriction = diagnosis.get("use_restriction") or {}
+        reason = str(restriction.get("reason") or "").strip().rstrip(".")
+        second = f"주된 제한 사유는 {reason}입니다." if reason else "불가 사유는 위 종합 판정에 표시했습니다."
+    elif verdict == "unknown":
+        second = "미확인 규제와 도로·접도 조건을 먼저 확인해야 합니다."
+    else:
+        second = "표시된 규모는 개념값이며 실제 설계·허가 과정에서 조정될 수 있습니다."
+    return f"{first} {second}"
+
+
 def _as_sentence(text: str) -> str:
     """구조화 값에서 온 설명을 다른 문장과 안전하게 이어 붙인다."""
     cleaned = str(text or "").strip()
@@ -4566,16 +4611,9 @@ class Orchestrator:
         )
         judgment = ""
         if names_specific_use:
-            try:
-                judgment = await asyncio.wait_for(
-                    self._verdict_judgment(query), timeout=14.0
-                )
-            except asyncio.TimeoutError:
-                logger.warning(
-                    "single-use verdict judgment timeout; using deterministic fallback"
-                )
-            if not judgment:
-                judgment = _deterministic_verdict_judgment(diagnosis)
+            # 상세 내용은 바로 위 진단 보고서에 있으므로 특정 용도의 검토 의견은
+            # AI 장문 재서술 대신 결론+핵심 조건 두 문장으로 고정한다.
+            judgment = _concise_verdict_judgment(diagnosis)
         else:
             try:
                 judgment = await asyncio.wait_for(

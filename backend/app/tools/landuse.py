@@ -10,6 +10,7 @@ mock 모드면 조용히 빈 목록을 돌려준다.
 
 from __future__ import annotations
 
+import json
 import logging
 
 import httpx
@@ -30,8 +31,35 @@ def _is_zoning_record(code: str) -> bool:
     return len(code) == 6 and code.startswith(_ZONING_CODE_PREFIXES)
 
 
-def _parse_landuse_payload(data: dict) -> dict:
+def _unavailable_payload(error: str) -> dict:
+    return {
+        "status": "UNAVAILABLE",
+        "source": "VWorld NED 토지이용계획정보",
+        "records": [],
+        "active_records": [],
+        "error": error,
+    }
+
+
+def _parse_landuse_payload(data: object) -> dict:
+    # VWorld가 드물게 JSON 객체를 다시 문자열로 감싼 응답을 보낸다. 외부 응답의
+    # 형식 이상 때문에 전체 사전진단이 AttributeError로 중단되지 않게 정규화한다.
+    if isinstance(data, str):
+        try:
+            data = json.loads(data)
+        except (TypeError, json.JSONDecodeError):
+            return _unavailable_payload("INVALID_RESPONSE_TYPE")
+    if not isinstance(data, dict):
+        return _unavailable_payload("INVALID_RESPONSE_TYPE")
+
     payload = data.get("landUses") or {}
+    if isinstance(payload, str):
+        try:
+            payload = json.loads(payload)
+        except (TypeError, json.JSONDecodeError):
+            return _unavailable_payload("INVALID_LANDUSES_PAYLOAD")
+    if not isinstance(payload, dict):
+        return _unavailable_payload("INVALID_LANDUSES_PAYLOAD")
     if payload.get("resultCode") not in (None, "", "OK"):
         return {
             "status": "UNAVAILABLE",
@@ -47,6 +75,8 @@ def _parse_landuse_payload(data: dict) -> dict:
     records: list[dict] = []
     seen: set[tuple[str, str, str]] = set()
     for field in fields:
+        if not isinstance(field, dict):
+            continue
         name = str(field.get("prposAreaDstrcCodeNm") or "").strip()
         code = str(field.get("prposAreaDstrcCode") or "").strip()
         relation_code = str(field.get("cnflcAt") or "").strip()

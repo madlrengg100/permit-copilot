@@ -1313,42 +1313,49 @@ export class MapBridge {
         : yellow;
       const isCustom = Boolean(seg.color);
 
-      // 높이 치수선은 지형 타일이 아직 도착하지 않아도 보이도록 지면 상대고도로
-      // 만든다. 일반 polyline은 높이 기준을 지정할 수 없어 조회 순간의 절대 지형고를
-      // 쓰면 선이 땅속에 묻힐 수 있으므로, 아주 얇은 수직 프리즘을 선처럼 사용한다.
+      // 높이 치수선은 가로·세로의 공통 원점에서 수직으로 올린다. 예전의 수직
+      // 프리즘은 건물/지형 뒤에서 깊이 판정으로 통째로 사라졌고, 지형 타일이 늦게
+      // 바뀌는 곳에서는 땅속에 묻히기도 했다. 현재 지형고를 계속 다시 읽는
+      // CallbackProperty 폴리라인과 depthFailMaterial을 써 어느 필지에서도 보이게 한다.
       if (seg.height_m && seg.height_m > 0) {
         const [hlon, hlat] = seg.positions[0];
-        const cosLat = Math.max(0.1, Math.cos((hlat * Math.PI) / 180));
-        // 8cm 폭은 비스듬한 시점에서 1px 아래로 줄어 깜빡여 보인다. 정사각 단면
-        // 30cm면 어느 방위에서도 한쪽 면이 남으면서 건물 치수 막대로 과도하게 굵지 않다.
-        const halfWidthM = 0.15;
-        const dLon = halfWidthM / (111320 * cosLat);
-        const dLat = halfWidthM / 111320;
+        const heightM = seg.height_m;
+        const Cesium = (window as any).Cesium;
+        const CallbackProperty = Cesium?.CallbackProperty ?? ws3d.common.CallbackProperty;
+        const heightNone = Cesium?.HeightReference?.NONE ?? 0;
+        const verticalPositions = () => {
+          const ground = this.terrainHeight(hlon, hlat);
+          return [
+            ws3d.common.Cartesian3.fromDegrees(hlon, hlat, ground + 0.5),
+            ws3d.common.Cartesian3.fromDegrees(hlon, hlat, ground + heightM + 0.5),
+          ];
+        };
+        const verticalLabelPosition = () => {
+          const ground = this.terrainHeight(hlon, hlat);
+          return ws3d.common.Cartesian3.fromDegrees(
+            hlon, hlat, ground + heightM / 2 + 0.5,
+          );
+        };
         const vlineId = `map-dim-vline-${Date.now()}-${rid()}`;
         this.viewer.entities.add({
           id: vlineId,
-          polygon: {
-            hierarchy: ws3d.common.Cartesian3.fromDegreesArray([
-              hlon - dLon, hlat - dLat,
-              hlon + dLon, hlat - dLat,
-              hlon + dLon, hlat + dLat,
-              hlon - dLon, hlat + dLat,
-            ]),
-            height: 0.5,
-            heightReference: relativeToGround,
-            extrudedHeight: seg.height_m + 0.5,
-            extrudedHeightReference: relativeToGround,
+          polyline: {
+            positions: CallbackProperty
+              ? new CallbackProperty(verticalPositions, false)
+              : verticalPositions(),
+            clampToGround: false,
+            width: 4,
             material: segColor,
-            outline: false,
-            closeTop: true,
-            closeBottom: true,
+            depthFailMaterial: segColor,
           },
         });
         bucket.push(vlineId);
         const vlabelId = `map-dim-vlabel-${Date.now()}-${rid()}`;
         this.viewer.entities.add({
           id: vlabelId,
-          position: ws3d.common.Cartesian3.fromDegrees(hlon, hlat, seg.height_m / 2 + 0.5),
+          position: CallbackProperty
+            ? new CallbackProperty(verticalLabelPosition, false)
+            : verticalLabelPosition(),
           label: {
             text: seg.label,
             font: isCustom ? "bold 13px 'Malgun Gothic', sans-serif" : "13px 'Malgun Gothic', sans-serif",
@@ -1359,7 +1366,7 @@ export class MapBridge {
                 : ws3d.common.Color.BLACK,
             showBackground: true,
             backgroundColor: isCustom ? segColor.withAlpha(0.95) : yellow.withAlpha(0.98),
-            heightReference: relativeToGround,
+            heightReference: heightNone,
             disableDepthTestDistance: Number.POSITIVE_INFINITY,
           },
         });

@@ -14,6 +14,14 @@
   `setbacks_verified.json`(검수본)에 담고 `setback_rules._load()`가 자동파싱값보다 우선
   적용한다(재수집에도 보존). 음성군을 검수본으로 추가, test_eumseong_setbacks.py(총 119).
 
+### 지구단위계획 런타임 근거 연결 + landuse 예외 처리 (Codex 병행)
+- `tools/district_plan.py`: 수집·정제 중인 지구단위계획 공식 원문 근거를 진단 결과에
+  연결(런타임). `district_plan_sources.json` 참조. orchestrator·prediagnosis 연동.
+- `tools/landuse.py`: VWorld 토지이용계획 조회 실패 시 status=UNAVAILABLE payload 로
+  안전 처리(용도지역 미조회를 오류 대신 명시적 상태로). 프런트 ChatPanel·mapBridge 보강.
+- 테스트 추가: district_plan_evidence, landuse_response_types, permit_legal_evidence,
+  concise_verdict_judgment.
+
 ### 지구단위계획 문서 파서 + 진단/치수선 테스트 보강 (Codex 병행)
 - `scripts/parse_district_plan_documents.py`: 지구단위계획 PDF/HWP/HWPX를 페이지 단위로
   추출하고 스캔 페이지만 OCR(PyMuPDF·Pillow, requirements 추가). 대상 목록은
