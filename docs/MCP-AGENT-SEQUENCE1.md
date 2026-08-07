@@ -40,6 +40,56 @@ flowchart TB
 - **③ 에이전트(4개)** — 모듈을 실행하고 **MCP 도구 호출의 유일한 주체**다. 결과를 정규화한다.
 - **④ 모듈** — 단일 기능 단위(도구 인자 생성 / 응답 해석 / 결정적 계산).
 
+### 1.1 DB 관계 — RDB · Graph DB · Vector DB
+
+```mermaid
+flowchart LR
+    RDB[("RDB<br/>법령 · 규제조건 · 규칙")]
+    GDB[("Graph DB<br/>법령 간 연계정보<br/>= 산정방식 룰셋")]
+    VDB[("Vector DB (RAG)<br/>판례 · 민원 · 사례 · 법령 조문")]
+
+    RDB -->|법령 간 연계정보 적재| GDB
+    GDB -.->|Graph 검색| RAG["RAG (Hybrid)"]
+    VDB -.->|Vector 검색 · 유사사례| RAG
+    GDB -.->|룰셋| RE["Rule Engine"]
+    RDB -.->|기준값| RE
+```
+
+- **RDB** — 법령·규제조건·규칙(건폐율·용적률 등 **판정 기준값**). Graph DB 적재의 원천.
+- **Graph DB** — RDB에서 적재한 **법령 간 연계정보**로 **산정방식 룰셋(규칙)**을 구성한다. Rule
+  Engine과 RAG(Graph 검색)가 읽는다.
+- **Vector DB(RAG)** — 판례·민원·사례·법령 조문 임베딩. **법령 검색 + 유사사례 검색 → 근거 제시**.
+- **Hybrid RAG** — RAG는 **Graph DB와 Vector DB를 함께 조회**한다(그래프 확장 + 벡터 유사검색).
+  즉 `RDB→Graph→Vector` 직렬이 아니라, RDB는 적재 원천이고 조회는 Graph·Vector 양쪽에서 일어난다.
+
+### 1.2 온톨로지 구조 설계 (Graph DB에 들어가는 지식 체계)
+
+> **법령·조례와 지역지구·판단 규칙을 단일 온톨로지로 통합하고 무결성 강제 규칙을 정의하여,
+> 인허가 판정의 법적 근거 추적성과 룰엔진·RAG 검색에 직결되는 지식 체계 확보.**
+
+```mermaid
+flowchart LR
+    LAW["법령 (Law)<br/>법률 · 시행령 · 시행규칙"]
+    ART["조문 (Article)"]
+    ZONE["공간 (Zone)<br/>용도지역 · 지구 · 구역"]
+
+    LAW --- ART
+    ART --- ZONE
+
+    LAW --> U1["항 · 호 · 목 (Unit)"]
+    LAW --> U2["별표 · 부칙<br/>시설물별 행위기준"]
+    ART --> ORD["조례"]
+    ZONE --> Z1["보호 · 규제구역"]
+    ZONE --> Z2["건폐율 · 용적률"]
+    ZONE --> Z3["행위제한<br/>시설물 용도별 행위"]
+```
+
+- **법령(Law)** — 법률·시행령·시행규칙 → **항·호·목(Unit)**, **별표·부칙**(시설물별 행위기준)
+- **조문(Article)** — 법령과 공간을 잇는 중간 계층 → **조례**로 확장
+- **공간(Zone)** — 용도지역·지구·구역 → **보호·규제구역**, **건폐율·용적률**, **행위제한**(시설물 용도별 행위)
+- **무결성 강제 규칙**으로 이 지식 체계의 일관성을 검사해, **판정의 법적 근거 추적성**과
+  **Rule Engine·RAG 검색**이 이 온톨로지에 직결되게 한다.
+
 ---
 
 ## 2. 오르내리는 것 — 요청(↓) / 결과 반환(↑)
@@ -72,6 +122,31 @@ flowchart TB
 | **Action**(도구 호출) | 그 값을 주는 **MCP 도구를 호출** |
 | **Observation**(결과 관찰) | 도구가 돌려준 **정형 결과**를 받아 State에 반영 |
 | **재판단 반복** | 더 필요하면 다시 Thought로, 다 모이면 State를 Sub에 올림 |
+
+**ReAct 구조 — Sub ↔ 에이전트 ↔ 모듈 ↔ Tool**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant SO as ② Sub 오케스트레이터
+    participant AG as ③ 에이전트
+    participant MO as ④ 모듈
+    participant T as MCP Tool
+
+    SO->>AG: 실행 시작 (State 판단)
+    loop 근거가 다 모일 때까지
+        AG->>AG: Thought — 다음 필요한 값 판단
+        AG->>MO: Action 준비 (도구 인자 생성)
+        MO->>T: MCP 도구 호출 ↓
+        T-->>MO: 도구 결과 ↑
+        MO-->>AG: Observation (결과 관찰)
+        AG->>AG: 재판단 (계속 / 종료)
+    end
+    AG-->>SO: State (완성)
+```
+
+> Sub는 **루프를 관장**만 하고, **도구를 직접 부르는 건 에이전트**다(모듈 경유). 모듈은
+> **MCP Tool을 호출**하고 결과를 Observation으로 되돌린다.
 
 ---
 
