@@ -415,12 +415,12 @@ flowchart LR
 
 사람이 규칙을 적어 두면 기계가 그대로 적용한다. 규칙은 네 종류다.
 
-| 종류 | 예 | 어디서 가져오나 |
-|---|---|---|
-| 숫자 규칙 | 건폐율 40% 넘으면 위반 | 일반 DB |
-| 허용 규칙 | 계획관리지역 + 창고 → 조건부 | 일반 DB + 지식그래프 |
-| **충돌 규칙** | 국토계획법은 되는데 다른 법이 막음 → 다른 법 우선 | **지식그래프** |
-| 순서 규칙 | 전·답·과수원이면 **농지전용** 먼저, 임야면 **산지전용** 먼저 | 지식그래프 |
+| 층 | 무엇 | 원천 | 예 |
+|---|---|---|---|
+| **① 기준값 룰** | 숫자 비교 | RDB | 건폐율 40% 초과 → 위반 |
+| **② 허용 룰** | 용도지역 × 행위유형 | RDB + Graph | 계획관리지역 × 창고시설 → 조건부 |
+| **③ 충돌 룰** | 법령 간 저촉 | **Graph** | 국토계획법 허용 × 개별법 제한 → 개별법 우선, 협의 대상 |
+| **④ 절차 룰** | 선후행 관계 | Graph | 지목 전·답 → **농지전용** 선행 → 개발행위 → 건축<br>지목 임야 → **산지전용** 선행 → 개발행위 → 건축 |
 
 **세 가지를 지킨다.**
 
@@ -472,26 +472,50 @@ sequenceDiagram
 
 ## 7. 지금 있는 것과 없는 것
 
-**이미 있다** — 새로 만드는 게 아니라 **감싸서 규격에 맞추면 되는 것들**이다.
+**이미 있다** — 새로 만드는 게 아니라 **감싸서 MCP 규격에 맞추면 되는 것들**이다.
+아래 `요청`과 `반환`을 그대로 **도구 스키마**로 고정하면 된다.
 
-| 하는 일 | 지금 코드 |
-|---|---|
-| 주소 → 좌표, 필지 조회 | `vworld.py` |
-| 용도지역 조회 | `landuse.py` |
-| 건폐율 · 용적률 | `zoning.py` |
-| 건축 가능 규모 계산 | `massing.py` |
-| 최소 대지면적 | `min_lot_area.py` |
-| 도로에 접했는지 | `road_access.py` |
-| 건물 띄우는 거리(이격) | `setback_rules.py` |
-| 땅 나누기 검토 | `land_division.py` |
-| 농지 · 산지 전용 | `land_conversion.py` |
-| 재해 · 환경 · 문화재 겹침 | `regulatory_screen.py` |
-| 경사도 · 표고 | `terrain.py` |
-| 건축물대장 | `building_register.py` |
-| **법 부딪침 판정** | `legal_conflicts.py` |
-| **인허가 요건 · 선후 순서** | `permit_requirements.py` |
-| 근거 문서 검색 | `ordinance_index.py` |
-| 지도 명령 만들기 | `map_control.py` |
+| MCP 도구 | 요청(params) | 반환(Observation) | 지금 코드 |
+|---|---|---|---|
+| `geocode` | 주소 | 좌표 `{lon, lat}` | `vworld.py` |
+| `get_parcel` | 좌표 | `{pnu, 지목, 면적, 경계}` | `vworld.py` |
+| `get_zone_shares` | 필지 경계 | 걸친 용도지역 조각 `[{용도지역, 면적, 비율, 경계}]` | `vworld.py` |
+| `get_landuse_designations` | `pnu` | 용도지역 · 지구 지정 | `landuse.py` |
+| `get_landuse_districts` | `pnu` | 지구 목록 | `landuse.py` |
+| `zoning.lookup` | 용도지역, 건축물 용도 | `{건폐율 상한, 용적률 상한, 허용 여부}` | `zoning.py` |
+| `min_lot_area.check` | 용도지역, 면적 | 최소 대지면적 충족 여부 | `min_lot_area.py` |
+| `massing.calc_massing` | 면적, 건폐율, 용적률 | `{건축면적, 연면적, 층수, 높이}` | `massing.py` |
+| `site_constraints.apply` | 경계, 규모, 접도 | 유효 건축면적 · 연면적 · 층수 | `site_constraints.py` |
+| `site_constraints.parking_requirement` | 건축물 용도, 연면적 | 주차 대수 | `site_constraints.py` |
+| `road_access.assess` | 필지 경계 | 접도 · 배수 · 도로 접촉선 | `road_access.py` |
+| `setback_rules.lookup` | 관할, 용도, 용도지역, 연면적 | `{이격거리 앞 · 옆, 근거}` | `setback_rules.py` |
+| `land_division.assess` | 진단 결과 | `{분할 성립 여부, 방법별 확보 면적}` | `land_division.py` |
+| `land_conversion.assess` | 지목, 용도지역 | 농지 · 산지 전용 규제 | `land_conversion.py` |
+| `jimok.classify` | 지목 | 전용허가 필요성 | `jimok.py` |
+| `facility_rules` | 시설, 지목 | 농지 내 시설 가능 여부 | `facility_rules.py` |
+| `regulatory_screen.assess` | 필지 경계 | 재해 · 환경 · 국가유산 중첩 | `regulatory_screen.py` |
+| `terrain.analyze_terrain` | 필지 경계 | 경사도 구간 · 표고 | `terrain.py` |
+| `ogc` / `local_spatial` | 범위 · 경계 | 재해위험지구 · 생태자연도 중첩 | `ogc.py`, `local_spatial.py` |
+| `building_register.lookup` | `pnu` | 기존 건축물대장 | `building_register.py` |
+| `land_ownership.lookup_ownership` | `pnu` | 소유 구분 | `land_ownership.py` |
+| **`legal_conflicts.evaluate`** | 지금까지 모은 상황(State) | **법령 간 저촉 판정** | `legal_conflicts.py` |
+| **`permit_requirements.build`** | 지금까지 모은 상황(State) | **인허가 요건 · 근거 · 선후 순서** | `permit_requirements.py` |
+| `ordinance_index.search` | 질의 | 근거 조문 · 별표 | `ordinance_index.py` |
+| `district_plan.evidence_for` | 지구단위계획구역 | 원문 근거 | `district_plan.py` |
+| `law_open.verify_legal_sources` | 상황(State) | 법령 원문 확인 | `law_open.py` |
+| `development_charge.assess` | 면적, 용도 | 개발부담금 | `development_charge.py` |
+| `conversion_charges.estimate` | 지목, 면적 | 전용부담금 | `conversion_charges.py` |
+| `build_map_commands` | 진단 결과 | 지도 명령 배열 | `map_control.py` |
+| `map_command` | `ops`(동작 목록) | 지도 실행 명세 | map MCP 서버 `:7010` |
+
+**MCP 도구가 지켜야 할 약속 네 가지**
+
+| | 약속 | 왜 |
+|---|---|---|
+| **1** | **실패해도 오류를 터뜨리지 않는다.** `{ok: false, reason: "사유"}` 로 돌려준다 | 사유를 그대로 사용자에게 보여줄 수 있다. 터뜨리면 원인이 묻힌다 |
+| **2** | **숫자는 숫자로 준다.** `"2,777.0"` 처럼 쉼표 낀 글자로 주지 않는다 | 받는 쪽이 계산할 때 깨진다 |
+| **3** | **좌표는 위경도(WGS84)로 준다** | 다른 좌표계로 오면 엉뚱한 위치가 된다 |
+| **4** | **소유자 개인정보는 빼고 준다** | 도구가 준 값이 그대로 AI에게 넘어간다 |
 
 **아직 없다**
 
