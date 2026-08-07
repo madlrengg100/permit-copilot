@@ -391,7 +391,7 @@ sequenceDiagram
         SO->>AG: Action(next_tool)
 
         alt 주소만 있는 경우
-            AG->>MCP: geocode(address = "충북 음성군 생극면 팔성리 100")
+            AG->>MCP: geocode(address = "충북 음성 두성리 100")
             MCP-->>AG: {ok:true, lat:37.05, lng:127.60, crs:"EPSG:4326"}
         else 좌표를 이미 아는 경우 (지도 클릭 진입)
             AG->>MCP: parcel_locate(lat = 37.05, lng = 127.60)
@@ -399,7 +399,7 @@ sequenceDiagram
         end
 
         AG->>MCP: parcel_basic(pnu = "4373032024…")
-        MCP-->>AG: {ok:true, address:"…팔성리 100", jimok:"전", area_m2:1380.0, official_land_price:123000}
+        MCP-->>AG: {ok:true, address:"…두성리 100", jimok:"전", area_m2:1380.0, official_land_price:123000}
         AG->>MCP: parcel_land_use(pnu = "4373032024…")
         MCP-->>AG: {ok:true, zones:["계획관리지역"], items:[{zone:"계획관리지역", code:"UQA200", law_kind:"국토계획법", conflict:""}]}
 
@@ -407,10 +407,10 @@ sequenceDiagram
     end
 
     Note over AG,RG: ③ 근거 검색 — 법령·조례
-    AG->>RG: search(zone = "계획관리지역", building_use = "창고시설", districts = [])
+    AG->>RG: search(zone = "계획관리지역", building_use = "공장", districts = [])
     RG-->>AG: 근거 문단 + 출처(시행령 별표 · 지자체 조례)
 
-    AG->>JD: 판정(zone = "계획관리지역", use = "창고시설", 근거)
+    AG->>JD: 판정(zone = "계획관리지역", use = "공장", 근거)
     JD-->>AG: {verdict: "conditional", bcr_max_pct: 40, far_max_pct: 100}
 
     alt not_allowed 가 아님
@@ -695,7 +695,7 @@ sequenceDiagram
     participant GDB as Graph DB<br/>Fuseki
     participant RDB as RDB<br/>PostgreSQL
 
-    AG->>RG: search(zone="계획관리지역", use="창고시설", 행위유형="건축")
+    AG->>RG: search(zone="계획관리지역", use="공장", 행위유형="건축")
 
     Note over RG,VDB: ① Vector + 키워드 — 후보 회수
     RG->>EMB: embed(질의 키워드)
@@ -746,7 +746,7 @@ Vector DB(판례·민원 사례) **양쪽에서 입력을 받아** 룰셋을 적
 | 층 | 무엇 | 원천 | 예 |
 |---|---|---|---|
 | **① 기준값 룰** | 숫자 비교 | RDB | 건폐율 40% 초과 → 위반 |
-| **② 허용 룰** | 용도지역 × 행위유형 | RDB + Graph | 계획관리지역 × 창고시설 → 조건부 |
+| **② 허용 룰** | 용도지역 × 행위유형 | RDB + Graph | 계획관리지역 × 공장 → 조건부 |
 | **③ 충돌 룰** | **법령 간 저촉** | **Graph** | 국토계획법 허용 × 개별법 제한 → **개별법 우선, 협의 대상** |
 | **④ 절차 룰** | 선후행 관계 | Graph | 지목 전·답·과수원 → **농지전용** 선행 → 개발행위 → 건축<br>지목 임야 → **산지전용** 선행 → 개발행위 → 건축 |
 
@@ -763,7 +763,7 @@ sequenceDiagram
     participant VDB as Vector DB<br/>판례 · 민원 사례
     participant RG as RAG 근거검색
 
-    AG->>RE: evaluate(필지 사실, 행위유형="창고 신축")
+    AG->>RE: evaluate(필지 사실, 행위유형="공장 신축")
 
     Note over RE,RDB: ① 룰셋 로드 · 기준값
     RE->>RDB: 적용 룰셋 조회(zone, 행위유형)
