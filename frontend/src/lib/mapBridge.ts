@@ -115,8 +115,8 @@ export type MapCommand =
       type: "show_dimensions";
       // 분할선·분할 면적 라벨이면 true — 지속 레이어에 그려 이후 이격선 표시로도 안 지워진다.
       persist?: boolean;
-      segments: Array<{ positions: number[][]; label: string; color?: string; width?: number; onTop?: boolean; height_m?: number; kind?: "setback" | "division" }>;
-      labels: Array<{ lon: number; lat: number; text: string; height?: number; offset?: boolean; color?: string; kind?: "road_area" }>;
+      segments: Array<{ positions: number[][]; label: string; color?: string; width?: number; onTop?: boolean; height_m?: number; kind?: "setback" | "division" | "dimension" | "building_line" | "front_setback" | "adjacent_setback" | "north_setback" | "setback_tick" | "road_contact" | "drainage" }>;
+      labels: Array<{ lon: number; lat: number; text: string; height?: number; offset?: boolean; color?: string; kind?: "road_area" | "division_area" }>;
     }
   | {
       /** 자연어로 켠/끈 지도 레이어. 지정된 항목만 바꾼다(MapCanvas가 처리). */
@@ -1106,6 +1106,7 @@ export class MapBridge {
     // VWorld Polygon outline은 선 굵기가 제대로 적용되지 않아 Cesium Entity의
     // polygon과 clampToGround polyline을 함께 사용한다.
     const ws3d = window.ws3d;
+    const relativeToGround = (window as any).Cesium?.HeightReference?.RELATIVE_TO_GROUND ?? 2;
     // 선택 필지는 주변 지적선과 즉시 구별되도록 밝은 시안색을 사용한다.
     // 기존 디자인: 밝은 청록색 외곽선과 청록 반투명 면.
     const parcelColor = ws3d.common.Color.fromCssColorString("#00E5FF");
@@ -1118,8 +1119,9 @@ export class MapBridge {
         polygon: {
           hierarchy: ws3d.common.Cartesian3.fromDegreesArray(flat),
           material: parcelColor.withAlpha(0.22),
-          height: 0.2,
-          heightReference: 2, // RELATIVE_TO_GROUND
+          // 투명 지면 폴리곤의 깊이 충돌만 피하는 1cm 보정. 육안상 지면 밀착이다.
+          height: 0.01,
+          heightReference: relativeToGround,
         },
       });
       this.viewer.entities.add({
@@ -1149,6 +1151,7 @@ export class MapBridge {
    */
   private showZonePieces(cmd: Extract<MapCommand, { type: "show_zone_pieces" }>): void {
     const ws3d = window.ws3d;
+    const relativeToGround = (window as any).Cesium?.HeightReference?.RELATIVE_TO_GROUND ?? 2;
     // 분할 오버레이면 지속 레이어(모델을 세워도 남는다)에, 아니면 일반 조각 레이어에 담는다.
     const bucket = cmd.persist ? this.divisionOverlayIds : this.zonePieceIds;
     let drawn = 0;
@@ -1165,10 +1168,15 @@ export class MapBridge {
             // 분할 면은 바탕 지도가 비치는 반투명 채움으로, 경계·후퇴선은 아래
             // showDimensions에서 완전 불투명으로 그린다. 같은 계열 색이어도 면/선의
             // 시각 문법이 즉시 갈리도록 지속 분할 오버레이만 투명도를 더 낮춘다.
-            material: pieceColor.withAlpha(cmd.persist ? 0.3 : 0.5),
-            // 필지 채움(0.2m)보다 살짝 위 — 아래 청록색과 섞여 탁해지지 않게
-            height: 0.6,
-            heightReference: 2, // RELATIVE_TO_GROUND
+            // 도로 편입 띠는 폭이 좁아 다른 지속 분할면과 같은 0.3이면 거의 보이지
+            // 않는다. 이 조각만 한 단계 진하게 표시한다.
+            material: pieceColor.withAlpha(
+              cmd.persist ? (piece.zone === "도로 편입(후퇴)" ? 0.4 : 0.3) : 0.5,
+            ),
+            // VWorld/Cesium의 투명 지면 폴리곤은 zIndex만으로 순서가 보장되지 않는다.
+            // 육안으로 구분되지 않는 1cm 간격만 두어 깊이 충돌과 소실을 막는다.
+            height: cmd.persist ? 0.03 : 0.02,
+            heightReference: relativeToGround,
           },
         });
         bucket.push(id);
@@ -1400,14 +1408,33 @@ export class MapBridge {
       const mid = seg.positions[Math.floor(seg.positions.length / 2)];
       // 라벨 텍스트가 비어 있으면(예: 분할선처럼 선만 필요한 경우) 라벨은 그리지 않는다.
       if (seg.label && seg.label.trim()) {
-        const a = seg.positions[0];
-        const b = seg.positions[seg.positions.length - 1];
-        const midLon = (a[0] + b[0]) / 2;
-        const midLat = (a[1] + b[1]) / 2;
+        // 폐합선은 첫 점과 마지막 점이 같으므로 두 점 평균을 쓰면 라벨이 항상
+        // 첫 꼭짓점에 몰린다. 전체 선 길이의 절반 지점을 실제 라벨 앵커로 쓴다.
+        const meanLat = seg.positions.reduce((sum, p) => sum + p[1], 0) / seg.positions.length;
+        const lonScale = Math.max(0.1, Math.cos(meanLat * Math.PI / 180));
+        const lengths = seg.positions.slice(1).map((p, i) => {
+          const prev = seg.positions[i];
+          return Math.hypot((p[0] - prev[0]) * lonScale, p[1] - prev[1]);
+        });
+        const totalLength = lengths.reduce((sum, length) => sum + length, 0);
+        let remaining = totalLength / 2;
+        let midLon = seg.positions[0][0];
+        let midLat = seg.positions[0][1];
+        for (let i = 0; i < lengths.length; i += 1) {
+          if (remaining <= lengths[i] || i === lengths.length - 1) {
+            const ratio = lengths[i] > 0 ? Math.min(1, remaining / lengths[i]) : 0;
+            midLon = seg.positions[i][0] + (seg.positions[i + 1][0] - seg.positions[i][0]) * ratio;
+            midLat = seg.positions[i][1] + (seg.positions[i + 1][1] - seg.positions[i][1]) * ratio;
+            break;
+          }
+          remaining -= lengths[i];
+        }
         const labelId = `map-dim-label-${Date.now()}-${rid()}`;
         this.viewer.entities.add({
           id: labelId,
-          position: ws3d.common.Cartesian3.fromDegrees(midLon, midLat, 1),
+          // 선은 지면에 clamp되므로 라벨도 같은 지면고에 둔다. 1m를 주면 낮은
+          // 카메라 각도에서 라벨이 선과 떨어져 공중에 떠 보인다.
+          position: ws3d.common.Cartesian3.fromDegrees(midLon, midLat, 0),
           label: {
             text: seg.label,
             font: isCustom ? "bold 13px 'Malgun Gothic', sans-serif" : "13px 'Malgun Gothic', sans-serif",
@@ -1425,7 +1452,7 @@ export class MapBridge {
                 : yellow.withAlpha(0.98),
             // 치수선 라벨(가로/세로)은 살짝 위로 올려, 같은 지면의 '도로 접촉'
             // 라벨과 겹치지 않게 한다.
-            pixelOffset: new ws3d.common.Cartesian2(0, -20),
+            pixelOffset: new ws3d.common.Cartesian2(0, 0),
             heightReference: relativeToGround,
             disableDepthTestDistance: Number.POSITIVE_INFINITY,
           },
@@ -1437,7 +1464,9 @@ export class MapBridge {
           id: labelId,
           lon: midLon,
           lat: midLat,
-          w: seg.label.length * 9 + 14,
+          // 13px 굵은 한글은 글자당 약 13px이다. 9px로 잡으면 실제 박스가 겹쳐도
+          // 충돌하지 않은 것으로 오판한다.
+          w: seg.label.length * 14 + 20,
           h: 30,
           kind: seg.kind,
         });
@@ -1451,8 +1480,9 @@ export class MapBridge {
       this.viewer.entities.add({
         id,
         // 면적 라벨은 팝업 앵커와 같은 높이(lab.height)에 둔다 — 확대해도 안 떨어진다.
-        // 도로 등 height 없는 라벨만 지면 위 1m.
-        position: ws3d.common.Cartesian3.fromDegrees(lab.lon, lab.lat, lab.height ?? 1),
+        // 도로·분할 라벨은 면과 같은 지면고에 둔다. 건축면적처럼 명시적 높이가
+        // 들어온 라벨만 해당 높이를 유지한다.
+        position: ws3d.common.Cartesian3.fromDegrees(lab.lon, lab.lat, lab.height ?? 0),
         label: {
           text: lab.text,
           font: "13px 'Malgun Gothic', sans-serif",
@@ -1465,17 +1495,7 @@ export class MapBridge {
           // 접기 버튼 → (간격) → 건축면적 → (간격) → 대지면적 순으로 규칙적으로.
           // 버튼 바로 밑에 붙지 않게 건축면적을 충분히 내리고, 대지면적은 그보다
           // 42px 더 아래로.
-          pixelOffset: new ws3d.common.Cartesian2(
-            0,
-            lab.text.startsWith("건축면적")
-              ? 44
-              : lab.text.startsWith("대지면적")
-                ? 86
-                // '도로 접촉'은 지면 라벨이라 치수선 라벨과 겹친다 — 아래로 내린다.
-                : lab.text.startsWith("도로 접촉")
-                  ? 22
-                  : 0,
-          ),
+          pixelOffset: new ws3d.common.Cartesian2(0, lab.text.startsWith("건축면적") ? 44 : 0),
           heightReference: relativeToGround,
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
         },
@@ -1486,7 +1506,7 @@ export class MapBridge {
       // 오프셋을 쓰므로 대상에서 제외한다(기존 동작 유지).
       if (persist) {
         this.persistLabelAnchors.push({
-          id, lon: lab.lon, lat: lab.lat, w: lab.text.length * 11 + 18, h: 30,
+          id, lon: lab.lon, lat: lab.lat, w: lab.text.length * 14 + 20, h: 30,
           kind: lab.kind,
         });
       }
@@ -1506,20 +1526,16 @@ export class MapBridge {
       const placed: { x: number; y: number; w: number; h: number }[] = [];
       // 분할·후퇴 라벨은 작은 조각 한가운데를 가리지 않도록 먼저 좌우 바깥으로
       // 뺀다. 일반 치수 라벨은 기존처럼 선 가까운 위·아래 자리를 우선한다.
-      const defaultCands: [number, number][] = persist
-        ? [
-            [92, -30], [-92, 30], [92, 30], [-92, -30],
-            [118, -56], [-118, 56], [118, 56], [-118, -56],
-            [0, -74], [0, 74], [0, -108], [0, 108],
-          ]
-        : [
-            [0, -22], [0, 22], [0, -48], [0, 48], [0, -74], [0, 74],
-            [0, -100], [0, 100], [0, -126], [0, 126], [0, -152], [0, 152],
-          ];
+      const defaultCands: [number, number][] = [
+        [0, -18], [0, 18], [0, -54], [0, 54],
+        [-100, -18], [100, -18], [-100, 18], [100, 18],
+        [-180, -18], [180, -18], [-180, 18], [180, 18],
+        [0, -90], [0, 90], [-100, -54], [100, 54],
+      ];
       const anchors = anchorList
         .map((a) => {
           const gh = this.terrainHeight(a.lon, a.lat);
-          const world = C.Cartesian3.fromDegrees(a.lon, a.lat, gh + 1);
+          const world = C.Cartesian3.fromDegrees(a.lon, a.lat, gh);
           const toPt = C.Cartesian3.subtract(world, camera.positionWC, new C.Cartesian3());
           const front = C.Cartesian3.dot(toPt, camera.directionWC) > 0;
           const win = front ? toWin(scene, world) : undefined;
@@ -1527,40 +1543,79 @@ export class MapBridge {
           return { a, win, dist };
         })
         .filter((x) => x.win)
-        .sort((x, y) => x.dist - y.dist);
+        .sort((x, y) => {
+          const priority: Record<string, number> = {
+            front_setback: 0, adjacent_setback: 1, north_setback: 2,
+            setback: 3, road_contact: 4, building_line: 5,
+            drainage: 6, road_area: 7, division: 8, division_area: 9, dimension: 10,
+          };
+          const byKind = (priority[x.a.kind ?? ""] ?? 10) - (priority[y.a.kind ?? ""] ?? 10);
+          return byKind || x.dist - y.dist;
+        });
       for (const { a, win } of anchors) {
         const ent = this.viewer.entities.getById(a.id);
         if (!ent?.label) continue;
         // 도로 관련 라벨은 같은 색 도형에 붙어 읽히는 것이 우선이다. 보라 후퇴선은
         // 선 바로 위, 파란 편입면적은 면 중심 바로 아래에서 시작하고 가까운 자리만 쓴다.
-        const cands: [number, number][] = a.kind === "setback"
-          ? [[0, -36], [48, -36], [-48, -36], [0, 36], [48, 36], [-48, 36]]
+        const preferred: [number, number][] = a.kind === "front_setback"
+          ? [[0, -36], [-70, -36], [70, -36]]
+          : a.kind === "division"
+            ? [[0, 36], [-70, 36], [70, 36]]
+          : a.kind === "division_area"
+            ? [[0, 72], [-80, 72], [80, 72], [0, -72]]
+          : a.kind === "setback"
+          ? [[0, 30], [0, -30]]
           : a.kind === "road_area"
-            ? [[0, 36], [52, 36], [-52, 36], [0, -36], [52, -36], [-52, -36]]
-            : defaultCands;
+            ? [[0, -22], [0, 22], [-40, -22], [40, -22], [-40, 22], [40, 22]]
+            : [];
+        // 편입 면적 라벨은 자기 면에서 멀리 날아가지 않도록 근거리 후보만 사용한다.
+        const cands: [number, number][] = ["road_area", "front_setback", "division", "division_area"].includes(a.kind ?? "")
+          ? preferred
+          : [...preferred, ...defaultCands];
+        // 라벨은 선에서 멀리 날리지 않는다. 가까운 후보 안에서 겹침이 가장 적은
+        // 위치를 고르고, 카메라 이동 때 다시 계산하지 않아 확대·축소 중 튀지 않는다.
         let chosen = cands[0];
+        let bestOverlap = Number.POSITIVE_INFINITY;
         for (const [cx, cy] of cands) {
-          const rect = { x: win.x + cx - a.w / 2, y: win.y + cy - a.h / 2, w: a.w, h: a.h };
-          const hit = placed.some(
-            (p) => !(rect.x + rect.w < p.x || rect.x > p.x + p.w || rect.y + rect.h < p.y || rect.y > p.y + p.h),
-          );
-          if (!hit) { chosen = [cx, cy]; break; }
+          const gap = 6;
+          const rect = {
+            x: win.x + cx - a.w / 2 - gap,
+            y: win.y + cy - a.h / 2 - gap,
+            w: a.w + gap * 2,
+            h: a.h + gap * 2,
+          };
+          const overlap = placed.reduce((sum, p) => {
+            const ox = Math.max(0, Math.min(rect.x + rect.w, p.x + p.w) - Math.max(rect.x, p.x));
+            const oy = Math.max(0, Math.min(rect.y + rect.h, p.y + p.h) - Math.max(rect.y, p.y));
+            return sum + ox * oy;
+          }, 0);
+          if (overlap < bestOverlap) {
+            bestOverlap = overlap;
+            chosen = [cx, cy];
+            if (overlap === 0) break;
+          }
         }
-        placed.push({ x: win.x + chosen[0] - a.w / 2, y: win.y + chosen[1] - a.h / 2, w: a.w, h: a.h });
+        placed.push({
+          x: win.x + chosen[0] - a.w / 2 - 6,
+          y: win.y + chosen[1] - a.h / 2 - 6,
+          w: a.w + 12,
+          h: a.h + 12,
+        });
         ent.label.pixelOffset = new C.Cartesian2(chosen[0], chosen[1]);
       }
     };
-    // persist(분할) 라벨은 전용 채널로, 정규 치수선과 독립적으로 겹침 방지·카메라 추적.
-    // 한 번의 분할 그리기에서 division_dimensions·도로편입 라벨이 나눠 들어오므로,
-    // 매번 누적된 persistLabelAnchors 전체로 다시 배치하고 리스너를 갱신한다.
-    if (persist) {
-      this.persistLabelDisposer?.();
-      declutter(this.persistLabelAnchors);
-      this.persistLabelDisposer = this.onCameraChange(() => declutter(this.persistLabelAnchors));
-    } else {
-      declutter(this.dimLabelAnchors);
-      this.dimLabelDisposer = this.onCameraChange(() => declutter(this.dimLabelAnchors));
-    }
+    // persist(분할) 라벨은 전용 채널로, 정규 치수선과 독립적으로 겹침을 한 번 정리한다.
+    // 지리 좌표에 고정된 라벨의 pixelOffset을 postRender마다 다시 고르면, 마우스 이동처럼
+    // 카메라가 바뀌지 않은 렌더에도 후보 순서가 흔들려 글씨가 커서를 따라다니는 것처럼
+    // 튄다. 분할 라벨은 명령이 추가될 때만 누적 앵커 전체를 다시 배치하고 이후 오프셋은
+    // 고정한다. 지도 이동·회전 때는 Cesium의 지리 앵커를 따라 자연스럽게 이동한다.
+    // 분할·면적·도로·이격 라벨을 한 목록으로 합쳐 현재 화면에서 한 번만 배치한다.
+    // 카메라 리스너는 두지 않으므로 확대·축소 중 라벨이 날아다니지 않는다.
+    this.persistLabelDisposer?.();
+    this.persistLabelDisposer = null;
+    this.dimLabelDisposer?.();
+    this.dimLabelDisposer = null;
+    declutter([...this.persistLabelAnchors, ...this.dimLabelAnchors]);
     this.viewer.scene?.requestRender?.();
     this.note(`✓ 치수선 ${cmd.segments.length}개 · 라벨 ${cmd.labels.length}개 표시`);
   }

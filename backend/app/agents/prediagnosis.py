@@ -603,6 +603,11 @@ def format_diagnosis_answer(d: dict) -> str:
             else:
                 extra = " · 건축법 접도 최소 2m 이상(유효 도로폭·후퇴선은 현황측량 확인)"
             out.append(f"- 접촉 길이 약 {contact}m{extra}")
+        if not ra.get("interior_overlap_confirmed"):
+            out.append(
+                "- **도로 편입·분할:** 현재 자료에서는 필지 내부 도로 중첩이 확인되지 않아 "
+                "도로 편입이나 필지분할이 필요하다고 판정하지 않습니다."
+            )
 
     # 재해·환경·국가유산
     rs = d.get("regulatory_screen") or {}

@@ -332,7 +332,10 @@ async def assess(
     return {
         "status": "CADASTRAL_CONTACT",
         "label": "지적도상 도로 접함",
-        "message": f"지목 '도로' 필지 {len(roads)}개와 접합니다. {setback}",
+        "message": (
+            f"지목 '도로' 필지 {len(roads)}개와 경계가 맞닿습니다. 이는 접도 확인이며, "
+            f"도로가 대상 필지 내부를 점유·통과하거나 편입 면적이 있다는 뜻은 아닙니다. {setback}"
+        ),
         "roads": roads,
         "adjacent_nonroad_parcels": adjacent_nonroads,
         "drainage": drainage_info,

@@ -198,26 +198,32 @@ def lookup(
 
     source = entry.get("source")
     gross = float(gross_floor_area_m2 or 0)
-    for rule in entry.get("rules", []):
-        if rule.get("use") != building_use:
-            continue
-        if not _matches(rule.get("when") or {}, zone, gross):
-            continue
-        if rule.get("needs_subtype"):
+    # 용도별 특칙을 먼저 평가하고, 없을 때만 조례 표의 '그 밖의 모든 건축물'
+    # 공통행(use="*")을 적용한다. 공통행을 용도마다 복사하면 새 용도가 추가될 때
+    # 0m로 빠지는 데이터 누락이 반복된다.
+    for candidate_use in (building_use, "*"):
+        for rule in entry.get("rules", []):
+            if rule.get("use") != candidate_use:
+                continue
+            if not _matches(rule.get("when") or {}, zone, gross):
+                continue
+            if rule.get("needs_subtype"):
+                return {
+                    "status": "NEEDS_SUBTYPE",
+                    "front_m": None,
+                    "adjacent_m": None,
+                    "preview_front_m": rule.get("preview_front_m"),
+                    "preview_adjacent_m": rule.get("preview_adjacent_m"),
+                    "source": source,
+                    "note": rule.get("note", "세부 유형에 따라 이격이 달라집니다."),
+                }
             return {
-                "status": "NEEDS_SUBTYPE",
-                "front_m": None,
-                "adjacent_m": None,
+                "status": "APPLIED",
+                "front_m": float(rule.get("front_m") or 0),
+                "adjacent_m": float(rule.get("adjacent_m") or 0),
                 "source": source,
-                "note": rule.get("note", "세부 유형에 따라 이격이 달라집니다."),
+                "note": rule.get("note", "해당 건축조례 별표 기준을 적용했습니다."),
             }
-        return {
-            "status": "APPLIED",
-            "front_m": float(rule.get("front_m") or 0),
-            "adjacent_m": float(rule.get("adjacent_m") or 0),
-            "source": source,
-            "note": rule.get("note", "해당 건축조례 별표 기준을 적용했습니다."),
-        }
 
     # 지자체는 수집됐으나 이 용도·규모는 대지 안의 공지 대상이 아님 → 0m.
     return {

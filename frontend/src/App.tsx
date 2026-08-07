@@ -767,8 +767,8 @@ export default function App() {
                       }
                     : p,
                 );
-                const f = Number(r.front_setback_m ?? 0);
-                const a = Number(r.adjacent_setback_m ?? 0);
+                const f = Number(r.front_setback_m ?? r.preview_front_setback_m ?? 0);
+                const a = Number(r.adjacent_setback_m ?? r.preview_adjacent_setback_m ?? 0);
                 const n = Number(r.north_setback_m ?? 0);
                 const src = r.source ? ` (${r.source})` : "";
                 // 이격은 '용도+규모+용도지역' 조건에 따라 정해진다는 걸 문구로 드러낸다.
@@ -782,11 +782,11 @@ export default function App() {
                 if (a > 0) parts.push(`인접 ${a}m`);
                 if (n > 0) parts.push(`정북일조 ${n}m`);
                 if (r.status === "NEEDS_SUBTYPE") {
-                  text = `${label} · ${cond} 세부 유형에 따라 이격이 달라집니다 — ${r.note ?? ""}`.trim() + src;
+                  text = `${label} · ${cond} 세부 유형에 따라 이격이 달라집니다. 현재 지도에는 조례 범위의 보수적 최대 미리보기(전면 ${f}m · 인접 ${a}m)를 다시 그렸습니다 — ${r.note ?? ""}`.trim() + src;
                 } else if (parts.length) {
                   text = `${label} · ${cond} ${parts.join(" · ")}가 적용됩니다 — 지도에 건축선으로 표시했습니다.${src}`;
                 } else if (r.status === "NOT_COLLECTED") {
-                  text = `${label} · 이 지자체 건축조례의 대지 안의 공지 값은 별표(첨부)라 자동수집되지 않았습니다. 단독주택·소규모 근린생활시설 등은 건축법 시행령 별표2상 이격이 조례에 위임(강제 규정 없음)돼 통상 0m이며, 아파트·대형 판매·숙박·위락시설 등은 조례 별표로 정해지니 별표 원문을 확인해야 합니다.`;
+                  text = `${label} · 관할 건축조례 별표가 아직 수집되지 않아 법적 이격거리는 미확정입니다. 화면 계산에 후퇴를 적용하지 않았더라도 0m 기준으로 해석하면 안 되며, 조례 별표와 설계 조건을 확인해야 합니다.`;
                 } else {
                   text = `${label} · 이 용도·규모·지역은 대지 안의 공지 대상이 아니어서 이격 0m입니다.${src}`;
                 }

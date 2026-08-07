@@ -90,6 +90,7 @@ def assess(diagnosis: dict | None) -> dict:
             if m2 >= z_min:
                 methods.append({
                     "method": "규제 분리(용도지역 걸침)",
+                    "necessity": "OPTIONAL",
                     "buildable_area_m2": m2,
                     "note": (
                         f"{s['zone']} 부분 약 {m2:,.0f}㎡만 분할하면 그 용도지역 최소 "
@@ -123,7 +124,8 @@ def assess(diagnosis: dict | None) -> dict:
             strip = round(clen * setback, 1)
             remaining = round(area - strip, 1)
             methods.append({
-                "method": "도로 후퇴(미달도로 편입)",
+                "method": "건축선 후퇴(미달도로 대지면적 제외 가능)",
+                "necessity": "MEASUREMENT_REQUIRED",
                 "buildable_area_m2": max(remaining, 0),
                 "note": (
                     f"접한 도로 추정폭 {float(w):g}m(<4m)라 중심선에서 약 {setback:.1f}m "
@@ -151,6 +153,13 @@ def assess(diagnosis: dict | None) -> dict:
         "parcel_area_m2": round(area, 1),
         "maenji": maenji,
         "needs_dev_permit": needs_dev_permit,
+        # 용도지역 걸침이나 미달도로 접촉은 그 자체로 필지분할 의무가 아니다.
+        # 내부 도로 중첩·편입처럼 분할 필요성이 확인된 방법이 있을 때만 자동 제안한다.
+        "division_recommendation": (
+            "REQUIRED"
+            if any(method.get("necessity") == "REQUIRED" for method in methods)
+            else "OPTIONAL" if methods else "NONE"
+        ),
         # 분할 뒤 그 대지에 이어지는 후속 인허가(분할은 끝이 아니라 시작). 녹지·관리·농림
         # 등은 분할 자체도 개발행위허가 대상이라 그 점을 함께 밝힌다.
         "followups": (

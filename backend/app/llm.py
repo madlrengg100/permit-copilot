@@ -63,9 +63,11 @@ class AnthropicAdapter:
     async def complete(
         self, *, system: str, messages: list[dict], tools: list[dict], max_tokens: int,
         model: str | None = None, reasoning_effort: str | None = None,
+        request_timeout: float | None = None,
     ) -> LLMResponse:
         # reasoning_effort 는 gemini(OpenAI 호환) thinking 제어용 인자다. anthropic 은
         # 자체 thinking(adaptive)을 쓰므로 시그니처 호환을 위해 받되 사용하지 않는다.
+        timeout_option = {"timeout": request_timeout} if request_timeout is not None else {}
         resp = await self.client.messages.create(
             model=model or LLM_MODEL,
             max_tokens=max_tokens,
@@ -74,6 +76,7 @@ class AnthropicAdapter:
             system=system,
             tools=self.tool_schema(tools),
             messages=messages,
+            **timeout_option,
         )
         out = LLMResponse(raw_assistant={"role": "assistant", "content": resp.content})
         for block in resp.content:
@@ -161,17 +164,20 @@ class OpenAIAdapter:
     async def complete(
         self, *, system: str, messages: list[dict], tools: list[dict], max_tokens: int,
         model: str | None = None, reasoning_effort: str | None = None,
+        request_timeout: float | None = None,
     ) -> LLMResponse:
         # OpenAI 는 system 을 messages 의 첫 항목으로 넣는다
         payload = [{"role": "system", "content": system}, *messages]
         # gemini 2.5 flash 는 thinking 이 기본 ON 이라 지연이 크다. reasoning_effort 로
         # thinking 예산을 낮춰(none/low) 응답 지연을 제어한다(gemini OpenAI 호환 필드).
         extra = {"reasoning_effort": reasoning_effort} if reasoning_effort else {}
+        timeout_option = {"timeout": request_timeout} if request_timeout is not None else {}
         resp = await self.client.chat.completions.create(
             model=model or LLM_MODEL,
             max_completion_tokens=max_tokens,
             messages=payload,
             tools=self.tool_schema(tools),
+            **timeout_option,
             **extra,
         )
         msg = resp.choices[0].message

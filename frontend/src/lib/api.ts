@@ -61,6 +61,9 @@ export async function fetchSetbackForUse(
   verdict_color?: string | null;
   front_setback_m?: number | null;
   adjacent_setback_m?: number | null;
+  preview_front_setback_m?: number | null;
+  preview_adjacent_setback_m?: number | null;
+  provisional?: boolean;
   north_setback_m?: number | null;
   source?: string | null;
   status?: string | null;

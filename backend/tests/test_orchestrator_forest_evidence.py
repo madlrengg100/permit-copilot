@@ -12,6 +12,7 @@ from app.orchestrator import (
     _ensure_query_evidence,
     _limit_review_length,
     _normalize_numbered_headings,
+    _setback_fact_answer,
     _strip_internal_field_names,
 )
 
@@ -135,6 +136,38 @@ class OrchestratorForestEvidenceTest(unittest.IsolatedAsyncioTestCase):
         text = _ensure_query_evidence("설계 시 이격을 검토합니다.", DIAGNOSIS, "이격거리 얼마야?")
         self.assertIn("전면 건축선 이격 3m", text)
         self.assertIn("정북 일조 이격 0m", text)
+
+    def test_adjacent_setback_question_reads_only_current_selected_use_value(self):
+        diagnosis = {
+            **DIAGNOSIS,
+            "request": {"building_use": "창고시설", "inferred": False},
+            "site_constraints": {
+                **DIAGNOSIS["site_constraints"],
+                "adjacent_setback_m": 0.5,
+                "setback_rule": {"status": "APPLIED"},
+            },
+        }
+        text = _setback_fact_answer(diagnosis, "선택 필지에 인접 이격은 뭐야?")
+        self.assertIn("창고시설 기준", text)
+        self.assertIn("인접 대지경계 이격 0.5m", text)
+        self.assertNotIn("전면 건축선 이격", text)
+
+    def test_uncollected_setback_is_unknown_not_zero(self):
+        diagnosis = {
+            **DIAGNOSIS,
+            "site_constraints": {
+                "front_setback_m": 0,
+                "adjacent_setback_m": 0,
+                "setback_rule": {
+                    "status": "NOT_COLLECTED",
+                    "note": "양평군 조례 별표 미수집",
+                },
+            },
+        }
+        text = _setback_fact_answer(diagnosis, "인접 이격은 얼마야?")
+        self.assertIn("아직 확정할 수 없습니다", text)
+        self.assertIn("0m를 법적 이격거리로 해석하면 안", text)
+        self.assertNotIn("인접 대지경계 이격 0m", text)
 
     def test_permit_answer_cannot_omit_later_steps(self):
         text = _ensure_query_evidence(

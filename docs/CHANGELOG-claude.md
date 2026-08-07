@@ -5,6 +5,13 @@
 > 가능 모델 목록은 `orchestrator._model_options_for_diagnosis()`만 — CLAUDE.md 준수.
 
 ## 2026-08-06
+### 이격 기하·분할 의미·세션 복원 보강 (Codex 병행)
+- setback 전면 이격 기하 계산, 도로접촉선-분할 의미 정합, 이격 기본 규칙, 세션 복원 시
+  이격 상태 유지 등을 보강하고 테스트 추가(test_front_setback_geometry·
+  road_contact_division_semantics·setback_default_rule·setback_session_restore). 프런트
+  App·api·mapBridge 보강(분할 전후 전환 시 직전 이격 치수선 폐기 = clearDimensions(true)).
+  llm.py request_timeout 인자. 전체 140 테스트 통과.
+
 ### '검토 의견 작성 중' 진행 표시 제거
 - 검토 의견 계산 전 흘리던 tool_start{judgment}('검토 의견 작성 중') 진행 표시가 작성
   완료 후에도 화면에 남아 지저분했다. main.py 소비부에서 그 emission 을 제거 — 검토
