@@ -1,0 +1,12 @@
+# 개발·테스트 전용 의존성. 운영 이미지(Dockerfile)는 requirements.txt만 설치한다.
+#
+#   pip install -r requirements.txt -r requirements-dev.txt
+#   python -m pytest tests/ -q
+#
+# 대형 공간데이터 변환 스크립트(backend/scripts/import_*.py)는 운영 의존성만으로
+# 동작하므로 여기에 추가할 것이 없다.
+
+-r requirements.txt
+
+pytest>=8
+pytest-asyncio>=0.24
