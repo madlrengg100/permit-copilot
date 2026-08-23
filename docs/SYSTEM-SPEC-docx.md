@@ -701,7 +701,7 @@ cd frontend && npm run dev -- --host 0.0.0.0 --port 5173
 
 | 항목 | 내용 |
 |---|---|
-| 세션 저장소 | 프로세스 메모리 + `/home/madlrengg100/.permit-copilot-sessions` 파일 스냅샷. 재시작 시 PNU별 상태 복원 |
+| 세션 저장소 | 프로세스 메모리 + `/home/jh12535320/.permit-copilot-sessions` 파일 스냅샷. 재시작 시 PNU별 상태 복원 |
 | Python 버전 | 3.9.25에서 동작하나 **3.11+ 권장**. 모든 모듈이 `from __future__ import annotations` 에 의존하며, 애노테이션 외부에서 `X | Y` 를 쓰면 즉시 실패 |
 | 진행 이벤트 | `diagnosis_step` 이 실시간이 아니라 진단 완료 후 일괄 방출 |
 | 오류 안내 | 프리셋 사용 시 `friendly_error` 가 실제 키 환경변수명(`GEMINI_API_KEY` 등) 대신 `OPENAI_API_KEY` 를 안내 |

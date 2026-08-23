@@ -14,7 +14,7 @@ from shapely.geometry import box, mapping, shape
 
 
 DEFAULT_DEM_PATH = (
-    "/home/madlrengg100/permit-copilot/backend/data/processed/"
+    "/home/jh12535320/permit-copilot/backend/data/processed/"
     "terrain/dem/cop30_korea.tif"
 )
 

@@ -5,11 +5,11 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=madlrengg100
-Group=madlrengg100
-WorkingDirectory=/home/madlrengg100/permit-copilot/backend
+User=jh12535320
+Group=jh12535320
+WorkingDirectory=/home/jh12535320/permit-copilot/backend
 EnvironmentFile=/etc/permit-copilot/permit-copilot.env
-ExecStart=/bin/bash -lc '/home/madlrengg100/permit-copilot/backend/.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000'
+ExecStart=/bin/bash -lc '/home/jh12535320/permit-copilot/backend/.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000'
 Restart=always
 RestartSec=3
 TimeoutStopSec=15

@@ -61,7 +61,7 @@ client = make_client()
 # 세션 ID -> Orchestrator. 프로세스 메모리 보관(단일 인스턴스 전제).
 _sessions: dict[str, Orchestrator] = {}
 _SESSION_STATE_DIR = Path(
-    os.getenv("SESSION_STATE_DIR", "/home/madlrengg100/.permit-copilot-sessions")
+    os.getenv("SESSION_STATE_DIR", "/home/jh12535320/.permit-copilot-sessions")
 )
 
 
