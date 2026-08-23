@@ -1260,8 +1260,8 @@ async def run_prediagnosis(
         state["location"]["matched_address"] = state["parcel"]["jibun"]
 
     # 용도지구·지구단위계획 등은 VWorld 용도지역 조회로 안 잡힌다. 토지이용계획
-    # (토지이음) API 로 필지 PNU 의 '지역지구 등 지정여부'를 보강한다.
-    # (LANDUSE_KEY 가 없으면 [] 를 돌려주므로 지금은 영향 없음)
+    # (토지이음) 조회로 필지 PNU 의 '지역지구 등 지정여부'를 보강한다.
+    # (VWORLD_KEY 가 없으면 NOT_CONFIGURED 로 빈 결과를 돌려준다)
     from ..tools import landuse as landuse_tool
 
     landuse_designations = await landuse_tool.get_landuse_designations(
