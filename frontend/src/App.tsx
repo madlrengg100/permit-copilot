@@ -862,8 +862,15 @@ export default function App() {
                   setMessages((current) => [
                     ...current.filter(
                       (message) => !(
-                        message.role === "status"
-                        && message.text.includes("현재 분석 중인 필지")
+                        (message.role === "status"
+                          && message.text.includes("현재 분석 중인 필지"))
+                        // 분석 중인 필지로 되돌아왔으면 그 사이에 다른 필지를 눌러
+                        // 남겨둔 '무슨 건물' 안내는 무효다. 지우지 않으면 다른 필지
+                        // 지번이 최신 안내처럼 남아 지금 필지와 어긋나 보인다.
+                        || (message.role === "assistant"
+                          && message.text.includes(
+                            "필지를 선택했습니다. 무슨 건물을 짓고 싶은가요?",
+                          ))
                       ),
                     ),
                     { role: "status", text: note },
