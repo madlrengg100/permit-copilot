@@ -1126,7 +1126,21 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
         and float(s.get("share_pct") or 0) > 0
         and float(s.get("area_m2") or 0) > 0
     ]
-    if len(pieces) >= 2:
+    # WFS 에 없고 토지이음(NED 지정목록)에만 있는 용도지역 — 조각 면적이 없어
+    # 지도에는 못 깔지만 걸침 판단과 범례 목록에는 넣어야 표기가 토지이음과 맞는다.
+    _wfs_zones = {s["zone"] for s in pieces}
+    ned_only = []
+    for record in (land_use.get("designation_lookup") or {}).get("records") or []:
+        if not (record.get("is_zoning") and record.get("active")):
+            continue
+        zone_name = (record.get("name") or "").strip()
+        if not zone_name or zone_name in _wfs_zones or zone_name in _TIER1_NAMES:
+            continue
+        if zone_name not in ned_only:
+            ned_only.append(zone_name)
+    # 조각이 하나뿐이어도 토지이음이 다른 용도지역을 '저촉'으로 적으면 걸침으로 본다.
+    # 조각이 0개면 지도도 색도 만들 수 없으므로 최소 1개는 있어야 한다.
+    if pieces and len(pieces) + len(ned_only) >= 2:
         piece_colors = _piece_colors([s["zone"] for s in pieces])
         piece_cmds = [
             {
@@ -1142,8 +1156,8 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
         # pieces 가 아니라 legend_items 로만 보낸다(지도에 덧칠하지 않는다).
         legend_items = []
         tier1 = []
-        for s in pieces:
-            t = zone_tier1(s["zone"])
+        for zone_name in [s["zone"] for s in pieces] + ned_only:
+            t = zone_tier1(zone_name)
             if t and t not in tier1:
                 tier1.append(t)
         if tier1:
@@ -1159,15 +1173,7 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
         # 연속주제도 WFS 는 면적으로 조각을 만들어 아주 작은 조각이 떨어져 나간다.
         # 토지이음(NED 지정목록)은 면적과 무관하게 '저촉'으로 적으므로, WFS 에 없는
         # 용도지역만 목록에 덧붙여 표기를 맞춘다. 지도 조각은 만들지 않는다.
-        seen_zones = {p["zone"] for p in piece_cmds}
-        lookup = (land_use.get("designation_lookup") or {}).get("records") or []
-        for record in lookup:
-            if not (record.get("is_zoning") and record.get("active")):
-                continue
-            zone_name = (record.get("name") or "").strip()
-            if not zone_name or zone_name in seen_zones or zone_name in _TIER1_NAMES:
-                continue
-            seen_zones.add(zone_name)
+        for zone_name in ned_only:
             legend_items.append({
                 "label": f"{zone_name} · 저촉(면적 미미)", "color": "", "symbol": "tier",
                 "note": "토지이음 지정목록에는 있으나 연속주제도상 조각 면적이 없어 지도에는 표시되지 않는다",
