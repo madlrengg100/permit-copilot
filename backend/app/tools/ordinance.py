@@ -18,6 +18,8 @@ import re
 from functools import lru_cache
 from pathlib import Path
 
+from .textfmt import kdate
+
 _DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "ordinances.json"
 # 전국 자동 수집본(collect_ordinances.py 산출). 수작업 검증본이 없는 지자체만
 # 보완적으로 병합한다. review_status=="auto_extracted" 인 것만 신뢰해 쓴다.
@@ -272,7 +274,7 @@ def resolve_limits(zone: str, jurisdiction: str | None = None) -> dict:
             "source": "ordinance",
             "source_label": (
                 f"{src.get('ordinance', jurisdiction + ' 도시계획조례')} "
-                f"{src.get('articles', '')} (시행 {src.get('effective_date', '?')})"
+                f"{src.get('articles', '')} (시행 {kdate(src.get('effective_date')) or '?'})"
             ).strip(),
             "ordinance_note": entry.get("note"),
         }

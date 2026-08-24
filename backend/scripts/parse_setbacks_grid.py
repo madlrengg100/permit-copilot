@@ -40,6 +40,21 @@ _DIST = re.compile(r"(\d+(?:\.\d+)?)\s*(?:미터|m|M)(?![A-Za-z0-9])")
 _GROSS = re.compile(r"(\d[\d,]*)\s*(?:제곱미터|㎡|m2|평방미터)")
 
 
+
+def _kdate(value) -> str:
+    """시행일자 YYYYMMDD -> YYYY-MM-DD (app/tools/textfmt.kdate 와 같은 규칙).
+    실재하지 않는 날짜나 8자리가 아니면 원문 그대로 둔다."""
+    import datetime
+    text = str(value or "").strip()
+    m = re.fullmatch(r"(\d{4})(\d{2})(\d{2})", text)
+    if not m:
+        return text
+    try:
+        datetime.date(int(m[1]), int(m[2]), int(m[3]))
+    except ValueError:
+        return text
+    return f"{m[1]}-{m[2]}-{m[3]}"
+
 def _dists(cell: str) -> list[float]:
     """셀에서 거리(미터) 목록. 셀이 '-' 뿐이면 0."""
     c = cell or ""
@@ -285,7 +300,7 @@ def main() -> None:
             continue
         rules = parse_grid(hwp)
         out[org] = {
-            "source": f"{rec.get('ordinance', org)} 별표(대지 안의 공지) (시행 {rec.get('effective_date','?')})",
+            "source": f"{rec.get('ordinance', org)} 별표(대지 안의 공지) (시행 {_kdate(rec.get('effective_date')) or '?'})",
             "review_status": "needs_review",
             "rules": rules,
         }

@@ -51,6 +51,21 @@ JSON 배열만 출력하고 다른 말은 하지 마라.
 """
 
 
+
+def _kdate(value) -> str:
+    """시행일자 YYYYMMDD -> YYYY-MM-DD (app/tools/textfmt.kdate 와 같은 규칙).
+    실재하지 않는 날짜나 8자리가 아니면 원문 그대로 둔다."""
+    import datetime
+    text = str(value or "").strip()
+    m = re.fullmatch(r"(\d{4})(\d{2})(\d{2})", text)
+    if not m:
+        return text
+    try:
+        datetime.date(int(m[1]), int(m[2]), int(m[3]))
+    except ValueError:
+        return text
+    return f"{m[1]}-{m[2]}-{m[3]}"
+
 def parse_cells(cells: list[str]) -> list[dict]:
     text = " | ".join(cells)[:8000]
     resp = _client.chat.completions.create(
@@ -113,7 +128,7 @@ def main() -> None:
             rules = parse_cells(rec["cells"])
             out[org] = {
                 "source": f"{rec.get('ordinance', org)} 별표(대지 안의 공지) "
-                          f"(시행 {rec.get('effective_date', '?')})",
+                          f"(시행 {_kdate(rec.get('effective_date')) or '?'})",
                 "review_status": "needs_review",
                 "rules": rules,
             }

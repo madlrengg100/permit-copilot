@@ -43,6 +43,7 @@ from ..tools import (
     regulatory_screen,
     road_access,
     setback_rules,
+    textfmt,
     site_constraints,
     vworld,
     zoning,
@@ -678,9 +679,7 @@ def format_diagnosis_answer(d: dict) -> str:
         out.append(f"## {n}. 국가법령정보센터 원문 확인")
         n += 1
         for source in sources:
-            effective = source.get("effective_date") or ""
-            if len(effective) == 8:
-                effective = f"{effective[:4]}-{effective[4:6]}-{effective[6:]}"
+            effective = textfmt.kdate(source.get("effective_date"))
             suffix = f" · 시행 {effective}" if effective else ""
             out.append(
                 f"- [{source.get('title', source.get('query', '법령 원문'))}]"
@@ -721,9 +720,7 @@ def format_diagnosis_answer(d: dict) -> str:
         out.append(f"## {n}. {local_evidence_title}")
         n += 1
         for ev in evidence[:3]:
-            eff = ev.get("effective_date") or ""
-            if len(eff) == 8:
-                eff = f"{eff[:4]}-{eff[4:6]}-{eff[6:]}"
+            eff = textfmt.kdate(ev.get("effective_date"))
             suffix = f" · 시행 {eff}" if eff else ""
             art = ev.get("article") or ""
             title = ev.get("title") or ""
