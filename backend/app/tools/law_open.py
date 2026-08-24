@@ -12,6 +12,12 @@ from ..config import LAW_OPEN_API_OC
 
 
 SEARCH_URL = "https://www.law.go.kr/DRF/lawSearch.do"
+
+
+class LawOpenAuthError(RuntimeError):
+    """OC·서버 IP 미등록 등 계정 인증 거부. 법령명 오류와 구분해야 한다."""
+
+
 # 조문·항·호 표기. 법령명 추출에는 쓰지 않고, 남겨두면 앞 조문의 '조'가 뒤
 # 법령명 앞에 붙어 잘못 잡힌다("건축법 제11조 및 국토의 …" -> "조 및 국토의 …").
 # 그래서 먼저 구분자로 치환한 뒤 그 구분자를 법령명의 경계로 쓴다.
@@ -71,6 +77,12 @@ async def _search_one(client: httpx.AsyncClient, name: str) -> dict:
     response = await client.get(SEARCH_URL, params=params)
     response.raise_for_status()
     payload = response.json()
+    # 인증 거부는 HTTP 200 + {"result": ..., "msg": ...} 로 온다. 이걸 그냥 두면
+    # 'law' 키가 없어 '법령 못 찾음'과 똑같이 처리되어 원인이 화면에서 사라진다.
+    if isinstance(payload, dict) and "LawSearch" not in payload and payload.get("result"):
+        raise LawOpenAuthError(
+            f"{payload.get('result')} {payload.get('msg', '')}".strip()
+        )
     root = payload.get("LawSearch", payload)
     items = root.get("law") or []
     if isinstance(items, dict):
@@ -120,11 +132,27 @@ async def verify_legal_sources(state: dict) -> dict:
         )
     sources: list[dict] = []
     errors: list[str] = []
+    auth_reason = ""
     for name, result in zip(names, results):
-        if isinstance(result, Exception):
+        if isinstance(result, LawOpenAuthError):
+            auth_reason = auth_reason or str(result)
+            errors.append(name)
+        elif isinstance(result, Exception):
             errors.append(name)
         elif result.get("status") == "VERIFIED":
             sources.append(result)
+
+    if auth_reason and not sources:
+        return {
+            "status": "NOT_AUTHORIZED",
+            "sources": [],
+            "failed_queries": errors,
+            "message": (
+                "국가법령정보센터 인증이 거부되었습니다"
+                f"(OC={LAW_OPEN_API_OC}). 활용 ID와 서버 IP 등록 상태를 "
+                f"확인하세요 — {auth_reason}"
+            ),
+        }
 
     status = "VERIFIED" if sources and not errors else "PARTIAL" if sources else "UNAVAILABLE"
     return {
