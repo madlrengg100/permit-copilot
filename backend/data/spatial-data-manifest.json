@@ -1,34 +1,34 @@
 {
   "schema_version": 1,
-  "data_version": "2026-07",
-  "created_at": "2026-07-30T04:49:50.729133+00:00",
+  "data_version": "2026-08-23",
+  "created_at": "2026-08-24T12:38:59.178736+00:00",
   "root": "processed",
-  "total_size_bytes": 23795902982,
+  "total_size_bytes": 23866254418,
   "files": [
     {
       "path": "forest/forest_class.sqlite",
-      "size_bytes": 1765171200,
-      "sha256": "2241201f025ee46c6136af2dd982945407dc2e958bd20a55a58740838012c7f0"
+      "size_bytes": 1704550400,
+      "sha256": "5ffbb19a670223c8814837a954fe856ade8f610a37a6ca9e0cd1d90d46911020"
     },
     {
       "path": "forest_inventory/forest_inventory.sqlite",
-      "size_bytes": 15601065984,
-      "sha256": "dbec218e186eb21f42588c8a5ff19c6f18df8bab299622a84dbee673978d772d"
+      "size_bytes": 15594385408,
+      "sha256": "c349a4931df2bbc07a32784a05454b7aa843c10f8eef3cb16cbc07d554bad191"
     },
     {
       "path": "ecological_nature_map/ecological_nature.sqlite",
       "size_bytes": 5691789312,
-      "sha256": "c2e235fe89be84289039ef6275de860592ef0b9ff2dae4e8e066d41ed51a29a7"
+      "sha256": "197c41f3220144078529e9f248e97654eba3068c94227e091c78c47e416697b1"
     },
     {
       "path": "ecological_nature_map/separate_management.sqlite",
       "size_bytes": 60342272,
-      "sha256": "ef97cb24f83ca0dfc5c50df4d7bb7fa950c671dab2561f54d61f43b278f5619a"
+      "sha256": "0582a60298c27e7f6aa931c0b159147c09ff4da3b1eb461e9421153ef9758c74"
     },
     {
       "path": "terrain/dem/cop30_korea.tif",
-      "size_bytes": 677534214,
-      "sha256": "7a5f7522e4d3606a57316f00889f2414d782fcb6492b508461e2dca0c7819ab7"
+      "size_bytes": 815187026,
+      "sha256": "b9cc7144098f8700cbc9f1848e7fb996226d8def6e31276558465443611a3499"
     }
   ]
 }
