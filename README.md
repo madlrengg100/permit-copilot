@@ -170,6 +170,10 @@ API 키, 향후 데이터베이스 볼륨은 Git과 Docker 이미지에 포함�
 폴더를 `/data/processed`에 읽기 전용으로 마운트한다. 생성·체크섬 검증·배포
 절차는 [대형 공간데이터 패키징·배포](docs/SPATIAL-DATA-DEPLOYMENT.md)를 따른다.
 
+**서버를 새로 옮길 때는 [서버 이관 절차](docs/SERVER-MIGRATION.md)를 먼저 읽는다.**
+인증키별 IP·도메인 등록 요건, systemd 실행에서만 드러나는 경로 함정, 프런트
+재빌드가 필요한 지점, 이관 후 검증 체크리스트를 한 곳에 모아 두었다.
+
 `VWORLD_KEY` 는 [vworld.kr](https://www.vworld.kr) 에서 발급받고,
 개발용으로 `localhost` 를 인증 도메인에 등록해야 한다.
 
