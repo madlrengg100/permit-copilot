@@ -13,6 +13,7 @@
 """
 
 from __future__ import annotations
+from ..tools.textfmt import josa
 
 import asyncio
 import logging
@@ -316,7 +317,7 @@ async def recommend_areas(
         # 후보가 있었으나 요청 시설이 그 필지(농지)에서 법령상 불가라 전부 제외된 경우.
         note = (
             f"{center['matched_address']} 주변 비도시 후보는 대부분 농지(전·답)여서 "
-            f"{(building_use or '해당 시설')}은(는) 농지법상 설치할 수 없습니다. "
+            f"{josa(building_use or '해당 시설', '은')} 농지법상 설치할 수 없습니다. "
             "농막(신고 후 20㎡)이나 다른 용도로 다시 찾아보시겠어요?"
         )
     elif not items:

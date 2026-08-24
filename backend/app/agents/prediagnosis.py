@@ -19,6 +19,7 @@
 """
 
 from __future__ import annotations
+from ..tools.textfmt import josa
 
 import json
 import asyncio
@@ -296,7 +297,7 @@ def detect_use_restriction(query: str, diagnosis: dict) -> dict | None:
             return None
         return {
             "label": f"{term} 건축 불가",
-            "reason": f"{zone}에서 {'·'.join(blocked)}은(는) 건축할 수 없는 용도입니다.",
+            "reason": f"{zone}에서 {josa('·'.join(blocked), '은')} 건축할 수 없는 용도입니다.",
             "term": term,
             "blocked": blocked,
         }
@@ -1087,7 +1088,7 @@ def _summarize(state: dict) -> str:
 
     lines = [
         f"{parcel['jibun']} ({parcel['area_m2']:,.0f}㎡, 지목 {parcel['jimok']})는 "
-        f"{reg['zone']}이며, {use}은(는) {verdict_text}.",
+        f"{reg['zone']}이며, {josa(use, '은')} {verdict_text}.",
         reg.get("reason", ""),
     ]
 
@@ -1419,13 +1420,13 @@ async def run_prediagnosis(
     if _farm_verdict == "not_allowed":
         reg["verdict"] = "not_allowed"
         reg["reason"] = (
-            f"{_facility}은(는) 농지법상 농지(전·답·과수원)에 설치할 수 있는 시설이 아니어서 "
+            f"{josa(_facility, '은')} 농지법상 농지(전·답·과수원)에 설치할 수 있는 시설이 아니어서 "
             "이 필지에는 설치할 수 없습니다. 농막은 신고 후 소규모 설치가 가능합니다."
         )
     elif _farm_verdict == "conditional":
         reg["verdict"] = "conditional"
         reg["reason"] = (
-            f"{_facility}은(는) 농지에 지자체 신고 후 연면적 20㎡ 이하로 설치할 수 있는 "
+            f"{josa(_facility, '은')} 농지에 지자체 신고 후 연면적 20㎡ 이하로 설치할 수 있는 "
             "가설건축물입니다. 농지전용 없이 가능하나 입지·신고 기준과 도로·배수 여건을 확인해야 합니다."
         )
 
@@ -1547,7 +1548,7 @@ async def run_prediagnosis(
             "show_building_dimensions": False,
             "no_building_model": _facility,
             "reason": (
-                f"{_facility}은(는) 표준 건축물이 아니라(가설·특수 시설) 전용 3D 모델·규모 "
+                f"{josa(_facility, '은')} 표준 건축물이 아니라(가설·특수 시설) 전용 3D 모델·규모 "
                 f"산정 대상이 아니어서 매스·규모는 표시하지 않습니다. 다만 용도지역 건폐율·"
                 f"용적률 상한은 필지 기준값으로 함께 표시합니다. 현재 구현된 다른 용도의 "
                 f"가능한 건물 모델을 보여드릴까요?"

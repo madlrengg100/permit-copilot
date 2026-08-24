@@ -12,6 +12,7 @@ null 로 두고, 사유를 함께 기록한다.
 """
 
 from __future__ import annotations
+from .textfmt import josa
 
 import json
 import re
@@ -207,7 +208,7 @@ def resolve_limits(zone: str, jurisdiction: str | None = None) -> dict:
         return {
             "found": False,
             "zone": zone,
-            "reason": f"'{zone}'은(는) 시행령 용도지역 목록에 없습니다.",
+            "reason": f"{josa(chr(39) + str(zone) + chr(39), '은')} 시행령 용도지역 목록에 없습니다.",
         }
 
     result = {

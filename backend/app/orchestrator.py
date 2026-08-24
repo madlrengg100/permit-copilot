@@ -29,6 +29,7 @@ from .agents.prediagnosis import (
 )
 from .config import LLM_MODEL_HEAVY
 from .llm import append_tool_results
+from .tools.textfmt import josa
 from .tools import building_register, massing, site_constraints, vworld
 
 logger = logging.getLogger("uvicorn.error")
@@ -1000,7 +1001,43 @@ def _concise_verdict_judgment(diagnosis: dict | None) -> str:
         "not_allowed": "현재 기준으로 건축이 불가합니다",
         "unknown": "추가 확인 전에는 건축 가능 여부를 확정할 수 없습니다",
     }.get(verdict, "추가 확인이 필요합니다")
-    first = f"{address}의 {use}은 {conclusion}."
+
+    # 용도지역상 조건부라도 기존 건축물·협소 대지로 실질 배치가 불가하면 '조건부 가능'
+    # 으로 단정하면 안 된다. 그러면 뒤에 붙는 배치 불가 안내와 한 화면에서 모순된다.
+    # (render_pending_judgment 의 안전장치는 앞 80자에 '배치'가 있으면 덧붙이지 않는다)
+    # placement_restricted 만 본다. map_presentation.verdict == not_allowed 는 용도 자체가
+    # 안 되는 경우까지 포함해서, 그걸로 '실질 배치 불가'를 말하면 사유를 추측하게 된다
+    # (면적 2만㎡ 필지를 '협소 대지'로 설명하는 오류가 실제로 났다). 용도 불가는 아래
+    # not_allowed 분기가 use_restriction.reason 을 그대로 읽어 설명한다.
+    if diagnosis.get("placement_restricted"):
+        existing = diagnosis.get("existing_buildings") or {}
+        lot = diagnosis.get("min_lot_area") or {}
+        if existing.get("has_buildings"):
+            cause = f"기존 건축물 {existing.get('count')}건이 있어 멸실·해체 전에는"
+            path = (
+                "기존 건축물의 소유·권리관계를 확인해 해체허가·신고와 멸실 정리를 마친 뒤에야 "
+                "개별 용도의 인허가 절차를 검토할 수 있습니다."
+            )
+        elif lot.get("below_minimum"):
+            cause = "법정 최소 대지면적에 못 미치는 협소 대지라"
+            path = (
+                "인접 필지 합필 등으로 배치 요건을 먼저 갖춘 뒤에야 인허가 절차를 "
+                "검토할 수 있습니다."
+            )
+        else:
+            # 사유를 특정할 수 없으면 지어내지 않는다.
+            cause = "배치 요건을 충족하지 못해"
+            path = "제한 사유는 위 종합 판정에서 확인할 수 있습니다."
+        if verdict in {"allowed", "conditional"}:
+            first = (
+                f"{address}의 {josa(use, '은')} 용도지역상으로는 "
+                f"{conclusion.rstrip('.')}만, {cause} 실질적으로 신축 배치가 불가합니다."
+            )
+        else:
+            first = f"{address}의 {josa(use, '은')} {cause} 신축 배치가 불가합니다."
+        return f"{first} {path}"
+
+    first = f"{address}의 {josa(use, '은')} {conclusion}."
 
     if verdict == "conditional":
         names = [
@@ -1011,13 +1048,16 @@ def _concise_verdict_judgment(diagnosis: dict | None) -> str:
         core = "·".join(names[:3])
         suffix = " 등" if len(names) > 3 else ""
         second = (
-            f"핵심 선행조건은 {core}{suffix}이며, 세부 기준은 위 진단 항목에서 확인할 수 있습니다."
+            f"핵심 선행조건은 {josa(core + suffix, '이')}며, 세부 기준은 위 진단 항목에서 확인할 수 있습니다."
             if core
             else "위 진단에 표시된 선행조건을 충족한 뒤 인허가를 진행해야 합니다."
         )
     elif verdict == "not_allowed":
         restriction = diagnosis.get("use_restriction") or {}
-        reason = str(restriction.get("reason") or "").strip().rstrip(".")
+        reason = str(restriction.get("reason") or "").strip().rstrip(". ")
+        # reason 이 이미 '…입니다' 로 끝나면 '입니다입니다' 가 된다.
+        if reason.endswith("입니다"):
+            reason = reason[: -len("입니다")].rstrip()
         second = f"주된 제한 사유는 {reason}입니다." if reason else "불가 사유는 위 종합 판정에 표시했습니다."
     elif verdict == "unknown":
         second = "미확인 규제와 도로·접도 조건을 먼저 확인해야 합니다."
@@ -1171,14 +1211,14 @@ def _all_uses_verdict_judgment(diagnosis: dict | None) -> str:
         )
         return (
             f"{address} 필지는 {zone or '해당 용도지역'}으로 용도지역상으로는 "
-            f"{possible_examples or '일부 용도'}가 조건부이나, {cause} 실질적으로 신축 "
+            f"{josa(possible_examples or '일부 용도', '가')} 조건부이나, {cause} 실질적으로 신축 "
             "배치가 불가합니다. 신축하려면 기존 건축물의 소유권·임대차를 확인해 해체·멸실 "
             "정리 또는 합필 등으로 배치 요건을 먼저 갖춘 뒤에야 개별 용도의 인허가 절차를 "
             "검토할 수 있습니다."
         )
     if zone and has_possible_use:
         first = (
-            f"{address} 필지는 {zone}입니다. 건축물 용도 중 {possible_examples}은 "
+            f"{address} 필지는 {zone}입니다. 건축물 용도 중 {josa(possible_examples, '은')} "
             "건축 가능하거나 조건부로 검토할 수 있습니다. "
             f"다만 {' '.join(conditions[:2]) if conditions else '개별 규제를 확인해야 합니다.'} "
             "따라서 현재 조건부 가능합니다."
@@ -4698,7 +4738,12 @@ class Orchestrator:
         # LLM 문단이 '조건부'로 시작해도 배지(실질 배치 불가)와 어긋나지 않게 보장하는
         # 안전장치다(제미나이가 프롬프트 지시를 안 따를 때 대비). 이미 배치 불가로
         # 시작하면 중복해 붙이지 않는다.
-        if diagnosis.get("placement_restricted") and "배치" not in judgment[:80]:
+        # 앞 80자만 보면 판단 문장이 길 때 '배치 불가'를 놓쳐 같은 말을 두 번 하게 된다.
+        # 문단 전체에서 배치 불가 결론이 이미 나왔는지로 판단한다.
+        _states_blocked = any(
+            phrase in judgment for phrase in ("배치가 불가", "배치 불가", "배치할 수 없")
+        )
+        if diagnosis.get("placement_restricted") and not _states_blocked:
             existing = diagnosis.get("existing_buildings") or {}
             lot = diagnosis.get("min_lot_area") or {}
             if existing.get("has_buildings"):
@@ -4909,7 +4954,7 @@ class Orchestrator:
                 events.append({
                     "event": "message",
                     "data": {"text": _pres.get("reason") or (
-                        f"{_no_model_facility}은(는) 표준 건축물이 아니라(가설·특수 시설) "
+                        f"{josa(_no_model_facility, '은')} 표준 건축물이 아니라(가설·특수 시설) "
                         f"건폐율·용적률과 3D 모델 산정 대상이 아닙니다. 현재 구현된 다른 "
                         f"용도의 가능한 건물 모델을 보여드릴까요?"
                     )},

@@ -9,6 +9,7 @@
 """
 
 from __future__ import annotations
+from .textfmt import josa
 
 import json
 from functools import lru_cache
@@ -156,10 +157,10 @@ def lookup_zoning_rules(
         )
     elif matrix is None:
         verdict = "unknown"
-        reason = f"'{building_use}'은(는) 판정표에 없는 용도입니다. 건축법 시행령 별표1 확인 필요."
+        reason = f"{josa(chr(39) + str(building_use) + chr(39), '은')} 판정표에 없는 용도입니다. 건축법 시행령 별표1 확인 필요."
     elif zone in matrix["allowed"]:
         verdict = "allowed"
-        reason = f"{zone}에서 {building_use}은(는) 건축 가능한 용도입니다."
+        reason = f"{zone}에서 {josa(building_use, '은')} 건축 가능한 용도입니다."
     elif zone in matrix["conditional"]:
         verdict = "conditional"
         # 근거를 뭉뚱그리지 않는다 — 해당 지자체 도시계획조례가 확인되면 그 조례명·
@@ -172,12 +173,12 @@ def lookup_zoning_rules(
             )
         else:
             reason = (
-                f"{zone}에서 {building_use}은(는) {_basis_cite}가 정하는 "
+                f"{zone}에서 {josa(building_use, '은')} {_basis_cite}가 정하는 "
                 "범위에서 조건부 허용됩니다."
             )
     else:
         verdict = "not_allowed"
-        reason = f"{zone}에서 {building_use}은(는) 건축할 수 없는 용도입니다."
+        reason = f"{zone}에서 {josa(building_use, '은')} 건축할 수 없는 용도입니다."
 
     constraints = _match_constraints(districts, facility or building_use)
     if constraints and verdict in ("allowed", "conditional"):
