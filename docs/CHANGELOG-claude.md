@@ -19,6 +19,18 @@
 - `requirements-dev.txt` 신설. tests/ 에 33개 테스트가 있는데 pytest 가 어느 requirements
   에도 없어 실행 자체가 안 되던 상태였다. 운영 이미지는 requirements.txt 만 설치한다.
 
+### 검토 의견 LLM 이 매번 타임아웃하던 원인 — 프롬프트가 아니라 모델
+- 용도 미지정(all-uses) 질문 8건을 실측하니 **7건이 14초 타임아웃** 으로 결정적 fallback
+  에 떨어졌다. LLM 이 쓴 검토 의견을 사용자가 사실상 못 보고 있었다.
+- 프롬프트가 지시 20개 넘게 부풀어 있어 그게 원인이라 보고 축소를 검토했으나, 원인 분리
+  결과 **프롬프트와 무관** 했다. `LLM_MODEL_HEAVY` 로 쓰던 `gemini-flash-latest` 가 무료
+  티어에서 응답을 아예 안 준다(짧은 프롬프트·max_tokens 100 에도 HTTP 000 / 90초).
+  같은 키로 `gemini-flash-lite-latest` 는 1.8초, `gemini-2.5-flash`·`-lite` 는 404.
+- env `LLM_MODEL_HEAVY=gemini-flash-lite-latest` 로 전환. 같은 8건 재측정에서
+  **타임아웃 0건**, 응답 3.7~14.7초(대부분 7초 이내). 이제 LLM 문장이 실제로 나온다.
+- `config.py` 주석과 `docs/SERVER-MIGRATION.md` 에 배포 전 모델 생존 확인 절차를 남겼다.
+  **프롬프트 축소는 하지 않았다** — 원인이 아니었고, 출력 품질만 흔들 수 있다.
+
 ### 검토 의견의 자기모순·중복·조사 오류 정리
 - 용도를 특정한 질문(예: '단독주택')은 LLM 을 거치지 않고 결정적 템플릿으로 검토 의견을
   만든다(`render_pending_judgment` 의 `names_specific_use` 분기). 그 템플릿들이 서로 어긋나

@@ -68,6 +68,14 @@ if _preset and not os.getenv("LLM_MODEL"):
 # 검토 의견처럼 여러 규제 데이터를 읽어 인과·해결방법으로 엮는 '판독·추론' 호출만
 # 한 단계 위 모델을 쓴다(라우팅·추출·분류 같은 값싼 호출은 LLM_MODEL 유지 → 비용·지연 최소).
 # gemini 무료 티어에선 flash-lite → flash(gemini-flash-latest, 역시 무료)로 올린다.
+# 다만 gemini-flash-latest 는 무료 티어에서 응답이 아예 오지 않는 시기가 있다
+# (2026-08-24 확인: 짧은 프롬프트에도 90s 무응답, flash-lite 는 1.8s). 그 상태면 검토
+# 의견이 매번 타임아웃 → 결정적 fallback 으로 떨어진다. 배포 전 아래로 확인하고,
+# 응답이 없으면 env LLM_MODEL_HEAVY 로 동작하는 모델을 지정한다.
+#   curl -s -m 45 -w "%{http_code} %{time_total}s\n" -o /dev/null -X POST \
+#     https://generativelanguage.googleapis.com/v1beta/openai/chat/completions \
+#     -H "Authorization: Bearer $GEMINI_API_KEY" -H "Content-Type: application/json" \
+#     -d '{"model":"gemini-flash-latest","messages":[{"role":"user","content":"안녕"}],"max_tokens":100}'
 # 다른 provider 는 LLM_MODEL 그대로. env(LLM_MODEL_HEAVY)로 재정의 가능.
 LLM_MODEL_HEAVY = os.getenv("LLM_MODEL_HEAVY", "").strip() or (
     "gemini-flash-latest" if LLM_BASE_NAME == "gemini" else LLM_MODEL

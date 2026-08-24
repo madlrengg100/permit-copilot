@@ -92,6 +92,26 @@ curl -s -G "https://www.law.go.kr/DRF/lawSearch.do" \
 `OPENAI_API_KEY` 로 풀린다(`config.py` FREE_TIER_PRESETS). `anthropic` 이면 빈
 `ANTHROPIC_API_KEY` 로 Anthropic 을 호출해 실패한다.
 
+> ⚠️ **함정 — 모델이 살아 있는지 반드시 확인한다.** 검토 의견은 `LLM_MODEL_HEAVY`
+> (gemini 기본값 `gemini-flash-latest`)로 호출하는데, 무료 티어에서 이 모델이 **응답을
+> 아예 안 주는 시기**가 있다. 2026-08-24 에는 짧은 프롬프트에도 90초 무응답이었고
+> `gemini-flash-lite-latest` 는 1.8초였다. 그 상태면 검토 의견이 매번 14초 타임아웃 →
+> 결정적 fallback 으로 떨어져, LLM 이 쓴 문장을 사용자가 거의 못 본다(실측 8건 중 7건).
+> 프롬프트 길이 문제가 아니므로 프롬프트를 줄여도 소용없다.
+>
+> ```bash
+> for m in gemini-flash-latest gemini-flash-lite-latest; do
+>   printf "%-26s " "$m"
+>   curl -s -m 45 -w "%{http_code} %{time_total}s\n" -o /dev/null -X POST \
+>     https://generativelanguage.googleapis.com/v1beta/openai/chat/completions \
+>     -H "Authorization: Bearer $GEMINI_API_KEY" -H "Content-Type: application/json" \
+>     -d "{\"model\":\"$m\",\"messages\":[{\"role\":\"user\",\"content\":\"안녕\"}],\"max_tokens\":100}"
+> done
+> ```
+>
+> `HTTP 000` 이 나오면 그 모델은 못 쓴다. 동작하는 모델을 `LLM_MODEL_HEAVY` 에 지정한다.
+> 배포 후에는 로그로 재확인한다 — `journalctl -u permit-copilot-backend | grep 'judgment timeout'`
+
 ## 3. 공간데이터 (약 23.9 GB)
 
 `docs/SPATIAL-DATA-DEPLOYMENT.md` 참조. 요약하면 tar 를 옮겨 푸는 게 가장 빠르다.
