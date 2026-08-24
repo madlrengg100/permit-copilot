@@ -823,6 +823,19 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
 }
+
+/* 용도지역 대분류 머리줄 — 지도 색과 무관한 표기라 조각 없이 한 줄로만 둔다.
+   토지이음이 "도시지역 / 제1종일반주거지역"처럼 상위를 함께 적는 것과 맞춘다. */
+.zone-legend-row.is-tier {
+  margin: 2px 0 6px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--line);
+}
+.zone-legend-row.is-tier .zone-legend-name {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
 .zone-legend-line {
   width: 22px;
   height: 5px;

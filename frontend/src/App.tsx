@@ -148,7 +148,7 @@ export default function App() {
       share_pct: number | null;
       area_m2: number | null;
       color: string;
-      symbol?: "area" | "line";
+      symbol?: "area" | "line" | "tier";
       note?: string;
     }> | null
   >(null);
@@ -959,11 +959,18 @@ export default function App() {
           <div className={`zone-legend${zoneLegendIsDivision ? " is-division" : ""}`}>
             <div className="zone-legend-title">용도지역 걸침구분</div>
             {zoneLegend.map((z) => (
-              <div key={`${z.symbol ?? "area"}-${z.zone}`} className="zone-legend-row" title={z.note}>
-                <span
-                  className={z.symbol === "line" ? "zone-legend-line" : "zone-legend-swatch"}
-                  style={{ background: z.color, opacity: z.symbol === "line" ? 1 : 0.55 }}
-                />
+              <div
+                key={`${z.symbol ?? "area"}-${z.zone}`}
+                className={`zone-legend-row${z.symbol === "tier" ? " is-tier" : ""}`}
+                title={z.note}
+              >
+                {/* 대분류(tier)는 지도 색이 아니라 표기용 머리줄이라 색칠 조각을 두지 않는다. */}
+                {z.symbol !== "tier" && (
+                  <span
+                    className={z.symbol === "line" ? "zone-legend-line" : "zone-legend-swatch"}
+                    style={{ background: z.color, opacity: z.symbol === "line" ? 1 : 0.55 }}
+                  />
+                )}
                 <span className="zone-legend-name">{z.zone}</span>
                 {z.area_m2 != null && (
                   <span className="zone-legend-pct">

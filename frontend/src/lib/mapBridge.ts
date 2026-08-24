@@ -78,7 +78,7 @@ export type MapCommand =
       legend_items?: Array<{
         label: string;
         color: string;
-        symbol: "area" | "line";
+        symbol: "area" | "line" | "tier";
         share_pct?: number | null;
         area_m2?: number | null;
         note?: string;

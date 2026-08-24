@@ -93,6 +93,26 @@ def _piece_colors(zones: list[str]) -> list[str]:
     return out
 
 
+# 용도지역 대분류(국토계획법 제36조). 토지이음은 "도시지역 / 제1종일반주거지역"처럼
+# 상위·세분을 함께 적는데 연속주제도 WFS 는 세분만 준다. 범례 첫 줄에 상위를 덧붙여
+# 토지이음 표기와 눈으로 맞춘다. 판정 수치에는 쓰지 않는다(표기 전용).
+_MANAGEMENT_ZONES = {"보전관리지역", "생산관리지역", "계획관리지역"}
+_TIER1_NAMES = {"도시지역", "관리지역", "농림지역", "자연환경보전지역"}
+_URBAN_SUFFIXES = ("주거지역", "상업지역", "공업지역", "녹지지역")
+
+
+def zone_tier1(name: str) -> str:
+    """세분 용도지역 이름 -> 대분류. 판단 불가면 빈 문자열."""
+    name = (name or "").strip()
+    if name in _MANAGEMENT_ZONES:
+        return "관리지역"
+    if name in {"농림지역", "자연환경보전지역"}:
+        return name
+    if name.endswith(_URBAN_SUFFIXES):
+        return "도시지역"
+    return ""
+
+
 def _iter_linestrings(geom):
     from shapely.geometry import GeometryCollection, LineString, MultiLineString
     if geom is None or geom.is_empty:
@@ -1108,19 +1128,55 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
     ]
     if len(pieces) >= 2:
         piece_colors = _piece_colors([s["zone"] for s in pieces])
+        piece_cmds = [
+            {
+                "zone": s["zone"],
+                "share_pct": s["share_pct"],
+                "area_m2": s["area_m2"],
+                "color": piece_colors[i],
+                "geometry": s["geometry"],
+            }
+            for i, s in enumerate(pieces)
+        ]
+        # 범례 첫 줄 = 대분류(도시지역·관리지역 …). 지도 조각이 아니라 표기용이므로
+        # pieces 가 아니라 legend_items 로만 보낸다(지도에 덧칠하지 않는다).
+        legend_items = []
+        tier1 = []
+        for s in pieces:
+            t = zone_tier1(s["zone"])
+            if t and t not in tier1:
+                tier1.append(t)
+        if tier1:
+            legend_items.append({
+                "label": " · ".join(tier1), "symbol": "tier", "color": "",
+                "note": "국토계획법 제36조 용도지역 대분류 — 토지이음도 이 상위 구분을 함께 표기한다",
+            })
+        for piece in piece_cmds:
+            legend_items.append({
+                "label": piece["zone"], "color": piece["color"], "symbol": "area",
+                "share_pct": piece["share_pct"], "area_m2": piece["area_m2"],
+            })
+        # 연속주제도 WFS 는 면적으로 조각을 만들어 아주 작은 조각이 떨어져 나간다.
+        # 토지이음(NED 지정목록)은 면적과 무관하게 '저촉'으로 적으므로, WFS 에 없는
+        # 용도지역만 목록에 덧붙여 표기를 맞춘다. 지도 조각은 만들지 않는다.
+        seen_zones = {p["zone"] for p in piece_cmds}
+        lookup = (land_use.get("designation_lookup") or {}).get("records") or []
+        for record in lookup:
+            if not (record.get("is_zoning") and record.get("active")):
+                continue
+            zone_name = (record.get("name") or "").strip()
+            if not zone_name or zone_name in seen_zones or zone_name in _TIER1_NAMES:
+                continue
+            seen_zones.add(zone_name)
+            legend_items.append({
+                "label": f"{zone_name} · 저촉(면적 미미)", "color": "", "symbol": "tier",
+                "note": "토지이음 지정목록에는 있으나 연속주제도상 조각 면적이 없어 지도에는 표시되지 않는다",
+            })
         commands.append(
             {
                 "type": "show_zone_pieces",
-                "pieces": [
-                    {
-                        "zone": s["zone"],
-                        "share_pct": s["share_pct"],
-                        "area_m2": s["area_m2"],
-                        "color": piece_colors[i],
-                        "geometry": s["geometry"],
-                    }
-                    for i, s in enumerate(pieces)
-                ],
+                "pieces": piece_cmds,
+                "legend_items": legend_items,
             }
         )
 
