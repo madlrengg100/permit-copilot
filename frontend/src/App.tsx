@@ -497,6 +497,20 @@ export default function App() {
                 )
               );
             }
+            // 주소를 입력해 다른 필지를 진단하면(지도 클릭이 아님) 선택 상태가
+            // 옛 필지에 머문다. 그대로 두면 다음 턴에 그 값을 보내고 백엔드가
+            // 새 지도 클릭으로 해석해 필지가 되돌아간다('선택 필지에 …' 질문이
+            // 엉뚱한 지번을 답하던 원인). 분석 중인 필지로 선택을 맞춘다.
+            if (p.pnu && p.lon != null && p.lat != null) {
+              setSelectedLocation((current) =>
+                current?.pnu === p.pnu
+                  ? current
+                  : { lon: p.lon, lat: p.lat, address: p.address || current?.address, pnu: p.pnu, key: Date.now() },
+              );
+              setSessionParcelSelection(SESSION_ID, {
+                lon: p.lon, lat: p.lat, address: p.address || "", pnu: p.pnu,
+              }).catch(() => undefined);
+            }
             // 같은 스트림의 다음 명령도 최신 필지를 보도록 state보다 먼저 갱신한다.
             panelRef.current = p;
             setPanel(p);

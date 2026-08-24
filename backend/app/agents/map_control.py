@@ -1406,6 +1406,11 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
             "color": panel_color,
             "address": location.get("matched_address", ""),
             "pnu": (parcel or {}).get("pnu", ""),
+            # 프런트가 '현재 분석 중인 필지'로 선택 상태를 맞추는 데 쓴다. 주소를
+            # 입력해 다른 필지를 진단했는데 프런트가 옛 선택을 계속 보내면, 다음
+            # 턴에서 그 값이 새 지도 클릭처럼 해석돼 필지가 되돌아간다.
+            "lon": location.get("lon"),
+            "lat": location.get("lat"),
             "zone": regulation.get("zone") or (land_use.get("zones") or [""])[0],
             "districts": land_use.get("districts", []),
             "jimok": (parcel or {}).get("jimok", ""),
