@@ -547,13 +547,30 @@ async def setback_for_use(
     from .agents.map_control import VERDICT_COLOR, VERDICT_LABEL
 
     districts = (diag.get("land_use") or {}).get("districts") or []
-    zr = zoning_tool.lookup_zoning_rules(zone or "", req.use, districts, jurisdiction)
+    # 세부 검토 용도가 있는 진단에서 같은 표준 용도의 모델을 누르는 것은 용도를
+    # 바꾸는 동작이 아니다. 농업인 주택뿐 아니라 모든 세부 용도에 같은 규칙을
+    # 적용하고, 다른 표준 용도의 모델을 고른 경우에만 세부 용도를 해제한다.
+    current_request = diag2.get("request") or {}
+    current_facility = str(current_request.get("requested_facility") or "").strip()
+    facility_for_use = (
+        current_facility
+        if req.use == current_request.get("building_use")
+        else ""
+    )
+    zr = zoning_tool.lookup_zoning_rules(
+        zone or "",
+        req.use,
+        districts,
+        jurisdiction,
+        facility=facility_for_use,
+    )
     use_verdict = zr.get("verdict", "unknown")
     # 모델 클릭은 화면만 바꾸는 동작이 아니라 현재 PNU의 실제 검토 용도를 바꾼다.
     # 지도·팝업에 보낸 이격값을 후속 대화용 진단에도 같은 단일 값으로 저장하지 않으면,
     # 지도에는 0.5m가 보이는데 "인접 이격은 뭐야?"에는 이전 시설물 0m라고 답한다.
     request2 = dict(diag2.get("request") or {})
     request2["building_use"] = req.use
+    request2["requested_facility"] = facility_for_use
     request2["inferred"] = False
     diag2["request"] = request2
     regulation2 = dict(diag2.get("regulation") or {})
@@ -576,6 +593,7 @@ async def setback_for_use(
     return {
         "ok": True,
         "use": req.use,
+        "display_use": facility_for_use or req.use,
         "zone": zone,
         "gross_floor_area_m2": gross,
         "verdict": use_verdict,

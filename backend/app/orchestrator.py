@@ -24,6 +24,8 @@ from .agents.prediagnosis import (
     compact,
     detect_use_restriction,
     format_diagnosis_answer,
+    _agricultural_house_label,
+    _guess_use,
     _has_building_feasibility_intent,
     run_prediagnosis,
 )
@@ -897,7 +899,14 @@ def _deterministic_verdict_judgment(diagnosis: dict | None) -> str:
         or (diagnosis.get("location") or {}).get("matched_address")
         or "선택한 필지"
     )
-    use = request.get("building_use") or regulation.get("building_use") or "요청 용도"
+    # 사용자에게 보여주는 검토 용도는 내부 건축물 분류보다 구체적인 요청 시설명을
+    # 우선한다(예: 내부 분류 '단독주택', 표시 용도 '농업인 주택').
+    use = (
+        request.get("requested_facility")
+        or request.get("building_use")
+        or regulation.get("building_use")
+        or "요청 용도"
+    )
     verdict = diagnosis.get("verdict") or regulation.get("verdict") or "unknown"
     conclusion = {
         "allowed": "현재 건축 가능합니다",
@@ -993,7 +1002,12 @@ def _concise_verdict_judgment(diagnosis: dict | None) -> str:
         or (diagnosis.get("location") or {}).get("matched_address")
         or "선택한 필지"
     )
-    use = request.get("building_use") or regulation.get("building_use") or "요청 용도"
+    use = (
+        request.get("requested_facility")
+        or request.get("building_use")
+        or regulation.get("building_use")
+        or "요청 용도"
+    )
     verdict = diagnosis.get("verdict") or regulation.get("verdict") or "unknown"
     conclusion = {
         "allowed": "건축 가능합니다",
@@ -1399,7 +1413,14 @@ def _model_options_for_diagnosis(
 
     overview = regulation.get("zone_use_overview") or {}
     possible = set(overview.get("allowed") or []) | set(overview.get("conditional") or [])
-    requested_use = str((diagnosis.get("request") or {}).get("building_use") or "시설물")
+    request = diagnosis.get("request") or {}
+    requested_use = str(request.get("building_use") or "시설물")
+    requested_facility = str(request.get("requested_facility") or "").replace(" ", "")
+    if requested_facility == "농업인주택" and verdict in {"allowed", "conditional"}:
+        # 농업인 주택은 용도 판정표에는 별도 특례명으로 기록되지만, 준비된 3D 자산은
+        # 건축법상 내부 용도인 단독주택 모델을 사용한다. 이 특정 용도 질문에서 창고 등
+        # 농림지역의 다른 가능 용도를 대체 모델로 내보내지 않는다.
+        possible = {"단독주택"}
     prepared = [
         ("단독주택", "단독주택형", "detached", "법정 가능 층수 반영 · 주택 비례"),
         ("공동주택", "공동주택형", "lowrise", "건축 가능 영역 최대 활용"),
@@ -2722,6 +2743,7 @@ class Orchestrator:
                         },
                     }
             except Exception as exc:
+                logger.exception("명시 주소 사전진단 실패: query=%r", user_query)
                 yield {
                     "event": "error",
                     "data": {"tool": "prediagnose", "message": str(exc)},
@@ -3364,6 +3386,53 @@ class Orchestrator:
 
             interpreted = await self._interpret_followup(original_query)
             intent = interpreted.get("intent") or "followup_explanation"
+            # 같은 필지에서 구체 용도와 가능 여부를 함께 말하면 답변 해석으로 끝내지
+            # 않고 반드시 구조화 재진단한다. 그래야 자연어 답만 바뀌고 팝업의 판정·
+            # 검토 용도는 이전 값으로 남는 모순이 생기지 않는다. LLM이 "가능하다고
+            # 하는데"를 설명 요구로 분류해도 결정적으로 보정한다.
+            _explicit_followup_use = bool(
+                _agricultural_house_label(original_query)
+                or _guess_use(original_query) != "시설물"
+            )
+            if (
+                _explicit_followup_use
+                and _has_building_feasibility_intent(original_query)
+            ):
+                intent = "specific_use_feasibility"
+
+            if intent == "specific_use_feasibility":
+                _loc = (self.diagnosis or {}).get("location") or {}
+                _lon, _lat = _loc.get("lon"), _loc.get("lat")
+                if _lon is not None and _lat is not None:
+                    _query = (
+                        f"지도에서 선택한 위치(경도 {_lon}, 위도 {_lat})의 건축 가능 여부를 "
+                        f"다시 검토해줘. 사용자가 요청한 용도 표현을 그대로 보존할 것. "
+                        f"사용자 질문: {original_query}"
+                    )
+                    try:
+                        _out, _events = await self._diagnose_and_emit(
+                            _query, emit_card=False
+                        )
+                        for _event in _events:
+                            yield _event
+                        _answer = await self._natural_followup_answer(original_query)
+                        yield {"event": "message", "data": {"text": _answer}}
+                        self.messages.append({"role": "assistant", "content": _answer})
+                        _models = _model_options_for_diagnosis(
+                            self.diagnosis, include_alternatives=True
+                        )
+                        if _models:
+                            yield {
+                                "event": "message",
+                                "data": {
+                                    "text": "**가능 모델**\n허용되는 용도 중 준비된 모델만 보여드립니다.",
+                                    "options": _models,
+                                },
+                            }
+                        self._selection_changed = False
+                        return
+                    except Exception:
+                        logger.exception("same-parcel specific-use recheck failed")
             # '다른 용도 모델을 보여드릴까요?' 제안(pending_offer)에 사용자가 긍정하면,
             # 제미나이 분류가 흔들려도 결정적으로 possible_models 로 처리한다 — 제안↔화답은
             # 한 쌍이라 이 상태에서의 긍정은 곧 '그 모델을 보여줘'다.

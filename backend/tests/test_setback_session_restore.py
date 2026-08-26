@@ -69,6 +69,46 @@ class SetbackSessionRestoreTest(unittest.IsolatedAsyncioTestCase):
             result["adjacent_setback_m"],
         )
 
+    async def test_same_standard_use_preserves_specific_facility(self):
+        restored = _RestoredOrchestrator()
+        restored.diagnosis["request"] = {
+            "building_use": "창고시설",
+            "requested_facility": "저온저장고",
+        }
+
+        with (
+            patch.object(main, "_get_session", return_value=restored),
+            patch.object(main, "_save_session"),
+        ):
+            result = await main.setback_for_use(
+                "same-use-session",
+                main.SetbackForUseRequest(use="창고시설"),
+            )
+
+        self.assertEqual(result["display_use"], "저온저장고")
+        self.assertEqual(
+            restored.diagnosis["request"]["requested_facility"], "저온저장고"
+        )
+
+    async def test_different_standard_use_clears_specific_facility(self):
+        restored = _RestoredOrchestrator()
+        restored.diagnosis["request"] = {
+            "building_use": "창고시설",
+            "requested_facility": "저온저장고",
+        }
+
+        with (
+            patch.object(main, "_get_session", return_value=restored),
+            patch.object(main, "_save_session"),
+        ):
+            result = await main.setback_for_use(
+                "different-use-session",
+                main.SetbackForUseRequest(use="공장"),
+            )
+
+        self.assertEqual(result["display_use"], "공장")
+        self.assertEqual(restored.diagnosis["request"]["requested_facility"], "")
+
 
 if __name__ == "__main__":
     unittest.main()

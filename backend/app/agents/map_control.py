@@ -1247,6 +1247,10 @@ def build_map_commands(diagnosis: dict) -> list[dict]:
     # 이미 만든 것(regulation.constraints)을 그대로 쓴다 — 여기서 새 규칙을 만들지 않는다.
     # 면적 조각·지오메트리가 없어 share 없이 이름+심의/협의 성격만 색으로 구분한다.
     for con in (regulation.get("constraints") or []):
+        # 구버전 세션에는 제약 사유가 문자열로 저장돼 있을 수 있다. 범례 항목은
+        # {name, note} 구조만 사용하며, 레거시 문자열 때문에 렌더 전체가 중단되면 안 된다.
+        if not isinstance(con, dict):
+            continue
         label = str(con.get("name") or "").strip()
         if not label:
             continue

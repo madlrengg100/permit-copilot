@@ -144,6 +144,8 @@ def lookup_zoning_rules(
     far_max = limits["far_max_pct"]
     basis = limits["source_label"]
 
+    normalized_facility = "".join((facility or "").split())
+    agricultural_house = normalized_facility == "농업인주택"
     matrix = _use_matrix().get(building_use)
     if building_use == "시설물":
         overview = uses_for_zone(zone)
@@ -158,6 +160,13 @@ def lookup_zoning_rules(
     elif matrix is None:
         verdict = "unknown"
         reason = f"{josa(chr(39) + str(building_use) + chr(39), '은')} 판정표에 없는 용도입니다. 건축법 시행령 별표1 확인 필요."
+    elif agricultural_house and zone == "농림지역":
+        verdict = "conditional"
+        reason = (
+            "농림지역의 농업인 주택은 일반 단독주택과 달리 농업인 자격, 실제 영농을 "
+            "위한 주거 필요성, 세대·면적 및 입지 기준과 농지·산지 전용 절차를 충족하면 "
+            "허용될 수 있습니다. 농업인 자격과 대상 토지의 세부 구역을 확인해야 합니다."
+        )
     elif zone in matrix["allowed"]:
         verdict = "allowed"
         reason = f"{zone}에서 {josa(building_use, '은')} 건축 가능한 용도입니다."
@@ -194,6 +203,12 @@ def lookup_zoning_rules(
             "의뢰받으시기 바랍니다."
         )
 
+    overview = uses_for_zone(zone)
+    if agricultural_house and zone == "농림지역":
+        # 이 질문의 특례 용도를 전체 용도표에도 명시해, 후속 답변이 농림지역의
+        # 일반 단독주택 불가만 반복하지 않게 한다.
+        overview["conditional"].append("농업인 주택")
+
     return {
         "verdict": verdict,
         "zone": zone,
@@ -206,7 +221,7 @@ def lookup_zoning_rules(
         "constraints": constraints,
         # "다른 용도는 뭐가 되나" 류 질문에 답할 수 있도록, 이 용도지역의
         # 전체 용도 허용 현황을 함께 넘긴다 (판정표 9개 대분류 기준).
-        "zone_use_overview": uses_for_zone(zone),
+        "zone_use_overview": overview,
         # 조례 적용 여부를 답변에서 밝힐 수 있도록 근거를 함께 넘긴다
         "limit_source": limits["source"],          # "ordinance" | "statutory"
         "jurisdiction": limits.get("jurisdiction"),

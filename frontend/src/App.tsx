@@ -221,7 +221,7 @@ export default function App() {
       }
       setPanel((current: any) => current ? {
         ...current,
-        building_use: useName,
+        building_use: result.display_use ?? useName,
         ...(result.verdict ? { verdict: result.verdict } : {}),
         ...(result.verdict_label ? { verdict_label: result.verdict_label } : {}),
         ...(result.verdict_color ? { color: result.verdict_color } : {}),
@@ -774,7 +774,7 @@ export default function App() {
                   p
                     ? {
                         ...p,
-                        building_use: useName,
+                        building_use: r.display_use ?? useName,
                         ...(r.verdict ? { verdict: r.verdict } : {}),
                         ...(r.verdict_label ? { verdict_label: r.verdict_label } : {}),
                         ...(r.verdict_color ? { color: r.verdict_color } : {}),

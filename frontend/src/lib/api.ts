@@ -54,6 +54,7 @@ export async function fetchSetbackForUse(
 ): Promise<{
   ok: boolean;
   use?: string | null;
+  display_use?: string | null;
   zone?: string | null;
   gross_floor_area_m2?: number | null;
   verdict?: string | null;
@@ -118,7 +119,7 @@ export async function* streamChat(
   });
 
   if (res.status === 401) {
-    throw new Error("앱 토큰이 올바르지 않습니다. VITE_APP_TOKEN 과 백엔드 APP_TOKEN 을 맞추세요.");
+    throw new Error("서버 인증 설정이 올바르지 않습니다. 관리자에게 문의하세요.");
   }
   if (!res.ok) throw new Error(`백엔드 오류 ${res.status}`);
   if (!res.body) throw new Error("응답 스트림이 없습니다.");

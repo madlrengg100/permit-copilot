@@ -4,6 +4,59 @@
 > 중복 구현하지 말 것.** 규제 수치는 데이터파일에서만(하드코딩 금지),
 > 가능 모델 목록은 `orchestrator._model_options_for_diagnosis()`만 — CLAUDE.md 준수.
 
+## 2026-08-26
+### 농업인 주택 특례 — 농림지역에서 일반 단독주택으로 뭉개지던 문제
+- '농업인 주택'은 건축법 시행령 별표1상 단독주택이지만 농림지역에서 농업인 자격·영농
+  필요성·세대·면적 요건을 별도로 적용받는 법정 예외 용도다. 그런데 요청 용도가 내부
+  분류인 '단독주택'으로만 남아, 농림지역 판정표에 단독주택이 없다는 이유로 불가로
+  떨어지고 팝업 검토 용도도 '단독주택'으로 표시됐다.
+- `request.requested_facility` 에 '농업인 주택'을 보존하도록 요청 추출 3개 경로를 모두
+  맞췄다(`_deterministic_request`, `extract_request` 의 도구 호출본과 미호출본).
+  `_agricultural_house_label()` 하나로 판정하고 LLM 이 '주택'으로 정규화해도 덮어쓴다.
+- `zoning.lookup_zoning_rules` 에 `농업인주택 + 농림지역` 분기를 넣어 conditional 로
+  판정하고, `zone_use_overview.conditional` 에도 '농업인 주택'을 넣어 후속 답변이
+  '농림지역 단독주택 불가'만 반복하지 않게 했다.
+- `detect_use_restriction` 은 이 경우 넓은 표현 '주택'을 단독·공동주택으로 되펼쳐
+  불가 경고를 만들지 않는다.
+- `run_prediagnosis` 에서 농업진흥지역 중첩(산지 중첩 없음)만으로 unknown 강등하던
+  경로에 예외를 뒀다. 농업진흥구역의 농업인 주택은 불가가 아니라 자격·전용허가를
+  확인하는 조건부 경로다. `legal_conflicts.blocks_final_approval` 강등도 같이 제외한다.
+- 표시 용도는 `requested_facility` 를 우선한다(`_deterministic_verdict_judgment`,
+  `_concise_verdict_judgment`). 가능 모델은 CLAUDE.md 대로
+  `_model_options_for_diagnosis()` 만 고쳐, 이 질문에서 창고 등 농림지역의 다른 가능
+  용도를 대체 모델로 내보내지 않고 단독주택 자산만 쓴다.
+- 같은 필지 후속질문에서 구체 용도 + 가능 여부를 함께 물으면 답변 해석으로 끝내지 않고
+  구조화 재진단한다(`specific_use_feasibility`). 자연어만 바뀌고 팝업 판정·검토 용도가
+  이전 값으로 남던 모순을 없앴다. LLM 분류가 흔들려도 결정적으로 보정한다.
+- 모델 클릭(`setback_for_use`)은 같은 표준 용도면 세부 용도를 유지하고 다른 표준 용도를
+  고를 때만 해제한다. `display_use` 를 새로 내려 프런트가 팝업 라벨을 그 값으로 쓴다.
+  농업인 주택 전용이 아니라 '저온저장고' 같은 모든 세부 용도에 적용되는 규칙이다.
+- 테스트: `test_agricultural_house.py`, `test_agricultural_house_followup.py` 신설,
+  `test_setback_session_restore.py` 에 세부 용도 유지/해제 2건 추가. 164건 통과.
+
+### regulation.constraints 를 문자열에서 {name, note} 로 구조화
+- `run_prediagnosis` 가 보전 규제 사유를 `constraints` 에 **문자열**로 넣고 있었는데,
+  `map_control.build_map_commands` 는 `con.get("name")` 을 기대해 범례 렌더가 통째로
+  깨졌다. 규제명(`restricted_forest_label`·`protected_districts` 결합)과 사유를 나눠
+  담도록 고쳤다.
+- 저장된 구버전 세션에는 문자열이 남아 있으므로 `build_map_commands` 에 dict 아닌
+  항목을 건너뛰는 가드를 뒀다. 레거시 한 건 때문에 범례 전체가 죽으면 안 된다.
+
+### VWorld 가 JSON 을 문자열로 이중 포장해 주던 간헐 오류
+- VWorld 가 간헐적으로 JSON 객체를 JSON 문자열로 한 번 더 감싸 반환한다. 그대로
+  `data.get(...)` 을 부르면 사용자 화면에 `'str' object has no attribute 'get'` 이
+  그대로 노출됐다. 공통 진입점 `_get()` 에서 한 번 풀고, 그래도 객체가 아니면 정상적인
+  `VWorldError` 로 처리한다.
+- 명시 주소 사전진단 실패 경로에 `logger.exception` 을 추가했다. 그동안 메시지만 남고
+  스택이 없어 이런 외부 응답 이상을 추적할 수 없었다.
+
+### APP_TOKEN 을 브라우저 번들에서 제거
+- `VITE_APP_TOKEN` 은 빌드 결과물에 그대로 박혀 외부 사용자가 볼 수 있었다. 같은 서버의
+  `frontend/server.mjs` 프록시만 `APP_TOKEN` 을 보유하고 `x-app-token` 헤더로 백엔드에
+  전달하도록 바꿨다. 401 문구도 내부 환경변수명을 노출하지 않게 고쳤다.
+- `deploy/permit-copilot-frontend.service` 에 `EnvironmentFile` 을 추가했다. 없으면
+  프록시가 토큰 없이 떠서 모든 요청이 401 이 된다.
+
 ## 2026-08-24
 ### 전국 공간데이터 5종 반입 + 외부 API 4종 연결 (신규 서버)
 - `backend/data/processed/` 에 산지구분(1,066,806건)·1:5,000 임상도(3,381,067건)·

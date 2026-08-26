@@ -263,6 +263,18 @@ def detect_use_restriction(query: str, diagnosis: dict) -> dict | None:
     overview = reg.get("zone_use_overview") or {}
     zone = reg.get("zone") or "이 용도지역"
 
+    # 농업인 주택은 농림지역의 일반 단독주택과 다른 법정 예외 검토 용도다.
+    # 질의에 이 용도가 명시됐고 조건부 표에 포함되어 있으면, 넓은 표현인 '주택'을
+    # 다시 단독·공동주택으로 펼쳐 불가 경고를 만드는 일반 규칙을 적용하지 않는다.
+    requested_facility = str(
+        (diagnosis.get("request") or {}).get("requested_facility") or ""
+    ).replace(" ", "")
+    if (
+        requested_facility == "농업인주택"
+        and "농업인 주택" in (overview.get("conditional") or [])
+    ):
+        return None
+
     if (
         zone == "제1종전용주거지역"
         and query
@@ -855,6 +867,12 @@ _USE_ALIASES = {
 }
 
 
+def _agricultural_house_label(query: str) -> str:
+    """질의의 농업인 주택 특례를 표준 단독주택과 구분해 보존한다."""
+    compact = re.sub(r"\s+", "", query or "")
+    return "농업인 주택" if "농업인주택" in compact else ""
+
+
 def _guess_use(query: str) -> str:
     for name in BUILDING_USES:          # 정식 용도명이 그대로 들어 있으면 그것
         if name in query:
@@ -956,6 +974,7 @@ def _deterministic_request(query: str) -> dict | None:
         else "mixed" if "혼합주차" in query
         else "unspecified"
     )
+    agricultural_house = _agricultural_house_label(query)
     req = {
         "address": (
             ""
@@ -964,10 +983,12 @@ def _deterministic_request(query: str) -> dict | None:
             if address_match
             else ""
         ),
-        "building_use": explicit_use or "시설물",
+        "building_use": "단독주택" if agricultural_house else explicit_use or "시설물",
         "inferred": explicit_use is None,
         "parking_strategy": parking,
-        "requested_facility": "",
+        # '농업인 주택'은 건축법상 단독주택이지만 농림지역에서 별도 자격·입지
+        # 요건을 적용받는다. 팝업과 판정이 일반 단독주택으로 뭉개지지 않게 보존한다.
+        "requested_facility": agricultural_house,
         "no_building_model": False,
     }
     if coordinate_match:
@@ -1010,6 +1031,13 @@ async def extract_request(client, query: str) -> dict:
             req.setdefault("parking_strategy", "unspecified")
             req.setdefault("requested_facility", "")
             req.setdefault("no_building_model", False)
+            agricultural_house = _agricultural_house_label(query)
+            if agricultural_house:
+                # 모델이 '주택'만 보고 일반 단독주택으로 정규화하더라도 질문에 적힌
+                # 농업인 주택 특례와 화면 라벨은 잃지 않는다.
+                req["building_use"] = "단독주택"
+                req["requested_facility"] = agricultural_house
+                req["inferred"] = False
             # 용도 미지정 일반 질문은 특정 건축물 용도로 바꾸지 않는다.
             has_explicit_use = any(
                 name in query for name in BUILDING_USES
@@ -1020,7 +1048,15 @@ async def extract_request(client, query: str) -> dict:
             return req
 
     # 도구를 안 부른 경우 — 주소를 못 찾은 것으로 본다
-    return {"address": "", "building_use": _guess_use(query), "inferred": True, "parking_strategy": "unspecified"}
+    agricultural_house = _agricultural_house_label(query)
+    return {
+        "address": "",
+        "building_use": "단독주택" if agricultural_house else _guess_use(query),
+        "inferred": not bool(agricultural_house),
+        "parking_strategy": "unspecified",
+        "requested_facility": agricultural_house,
+        "no_building_model": False,
+    }
 
 
 def _merge_permit_legal_evidence(
@@ -1460,9 +1496,25 @@ async def run_prediagnosis(
     restricted_conversion = (
         state["land_conversion"].get("status") == "RESTRICTED_REVIEW"
     )
+    agriculture_overlap = (
+        (state["land_conversion"].get("agriculture") or {}).get("status")
+        == "OVERLAP"
+    )
+    forest_overlap = (
+        (state["land_conversion"].get("forest") or {}).get("status")
+        == "OVERLAP"
+    )
+    agricultural_house_exception = bool(
+        str(req.get("requested_facility") or "").replace(" ", "") == "농업인주택"
+        and agriculture_overlap
+        and not forest_overlap
+    )
     if (
         reg.get("verdict") != "not_allowed"
         and (restricted_conversion or protected_districts)
+        # 농업진흥구역의 농업인 주택은 바로 불가/판단보류로 바꾸는 대상이 아니라,
+        # 농업인 자격·영농 필요성·면적·전용허가를 확인하는 조건부 예외 경로다.
+        and not (agricultural_house_exception and not protected_districts)
     ):
         reg["verdict"] = "unknown"
         restrictions = []
@@ -1504,7 +1556,13 @@ async def run_prediagnosis(
                 " / ".join(restrictions)
                 + "를 확인하기 전에는 건축 가능 여부를 확정할 수 없습니다."
             )
-        reg.setdefault("constraints", []).append(reg["reason"])
+        constraint_name = "·".join(
+            part for part in (restricted_forest_label, *protected_districts) if part
+        ) or "보전 규제"
+        reg.setdefault("constraints", []).append({
+            "name": constraint_name,
+            "note": reg["reason"],
+        })
         # 법적 판정은 예외 허용시설 확인 전이라 unknown을 유지하되, 지도 표현은
         # 건축 가능한 것처럼 보이지 않게 구조화해 전달한다. 지도 제어
         # 코드가 전용 상태 조합을 다시 해석하거나 문구를 하드코딩하지 않는다.
@@ -1570,7 +1628,11 @@ async def run_prediagnosis(
         reg["verdict"] = "conditional"
 
     state["legal_conflicts"] = legal_conflicts.evaluate(state)
-    if state["legal_conflicts"]["blocks_final_approval"] and reg.get("verdict") in {"allowed", "conditional"}:
+    if (
+        state["legal_conflicts"]["blocks_final_approval"]
+        and reg.get("verdict") in {"allowed", "conditional"}
+        and not agricultural_house_exception
+    ):
         reg["verdict"] = "unknown"
         reg["reason"] = state["legal_conflicts"]["summary"]
 

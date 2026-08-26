@@ -166,6 +166,37 @@ LLM이나 검색 청크가 건폐율·용적률·이격거리 같은 수치를 �
 포함된다. 검색 결과가 없다고 법적 기준이 없는 것은 아니며, 정형 판정 결과와
 원문 확인 상태를 별도로 표시한다.
 
+### 색인 파일이 없으면 근거 섹션이 통째로 사라진다 (2026-08-26 확인)
+
+`ordinance_index.available()`은 `ordinance_index.npz`·`_chunks.json`·`_vocab.json`
+세 파일의 존재 여부다. 셋 다 `.gitignore` 대상이고(대용량, 재생성 가능) **어떤 코드나
+systemd 유닛도 기동 시 재생성하지 않는다.** 따라서 클론·서버 이관 직후에는 색인이 없다.
+
+없을 때 `prediagnosis.run_prediagnosis`는 예외 없이 조용히 빈 배열을 넣는다.
+
+```python
+if jurisdiction and ordinance_index.available():
+    state["ordinance_evidence"] = ordinance_index.search(...)
+else:
+    state["ordinance_evidence"] = []
+```
+
+그 결과가 아래로 연쇄한다.
+
+| 대상 | 색인 없을 때 |
+|---|---|
+| `ordinance_evidence` | `[]` |
+| `## N. 지자체 조례 근거자료` 섹션 | 헤더 자체가 생성되지 않음 |
+| 프런트 접기/펼치기 | `COLLAPSIBLE_SECTIONS` 규칙은 정상. 감쌀 섹션이 없어 안 보임 |
+| `legal_evidence` 의 semantic 부분 | `[]` — 카탈로그 직접 근거만 남음 |
+
+**화면에서는 "해당 조례가 없다"와 구분되지 않는다.** 조례 근거가 안 보인다는 신고를
+받으면 데이터나 정규식보다 먼저 `ls backend/app/data/ordinance_index.npz`를 확인한다.
+복구는 `scripts/build_ordinance_index.py` 한 번이다.
+
+건폐율·용적률 수치는 `ordinances*.json`에서 오므로 색인과 무관하게 정상 표시된다.
+수치는 나오는데 근거 조문만 사라지는 형태라 원인 추적이 어렵다.
+
 ## 현행 법령 검증
 
 `backend/app/tools/law_open.py`는 진단에서 실제 사용된 근거 문자열을 읽어 법령명을
@@ -206,6 +237,49 @@ LLM이 임의로 조문을 생성하게 하지 않는다.
 가축사육제한구역(가축분뇨법)은 축사·축산시설에만, 교육환경보호(학교정화)구역의
 금지시설 제한은 숙박·유흥 등에만 걸린다. `lookup_zoning_rules(facility=...)`가
 검토 용도를 받아 해당 시설이 아니면 그 지구를 제약에서 제외한다.
+
+## 근거 카탈로그의 범위 한계 — 절차 축만 있고 행위제한 축이 없다 (2026-08-26 확인)
+
+`legal_rule_catalog.json`은 법령 목록이 아니라 **인허가 단계 ↔ 법령 연결표**다.
+`permit_rules.json`의 룰 7개에 대응하는 참조 9건만 들어 있고, 생성 스크립트가 없는
+수작업 파일이라 자동으로 늘지 않는다.
+
+| rule_id | 연결된 조문 |
+|---|---|
+| `permit.demolition` | 건축물관리법 |
+| `permit.farmland_conversion` | 농지법 제34조 |
+| `permit.forest_conversion` | 산지관리법 제14조, 시행규칙 |
+| `permit.road_review` | 건축법 제2조제1항제11호, 제44조 |
+| `permit.special_review` | — |
+| `permit.development_activity` | 국토계획법 제56조 |
+| `permit.building_permission` | 건축법 제11조, 제14조 |
+
+여기서 두 가지가 따라 나온다.
+
+**첫째, 행위제한 조문이 들어갈 자리가 없다.** 농지법 제32조(농업진흥지역의 행위 제한),
+산지관리법 제12조 같은 조문은 "밟아야 할 절차"가 아니라 "이 용도가 되느냐"를 가르는
+실체 규정이라 어느 룰에도 붙지 않는다. 그래서 판정은 조건부로 나오는데 그렇게 만든
+조문은 근거 목록에 없다. `land_conversion.py`가 `basis` 리스트에 제32조 문자열을 담고
+있으나 카탈로그 참조가 아니라 렌더링 경로가 없다.
+
+**둘째, 전국 법령 RAG 질의가 이 카탈로그에서 만들어져 순환한다.**
+
+```python
+legal_query = " ".join(
+    f"{item.get('name', '')} {item.get('basis', '')}" for item in permit_items
+).strip()
+```
+
+사용자 질문은 이 질의에 들어가지 않는다. 카탈로그에 없는 조문은 질의에 안 들어가고,
+질의에 없으니 검색되지 않고, 그래서 계속 카탈로그에 없는 상태로 남는다.
+`legal_corpus_chunks.json`에는 농지법 63개 조문(제32조 포함)이 이미 수집돼 있는데도
+그렇다 — 데이터 부족이 아니라 질의 생성 구조의 문제다.
+
+행위제한 축을 다룰 때는 `building_use_rules.json`을 보게 되는데, 이 파일은
+`"status": "screening_only"`이고 출처가 국토계획법 시행령 별표다. 즉 **용도지역 축만**
+있고 개별법 용도구역 축(농업진흥구역·농업보호구역, 보전산지 임업용·공익용 등)은
+문자열 기준 0건이다. 현재는 그때그때 `zoning.py`·`prediagnosis.py`의 조건 분기와
+산문 `reason`으로 처리돼 있어 조문 추적이 되지 않는다.
 
 ## Gemini에 전달되는 구조
 
