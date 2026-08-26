@@ -2,9 +2,9 @@
   "_meta": {
     "note": "DRF 자치법규 API 자동 수집·파싱본. 수작업 검증본(ordinances.json)과 별도.",
     "source": "국가법령정보센터 공동활용 API (target=ordin)",
-    "jurisdiction_count": 141,
+    "jurisdiction_count": 143,
     "total_targets": 196,
-    "content_hash": "69b206d554ff46d3"
+    "content_hash": "b1bbd216250d30c2"
   },
   "(구)광주광역시": {
     "_meta": {
@@ -203,12 +203,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -299,12 +299,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -314,7 +314,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -420,12 +420,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -435,7 +435,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -541,12 +541,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -556,7 +556,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -662,7 +662,7 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1000,
         "far_min_pct": null
       },
       "일반상업지역": {
@@ -783,12 +783,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -798,7 +798,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -904,12 +904,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -919,7 +919,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -1025,12 +1025,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -1040,7 +1040,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -1509,12 +1509,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -1524,7 +1524,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -1588,9 +1588,9 @@
     "_meta": {
       "org": "강원특별자치도 춘천시",
       "ordinance_name": "춘천시 도시계획 조례",
-      "ordinance_no": "2045",
-      "effective_date": "20260226",
-      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2112587&amp;type=HTML&amp;mobileYn=",
+      "ordinance_no": "2074",
+      "effective_date": "20260813",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2160495&amp;type=HTML&amp;mobileYn=",
       "articles": "제(용도지역 안에서의 건폐율)·(용도지역 안에서의 용적률)",
       "extraction_confidence": "high",
       "review_status": "auto_extracted",
@@ -1630,12 +1630,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -1645,7 +1645,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -1751,12 +1751,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -1766,7 +1766,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -1872,12 +1872,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -1887,7 +1887,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -2230,12 +2230,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -2245,7 +2245,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -2545,10 +2545,10 @@
       "effective_date": "20251010",
       "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2078539&amp;type=HTML&amp;mobileYn=",
       "articles": "제(용도지역 안에서의 건폐율)·(용도지역 안에서의 용적률)",
-      "extraction_confidence": "medium",
+      "extraction_confidence": "high",
       "review_status": "auto_extracted",
       "validation_flags": [],
-      "zones_filled": 14
+      "zones_filled": 15
     },
     "zones": {
       "제1종전용주거지역": {
@@ -2596,6 +2596,11 @@
         "far_max_pct": 900,
         "far_min_pct": null
       },
+      "유통상업지역": {
+        "bcr_max_pct": null,
+        "far_max_pct": 1100,
+        "far_min_pct": null
+      },
       "전용공업지역": {
         "bcr_max_pct": 70,
         "far_max_pct": 300,
@@ -2627,9 +2632,9 @@
     "_meta": {
       "org": "경기도 광명시",
       "ordinance_name": "광명시 도시계획 조례",
-      "ordinance_no": "3352",
-      "effective_date": "20251219",
-      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2095423&amp;type=HTML&amp;mobileYn=",
+      "ordinance_no": "3402",
+      "effective_date": "20260805",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2157445&amp;type=HTML&amp;mobileYn=",
       "articles": "제(용도지역 안에서의 건폐율)·(용도지역 안에서의 용적률)",
       "extraction_confidence": "high",
       "review_status": "auto_extracted",
@@ -2669,7 +2674,7 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "일반상업지역": {
@@ -2765,7 +2770,7 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1000,
         "far_min_pct": null
       },
       "일반상업지역": {
@@ -2967,12 +2972,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -2982,7 +2987,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -3088,7 +3093,7 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
@@ -3287,17 +3292,98 @@
   "경기도 부천시": {
     "_meta": {
       "org": "경기도 부천시",
-      "ordinance_name": "",
-      "ordinance_no": "",
-      "effective_date": "",
+      "ordinance_name": "부천시 도시계획 조례",
+      "ordinance_no": "4327",
+      "effective_date": "20260706",
       "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2144525&amp;type=HTML&amp;mobileYn=",
       "articles": "제(용도지역 안에서의 건폐율)·(용도지역 안에서의 용적률)",
-      "extraction_confidence": "low",
-      "review_status": "needs_review",
+      "extraction_confidence": "high",
+      "review_status": "auto_extracted",
       "validation_flags": [],
-      "zones_filled": 0
+      "zones_filled": 16
     },
-    "zones": {}
+    "zones": {
+      "제1종전용주거지역": {
+        "bcr_max_pct": 50,
+        "far_max_pct": 100,
+        "far_min_pct": null
+      },
+      "제2종전용주거지역": {
+        "bcr_max_pct": 50,
+        "far_max_pct": 120,
+        "far_min_pct": null
+      },
+      "제1종일반주거지역": {
+        "bcr_max_pct": 60,
+        "far_max_pct": 190,
+        "far_min_pct": null
+      },
+      "제2종일반주거지역": {
+        "bcr_max_pct": 60,
+        "far_max_pct": 230,
+        "far_min_pct": null
+      },
+      "제3종일반주거지역": {
+        "bcr_max_pct": 50,
+        "far_max_pct": 280,
+        "far_min_pct": null
+      },
+      "준주거지역": {
+        "bcr_max_pct": 60,
+        "far_max_pct": 400,
+        "far_min_pct": null
+      },
+      "중심상업지역": {
+        "bcr_max_pct": 80,
+        "far_max_pct": 720,
+        "far_min_pct": null
+      },
+      "일반상업지역": {
+        "bcr_max_pct": 60,
+        "far_max_pct": 800,
+        "far_min_pct": null
+      },
+      "근린상업지역": {
+        "bcr_max_pct": 60,
+        "far_max_pct": 600,
+        "far_min_pct": null
+      },
+      "유통상업지역": {
+        "bcr_max_pct": 60,
+        "far_max_pct": 600,
+        "far_min_pct": null
+      },
+      "전용공업지역": {
+        "bcr_max_pct": 70,
+        "far_max_pct": 300,
+        "far_min_pct": null
+      },
+      "일반공업지역": {
+        "bcr_max_pct": 60,
+        "far_max_pct": 350,
+        "far_min_pct": null
+      },
+      "준공업지역": {
+        "bcr_max_pct": 60,
+        "far_max_pct": 400,
+        "far_min_pct": null
+      },
+      "보전녹지지역": {
+        "bcr_max_pct": 20,
+        "far_max_pct": 50,
+        "far_min_pct": null
+      },
+      "생산녹지지역": {
+        "bcr_max_pct": 20,
+        "far_max_pct": 50,
+        "far_min_pct": null
+      },
+      "자연녹지지역": {
+        "bcr_max_pct": 20,
+        "far_max_pct": 80,
+        "far_min_pct": null
+      }
+    }
   },
   "경기도 성남시": {
     "_meta": {
@@ -3345,7 +3431,7 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1000,
         "far_min_pct": null
       },
       "일반상업지역": {
@@ -3495,9 +3581,9 @@
     "_meta": {
       "org": "경기도 시흥시",
       "ordinance_name": "시흥시 도시계획 조례",
-      "ordinance_no": "2596",
-      "effective_date": "20260402",
-      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2118597&amp;type=HTML&amp;mobileYn=",
+      "ordinance_no": "2633",
+      "effective_date": "20260820",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2164147&amp;type=HTML&amp;mobileYn=",
       "articles": "제(용도지역 안에서의 건폐율)·(용도지역 안에서의 용적률)",
       "extraction_confidence": "medium",
       "review_status": "auto_extracted",
@@ -3537,12 +3623,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -3583,7 +3669,7 @@
       "extraction_confidence": "medium",
       "review_status": "auto_extracted",
       "validation_flags": [],
-      "zones_filled": 9
+      "zones_filled": 12
     },
     "zones": {
       "준주거지역": {
@@ -3591,9 +3677,24 @@
         "far_max_pct": 500,
         "far_min_pct": null
       },
+      "중심상업지역": {
+        "bcr_max_pct": null,
+        "far_max_pct": 1100,
+        "far_min_pct": null
+      },
+      "일반상업지역": {
+        "bcr_max_pct": null,
+        "far_max_pct": 1100,
+        "far_min_pct": null
+      },
       "근린상업지역": {
         "bcr_max_pct": null,
         "far_max_pct": 800,
+        "far_min_pct": null
+      },
+      "유통상업지역": {
+        "bcr_max_pct": null,
+        "far_max_pct": 1000,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -3679,12 +3780,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -3694,7 +3795,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -3775,7 +3876,7 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1000,
         "far_min_pct": null
       },
       "일반상업지역": {
@@ -3947,12 +4048,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -3962,7 +4063,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -4164,12 +4265,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -4179,7 +4280,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 70,
-        "far_max_pct": null,
+        "far_max_pct": 1000,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -4356,7 +4457,7 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "일반상업지역": {
@@ -4477,12 +4578,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1000,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -4573,12 +4674,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1000,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1000,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -4669,12 +4770,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -4684,7 +4785,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -4765,7 +4866,7 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1000,
         "far_min_pct": null
       },
       "일반상업지역": {
@@ -4965,9 +5066,9 @@
     "_meta": {
       "org": "경기도 포천시",
       "ordinance_name": "포천시 도시계획 조례",
-      "ordinance_no": "1886",
-      "effective_date": "20260410",
-      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2121989&amp;type=HTML&amp;mobileYn=",
+      "ordinance_no": "1890",
+      "effective_date": "20260814",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2161793&amp;type=HTML&amp;mobileYn=",
       "articles": "제(용도지역 안에서의 건폐율)·(용도지역 안에서의 용적률)",
       "extraction_confidence": "high",
       "review_status": "auto_extracted",
@@ -5007,7 +5108,7 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1000,
         "far_min_pct": null
       },
       "일반상업지역": {
@@ -5426,12 +5527,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -5441,7 +5542,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -5547,7 +5648,7 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1000,
         "far_min_pct": null
       },
       "일반상업지역": {
@@ -6152,12 +6253,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1000,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -6530,7 +6631,7 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1000,
         "far_min_pct": null
       },
       "일반상업지역": {
@@ -6609,9 +6710,9 @@
     "_meta": {
       "org": "경상남도 함양군",
       "ordinance_name": "함양군 군계획 조례",
-      "ordinance_no": "2787",
-      "effective_date": "20250701",
-      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2051639&amp;type=HTML&amp;mobileYn=",
+      "ordinance_no": "2835",
+      "effective_date": "20260806",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2162351&amp;type=HTML&amp;mobileYn=",
       "articles": "제(용도지역 안에서의 건폐율)·(용도지역 안에서의 용적률)",
       "extraction_confidence": "high",
       "review_status": "auto_extracted",
@@ -6651,7 +6752,7 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1000,
         "far_min_pct": null
       },
       "일반상업지역": {
@@ -6908,7 +7009,7 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 70,
-        "far_max_pct": null,
+        "far_max_pct": 1000,
         "far_min_pct": null
       },
       "일반상업지역": {
@@ -7145,12 +7246,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -7160,7 +7261,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -7266,12 +7367,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1000,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1000,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -7387,12 +7488,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -7508,12 +7609,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -7523,7 +7624,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -7750,12 +7851,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -7765,7 +7866,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -7967,12 +8068,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -7982,7 +8083,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -8088,12 +8189,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1000,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1000,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -8522,12 +8623,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -8537,7 +8638,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -8724,12 +8825,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -8739,7 +8840,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -8845,12 +8946,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -8860,7 +8961,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -8966,12 +9067,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -8981,7 +9082,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -9288,17 +9389,123 @@
   "대구광역시": {
     "_meta": {
       "org": "대구광역시",
-      "ordinance_name": "",
-      "ordinance_no": "",
-      "effective_date": "",
+      "ordinance_name": "대구광역시 도시계획 조례",
+      "ordinance_no": "6487",
+      "effective_date": "20260511",
       "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2128915&amp;type=HTML&amp;mobileYn=",
       "articles": "제(용도지역 안에서의 건폐율)·(용도지역 안에서의 용적률)",
-      "extraction_confidence": "low",
-      "review_status": "needs_review",
+      "extraction_confidence": "high",
+      "review_status": "auto_extracted",
       "validation_flags": [],
-      "zones_filled": 0
+      "zones_filled": 21
     },
-    "zones": {}
+    "zones": {
+      "제1종전용주거지역": {
+        "bcr_max_pct": 50,
+        "far_max_pct": 100,
+        "far_min_pct": null
+      },
+      "제2종전용주거지역": {
+        "bcr_max_pct": 40,
+        "far_max_pct": 120,
+        "far_min_pct": null
+      },
+      "제1종일반주거지역": {
+        "bcr_max_pct": 60,
+        "far_max_pct": 200,
+        "far_min_pct": null
+      },
+      "제2종일반주거지역": {
+        "bcr_max_pct": 60,
+        "far_max_pct": 220,
+        "far_min_pct": null
+      },
+      "제3종일반주거지역": {
+        "bcr_max_pct": 50,
+        "far_max_pct": 250,
+        "far_min_pct": null
+      },
+      "준주거지역": {
+        "bcr_max_pct": 60,
+        "far_max_pct": 400,
+        "far_min_pct": null
+      },
+      "중심상업지역": {
+        "bcr_max_pct": 80,
+        "far_max_pct": null,
+        "far_min_pct": null
+      },
+      "일반상업지역": {
+        "bcr_max_pct": 70,
+        "far_max_pct": null,
+        "far_min_pct": null
+      },
+      "근린상업지역": {
+        "bcr_max_pct": 70,
+        "far_max_pct": 800,
+        "far_min_pct": null
+      },
+      "유통상업지역": {
+        "bcr_max_pct": 70,
+        "far_max_pct": 900,
+        "far_min_pct": null
+      },
+      "전용공업지역": {
+        "bcr_max_pct": 70,
+        "far_max_pct": 300,
+        "far_min_pct": null
+      },
+      "일반공업지역": {
+        "bcr_max_pct": 70,
+        "far_max_pct": 350,
+        "far_min_pct": null
+      },
+      "준공업지역": {
+        "bcr_max_pct": 70,
+        "far_max_pct": 400,
+        "far_min_pct": null
+      },
+      "보전녹지지역": {
+        "bcr_max_pct": 20,
+        "far_max_pct": 60,
+        "far_min_pct": null
+      },
+      "생산녹지지역": {
+        "bcr_max_pct": 20,
+        "far_max_pct": 100,
+        "far_min_pct": null
+      },
+      "자연녹지지역": {
+        "bcr_max_pct": 20,
+        "far_max_pct": 100,
+        "far_min_pct": null
+      },
+      "보전관리지역": {
+        "bcr_max_pct": 20,
+        "far_max_pct": 80,
+        "far_min_pct": null
+      },
+      "생산관리지역": {
+        "bcr_max_pct": 20,
+        "far_max_pct": 80,
+        "far_min_pct": null
+      },
+      "계획관리지역": {
+        "bcr_max_pct": 40,
+        "far_max_pct": 100,
+        "far_min_pct": null
+      },
+      "농림지역": {
+        "bcr_max_pct": 20,
+        "far_max_pct": 80,
+        "far_min_pct": null
+      },
+      "자연환경보전지역": {
+        "bcr_max_pct": 20,
+        "far_max_pct": 80,
+        "far_min_pct": null
+      }
+    }
   },
   "대전광역시": {
     "_meta": {
@@ -9346,12 +9553,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 70,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -10536,12 +10743,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -10551,7 +10758,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -10615,9 +10822,9 @@
     "_meta": {
       "org": "전남광주통합특별시 고흥군",
       "ordinance_name": "고흥군 군계획 조례",
-      "ordinance_no": "3222",
-      "effective_date": "20251229",
-      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2099347&amp;type=HTML&amp;mobileYn=",
+      "ordinance_no": "3256",
+      "effective_date": "20260824",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2157245&amp;type=HTML&amp;mobileYn=",
       "articles": "제(용도지역 안에서의 건폐율)·(용도지역 안에서의 용적률)",
       "extraction_confidence": "high",
       "review_status": "auto_extracted",
@@ -10657,12 +10864,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -10672,7 +10879,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -10736,9 +10943,9 @@
     "_meta": {
       "org": "전남광주통합특별시 곡성군",
       "ordinance_name": "곡성군 군계획 조례",
-      "ordinance_no": "2715",
-      "effective_date": "20251230",
-      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2100715&amp;type=HTML&amp;mobileYn=",
+      "ordinance_no": "2733",
+      "effective_date": "20260812",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2159961&amp;type=HTML&amp;mobileYn=",
       "articles": "제(용도지역 안에서의 건폐율)·(용도지역 안에서의 용적률)",
       "extraction_confidence": "high",
       "review_status": "auto_extracted",
@@ -10778,12 +10985,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -10793,7 +11000,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -11020,12 +11227,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -11035,7 +11242,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -11116,12 +11323,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -11131,7 +11338,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -11212,12 +11419,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 70,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -11266,9 +11473,9 @@
     "_meta": {
       "org": "전남광주통합특별시 보성군",
       "ordinance_name": "보성군 군계획 조례",
-      "ordinance_no": "2958",
-      "effective_date": "20260415",
-      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2123169&amp;type=HTML&amp;mobileYn=",
+      "ordinance_no": "2962",
+      "effective_date": "20260804",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2157793&amp;type=HTML&amp;mobileYn=",
       "articles": "제(용도지역 안에서의 건폐율)·(용도지역 안에서의 용적률)",
       "extraction_confidence": "high",
       "review_status": "auto_extracted",
@@ -11308,12 +11515,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -11323,7 +11530,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -11508,9 +11715,9 @@
     "_meta": {
       "org": "전남광주통합특별시 신안군",
       "ordinance_name": "신안군 도시계획 조례",
-      "ordinance_no": "2882",
-      "effective_date": "20260401",
-      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2119229&amp;type=HTML&amp;mobileYn=",
+      "ordinance_no": "2884",
+      "effective_date": "20260814",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2164649&amp;type=HTML&amp;mobileYn=",
       "articles": "제(용도지역 안에서의 건폐율)·(용도지역 안에서의 용적률)",
       "extraction_confidence": "high",
       "review_status": "auto_extracted",
@@ -11550,12 +11757,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -11565,7 +11772,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -11671,12 +11878,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -11686,7 +11893,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -11750,9 +11957,9 @@
     "_meta": {
       "org": "전남광주통합특별시 영광군",
       "ordinance_name": "영광군 도시계획 조례",
-      "ordinance_no": "3113",
-      "effective_date": "20260430",
-      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2126925&amp;type=HTML&amp;mobileYn=",
+      "ordinance_no": "3116",
+      "effective_date": "20260810",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2160687&amp;type=HTML&amp;mobileYn=",
       "articles": "제(용도지역 안에서의 건폐율)·(용도지역 안에서의 용적률)",
       "extraction_confidence": "high",
       "review_status": "auto_extracted",
@@ -11792,12 +11999,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -11807,7 +12014,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -11871,9 +12078,9 @@
     "_meta": {
       "org": "전남광주통합특별시 영암군",
       "ordinance_name": "영암군 도시계획 조례",
-      "ordinance_no": "2998",
-      "effective_date": "20251226",
-      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2097965&amp;type=HTML&amp;mobileYn=",
+      "ordinance_no": "3022",
+      "effective_date": "20260806",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2158147&amp;type=HTML&amp;mobileYn=",
       "articles": "제(용도지역 안에서의 건폐율)·(용도지역 안에서의 용적률)",
       "extraction_confidence": "high",
       "review_status": "auto_extracted",
@@ -11913,12 +12120,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -11928,7 +12135,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -11992,9 +12199,9 @@
     "_meta": {
       "org": "전남광주통합특별시 완도군",
       "ordinance_name": "완도군 도시계획 조례",
-      "ordinance_no": "3196",
-      "effective_date": "20260204",
-      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2108925&amp;type=HTML&amp;mobileYn=",
+      "ordinance_no": "3230",
+      "effective_date": "20260804",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2159767&amp;type=HTML&amp;mobileYn=",
       "articles": "제(용도지역 안에서의 건폐율)·(용도지역 안에서의 용적률)",
       "extraction_confidence": "high",
       "review_status": "auto_extracted",
@@ -12113,9 +12320,9 @@
     "_meta": {
       "org": "전남광주통합특별시 장성군",
       "ordinance_name": "장성군 도시계획 조례",
-      "ordinance_no": "2831",
-      "effective_date": "20260701",
-      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2129861&amp;type=HTML&amp;mobileYn=",
+      "ordinance_no": "2843",
+      "effective_date": "20260818",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2163925&amp;type=HTML&amp;mobileYn=",
       "articles": "제(용도지역 안에서의 건폐율)·(용도지역 안에서의 용적률)",
       "extraction_confidence": "high",
       "review_status": "auto_extracted",
@@ -12276,12 +12483,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -12291,7 +12498,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -12355,9 +12562,9 @@
     "_meta": {
       "org": "전남광주통합특별시 함평군",
       "ordinance_name": "함평군 군계획 조례",
-      "ordinance_no": "2956",
-      "effective_date": "20251112",
-      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2087531&amp;type=HTML&amp;mobileYn=",
+      "ordinance_no": "2991",
+      "effective_date": "20260731",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2155805&amp;type=HTML&amp;mobileYn=",
       "articles": "제(용도지역 안에서의 건폐율)·(용도지역 안에서의 용적률)",
       "extraction_confidence": "high",
       "review_status": "auto_extracted",
@@ -12397,12 +12604,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -12412,7 +12619,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -12508,12 +12715,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -12523,7 +12730,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -12886,12 +13093,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1000,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -13456,7 +13663,7 @@
       "extraction_confidence": "high",
       "review_status": "auto_extracted",
       "validation_flags": [],
-      "zones_filled": 19
+      "zones_filled": 20
     },
     "zones": {
       "제1종전용주거지역": {
@@ -13487,6 +13694,11 @@
       "준주거지역": {
         "bcr_max_pct": null,
         "far_max_pct": 500,
+        "far_min_pct": null
+      },
+      "중심상업지역": {
+        "bcr_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "일반상업지역": {
@@ -13602,12 +13814,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -13617,7 +13829,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -13824,12 +14036,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 70,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 60,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -14288,12 +14500,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -14303,7 +14515,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -14488,9 +14700,9 @@
     "_meta": {
       "org": "충청남도 부여군",
       "ordinance_name": "부여군 군계획 조례",
-      "ordinance_no": "3110",
-      "effective_date": "20251218",
-      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2093561&amp;type=HTML&amp;mobileYn=",
+      "ordinance_no": "3146",
+      "effective_date": "20260825",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2165187&amp;type=HTML&amp;mobileYn=",
       "articles": "제(용도지역 안에서의 건폐율)·(용도지역 안에서의 용적률)",
       "extraction_confidence": "high",
       "review_status": "auto_extracted",
@@ -14505,27 +14717,27 @@
       },
       "준주거지역": {
         "bcr_max_pct": 70,
-        "far_max_pct": 300,
+        "far_max_pct": 500,
         "far_min_pct": null
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": 800,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": 700,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
         "bcr_max_pct": 70,
-        "far_max_pct": 600,
+        "far_max_pct": 900,
         "far_min_pct": null
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": 500,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -14550,7 +14762,7 @@
       },
       "생산녹지지역": {
         "bcr_max_pct": 20,
-        "far_max_pct": 80,
+        "far_max_pct": 100,
         "far_min_pct": null
       },
       "자연녹지지역": {
@@ -14580,7 +14792,7 @@
       },
       "자연환경보전지역": {
         "bcr_max_pct": 20,
-        "far_max_pct": 60,
+        "far_max_pct": 80,
         "far_min_pct": null
       }
     }
@@ -14757,7 +14969,7 @@
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1000,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -14831,9 +15043,9 @@
     "_meta": {
       "org": "충청남도 아산시",
       "ordinance_name": "아산시 도시계획 조례",
-      "ordinance_no": "2715",
-      "effective_date": "20260225",
-      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2111831&amp;type=HTML&amp;mobileYn=",
+      "ordinance_no": "2725",
+      "effective_date": "20260818",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2162613&amp;type=HTML&amp;mobileYn=",
       "articles": "제(용도지역 안에서의 건폐율)·(용도지역 안에서의 용적률)",
       "extraction_confidence": "high",
       "review_status": "auto_extracted",
@@ -14994,12 +15206,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -15009,7 +15221,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -15115,12 +15327,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1200,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -15194,9 +15406,9 @@
     "_meta": {
       "org": "충청남도 청양군",
       "ordinance_name": "청양군 군계획 조례",
-      "ordinance_no": "2935",
-      "effective_date": "20251215",
-      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2092161&amp;type=HTML&amp;mobileYn=",
+      "ordinance_no": "2986",
+      "effective_date": "20260803",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=aipermit&amp;target=ordin&amp;MST=2156897&amp;type=HTML&amp;mobileYn=",
       "articles": "제(용도지역 안에서의 건폐율)·(용도지역 안에서의 용적률)",
       "extraction_confidence": "high",
       "review_status": "auto_extracted",
@@ -15589,12 +15801,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -15604,7 +15816,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -15710,7 +15922,7 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
@@ -16169,12 +16381,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -16184,7 +16396,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -16411,12 +16623,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -16426,7 +16638,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {
@@ -16532,12 +16744,12 @@
       },
       "중심상업지역": {
         "bcr_max_pct": 90,
-        "far_max_pct": null,
+        "far_max_pct": 1500,
         "far_min_pct": null
       },
       "일반상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1300,
         "far_min_pct": null
       },
       "근린상업지역": {
@@ -16547,7 +16759,7 @@
       },
       "유통상업지역": {
         "bcr_max_pct": 80,
-        "far_max_pct": null,
+        "far_max_pct": 1100,
         "far_min_pct": null
       },
       "전용공업지역": {

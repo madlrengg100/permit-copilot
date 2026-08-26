@@ -154,10 +154,15 @@ def _articles(xml: str) -> list[tuple[str, str]]:
     ]
 
 
+# 조례 원문은 네 자리 이상 수치를 "1,500퍼센트"처럼 천단위 쉼표로 적는다.
+# 쉼표를 허용하지 않으면 상업지역 용적률(1,000% 이상)이 통째로 누락된다.
+_PCT = r"(\d{1,3}(?:,\d{3})+|\d{1,4})\s*(?:퍼센트|%)"
+
+
 def _zone_hits(body: str) -> int:
     return sum(
         1 for z in STANDARD_ZONES
-        if re.search(re.escape(z) + r"\s*(?::|은|는)?\s*\d{1,4}\s*(?:퍼센트|%)", body)
+        if re.search(re.escape(z) + r"\s*(?::|은|는)?\s*" + _PCT, body)
     )
 
 
@@ -198,11 +203,11 @@ def _parse_zone_values(body: str) -> dict[str, int]:
             continue
         # 용도지역명 뒤 콜론, 그 직후 첫 '숫자 퍼센트/%'.
         m = re.search(
-            re.escape(zone) + r"\s*(?::|은|는)?\s*(\d{1,4})\s*(?:퍼센트|%)",
+            re.escape(zone) + r"\s*(?::|은|는)?\s*" + _PCT,
             body,
         )
         if m:
-            out[zone] = int(m.group(1))
+            out[zone] = int(m.group(1).replace(",", ""))
     return out
 
 
