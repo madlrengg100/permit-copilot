@@ -9,6 +9,7 @@ Type=simple
 User=jh12535320
 Group=jh12535320
 WorkingDirectory=/home/jh12535320/permit-copilot/frontend
+EnvironmentFile=/etc/permit-copilot/permit-copilot.env
 Environment=NODE_ENV=production
 Environment=HOST=0.0.0.0
 Environment=PORT=5173

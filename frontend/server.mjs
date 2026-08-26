@@ -8,6 +8,7 @@ const port = Number(process.env.PORT || 5173);
 const host = process.env.HOST || "0.0.0.0";
 const backendHost = process.env.BACKEND_HOST || "127.0.0.1";
 const backendPort = Number(process.env.BACKEND_PORT || 8000);
+const appToken = process.env.APP_TOKEN || "";
 
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
@@ -36,7 +37,13 @@ function proxyApi(req, res) {
       port: backendPort,
       method: req.method,
       path: req.url,
-      headers: { ...req.headers, host: `${backendHost}:${backendPort}` },
+      // APP_TOKEN은 브라우저 번들에 넣지 않는다. 같은 서버의 프록시만 비밀값을
+      // 보유하고 백엔드로 전달해, 외부 사용자는 토큰을 볼 수 없게 한다.
+      headers: {
+        ...req.headers,
+        host: `${backendHost}:${backendPort}`,
+        ...(appToken ? { "x-app-token": appToken } : {}),
+      },
     },
     (upstreamResponse) => {
       res.writeHead(upstreamResponse.statusCode || 502, upstreamResponse.headers);
