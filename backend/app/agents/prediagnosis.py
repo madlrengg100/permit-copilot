@@ -36,6 +36,7 @@ from ..tools import (
     legal_conflicts,
     district_plan,
     facility_rules,
+    district_use,
     land_conversion,
     massing,
     ordinance,
@@ -667,6 +668,26 @@ def format_diagnosis_answer(d: dict) -> str:
                 "건축허가를 받을 수 없습니다."
             )
 
+    # 개별법 용도구역 행위제한 — 이 판정을 만든 조문과 남은 요건.
+    restriction = (d.get("regulation") or {}).get("district_restriction") or {}
+    if restriction.get("verdict") in {"conditional", "not_allowed"} and restriction.get("districts"):
+        out.append("")
+        out.append(f"## {n}. 용도구역 행위제한")
+        n += 1
+        out.append(f"- 해당 구역: {' · '.join(restriction['districts'])}")
+        for hit in restriction.get("matched") or []:
+            clause = f"{hit.get('clause', '')}"
+            delegated = hit.get("delegated")
+            cite = f"{clause}({delegated} 위임)" if delegated else clause
+            out.append(f"- 허용 근거: {hit.get('name', '')} — {cite}")
+        conditions = restriction.get("conditions") or []
+        if conditions:
+            out.append("- 충족해야 할 요건:")
+            for condition in conditions:
+                out.append(f"  - {condition}")
+        if restriction["verdict"] == "not_allowed":
+            out.append(f"- {restriction.get('reason', '')}")
+
     # 예상 인허가·협의 단계
     pr = d.get("permit_requirements") or {}
     items = pr.get("items") or []
@@ -1059,10 +1080,21 @@ async def extract_request(client, query: str) -> dict:
     }
 
 
+def _legal_catalog_references() -> dict:
+    """permit_requirements 가 읽는 같은 카탈로그를 근거 목록에서도 쓴다."""
+    return (permit_requirements._legal_catalog() or {}).get("references", {})
+
+
 def _merge_permit_legal_evidence(
-    permit_items: list[dict], semantic_evidence: list[dict] | None
+    permit_items: list[dict],
+    semantic_evidence: list[dict] | None,
+    restriction: dict | None = None,
 ) -> list[dict]:
-    """전국 공통 인허가 근거를 검색 순위와 무관하게 우선 보존한다."""
+    """전국 공통 인허가 근거를 검색 순위와 무관하게 우선 보존한다.
+
+    절차 근거(농지법 제34조 등)와 용도구역 행위제한 근거(제32조 등)는 축이
+    다르다. 행위제한 조문이 이 판정을 만들었으므로 절차 조문보다 먼저 싣는다.
+    """
     result: list[dict] = []
     seen: set[tuple[str, str]] = set()
 
@@ -1074,6 +1106,22 @@ def _merge_permit_legal_evidence(
             return
         seen.add(key)
         result.append(evidence)
+
+    # 이 판정을 만든 행위제한 조문이 먼저다. "왜 조건부인가"의 답이 근거 목록에
+    # 없고 "그럼 뭘 하면 되나"(전용허가)만 남는 상태를 만들지 않는다.
+    catalog = _legal_catalog_references()
+    for ref_id in (restriction or {}).get("legal_references") or []:
+        reference = catalog.get(ref_id)
+        if reference:
+            add({
+                "jurisdiction": reference.get("jurisdiction") or "전국",
+                "law": reference.get("law"),
+                "article": reference.get("article"),
+                "title": reference.get("title"),
+                "kind": "용도구역 행위제한 근거",
+                "url": reference.get("source_url"),
+                "ref_id": ref_id,
+            })
 
     # permit_rules.json에서 실제 선택된 단계에 연결된 법령은 결정적 근거다.
     # 도로·접도 조문 등이 벡터 검색 상위 건수에서 밀려 사라지면 안 된다.
@@ -1433,6 +1481,20 @@ async def run_prediagnosis(
     jurisdiction = ordinance.detect_jurisdiction(state["location"]["matched_address"])
     state["jurisdiction"] = jurisdiction
 
+    # 개별법 용도구역(농업진흥/보호구역, 임업용/공익용산지)을 공간조회 결과에서
+    # 뽑는다. 코드(UEA110 등)가 고시·연도에 흔들리는 이름보다 안정적이다.
+    _conv = state.get("land_conversion") or {}
+    _layer_overlaps = [
+        overlap
+        for key in ("agriculture", "forest")
+        for overlap in ((_conv.get(key) or {}).get("overlaps") or [])
+    ]
+    land_districts = district_use.districts_for(
+        [overlap.get("name") for overlap in _layer_overlaps],
+        [overlap.get("code") for overlap in _layer_overlaps],
+    )
+    state["land_districts"] = land_districts
+
     step("lookup_zoning", {"zone": zone, "building_use": req["building_use"]})
     reg = zoning.lookup_zoning_rules(
         zone=zone,
@@ -1442,6 +1504,7 @@ async def run_prediagnosis(
         # 검토 용도(농막·축사 등)를 넘겨 시설 특정 제약(가축사육제한구역 등)을
         # 그 시설일 때만 걸리게 한다. 비어 있으면 building_use 로 대체.
         facility=str(req.get("requested_facility") or "").strip(),
+        land_districts=land_districts,
     )
     reg = zoning.apply_straddling_limits(reg, zone_shares, jurisdiction)
     state["regulation"] = reg
@@ -1737,13 +1800,23 @@ async def run_prediagnosis(
         pnu=state.get("parcel", {}).get("pnu"),
     )
 
-    # 정형 인허가 규칙이 선택한 단계명·근거만으로 전국 법령 corpus를 검색한다.
-    # 조례 검색과 범위를 분리해 다른 지자체 조례나 일반론이 섞이지 않게 한다.
+    # 정형 규칙이 선택한 근거만으로 전국 법령 corpus를 검색한다. 조례 검색과
+    # 범위를 분리해 다른 지자체 조례나 일반론이 섞이지 않게 한다.
+    #
+    # 질의에 절차 단계만 넣으면 순환이 생긴다. 카탈로그에 없는 조문은 질의에
+    # 안 들어가고 -> 검색되지 않고 -> 계속 카탈로그 밖에 남는다. 행위제한 축이
+    # 판정한 구역명·조문도 함께 넣어 그 고리를 끊는다.
     permit_items = (state.get("permit_requirements") or {}).get("items", [])
-    legal_query = " ".join(
-        f"{item.get('name', '')} {item.get('basis', '')}"
-        for item in permit_items
-    ).strip()
+    _restriction = (state.get("regulation") or {}).get("district_restriction") or {}
+    legal_terms = [
+        f"{item.get('name', '')} {item.get('basis', '')}" for item in permit_items
+    ]
+    legal_terms.extend(_restriction.get("districts") or [])
+    legal_terms.extend(
+        f"{hit.get('name', '')} {hit.get('clause', '')}"
+        for hit in _restriction.get("matched") or []
+    )
+    legal_query = " ".join(term for term in legal_terms if term.strip()).strip()
     semantic_legal_evidence = (
         ordinance_index.search(
             query=legal_query,
@@ -1755,7 +1828,9 @@ async def run_prediagnosis(
         else []
     )
     state["legal_evidence"] = _merge_permit_legal_evidence(
-        permit_items, semantic_legal_evidence
+        permit_items,
+        semantic_legal_evidence,
+        (state.get("regulation") or {}).get("district_restriction"),
     )
     if isinstance(state.get("legal_sources"), dict):
         state["legal_sources"]["evidence"] = state["legal_evidence"]

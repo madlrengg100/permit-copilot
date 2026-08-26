@@ -15,6 +15,7 @@ import json
 from functools import lru_cache
 from pathlib import Path
 
+from . import district_use
 from . import ordinance
 
 _RULES_PATH = Path(__file__).resolve().parent.parent / "data" / "building_use_rules.json"
@@ -117,6 +118,7 @@ def lookup_zoning_rules(
     districts: list[str] | None = None,
     jurisdiction: str | None = None,
     facility: str = "",
+    land_districts: list[str] | None = None,
 ) -> dict:
     """용도지역 + 건축물 용도 -> 허용 여부와 밀도 상한.
 
@@ -144,8 +146,17 @@ def lookup_zoning_rules(
     far_max = limits["far_max_pct"]
     basis = limits["source_label"]
 
-    normalized_facility = "".join((facility or "").split())
-    agricultural_house = normalized_facility == "농업인주택"
+    # 개별법(농지법·산지관리법)이 용도구역에 건 행위제한. 국토계획법 용도지역
+    # 판정과 축이 다르고, 더 엄격한 쪽이 이긴다. 판정표에 없는 용도라도 예외
+    # 열거에 해당하면 열리고(농업진흥구역의 농업인 주택), 판정표가 허용해도
+    # 구역이 금지하면 닫힌다.
+    # 용도지역 축은 zone 에서 직접 만든다. 호출부가 개별법 용도구역만 넘겨도
+    # 농림지역·자연환경보전지역의 별표 제한은 빠지지 않는다.
+    restriction = district_use.evaluate(
+        district_use.districts_for(land_districts or [], zone=zone),
+        facility,
+        building_use,
+    )
     matrix = _use_matrix().get(building_use)
     if building_use == "시설물":
         overview = uses_for_zone(zone)
@@ -160,13 +171,12 @@ def lookup_zoning_rules(
     elif matrix is None:
         verdict = "unknown"
         reason = f"{josa(chr(39) + str(building_use) + chr(39), '은')} 판정표에 없는 용도입니다. 건축법 시행령 별표1 확인 필요."
-    elif agricultural_house and zone == "농림지역":
+    elif restriction["verdict"] == "not_allowed":
+        verdict = "not_allowed"
+        reason = restriction["reason"]
+    elif restriction["verdict"] == "conditional":
         verdict = "conditional"
-        reason = (
-            "농림지역의 농업인 주택은 일반 단독주택과 달리 농업인 자격, 실제 영농을 "
-            "위한 주거 필요성, 세대·면적 및 입지 기준과 농지·산지 전용 절차를 충족하면 "
-            "허용될 수 있습니다. 농업인 자격과 대상 토지의 세부 구역을 확인해야 합니다."
-        )
+        reason = restriction["reason"]
     elif zone in matrix["allowed"]:
         verdict = "allowed"
         reason = f"{zone}에서 {josa(building_use, '은')} 건축 가능한 용도입니다."
@@ -204,10 +214,14 @@ def lookup_zoning_rules(
         )
 
     overview = uses_for_zone(zone)
-    if agricultural_house and zone == "농림지역":
-        # 이 질문의 특례 용도를 전체 용도표에도 명시해, 후속 답변이 농림지역의
-        # 일반 단독주택 불가만 반복하지 않게 한다.
-        overview["conditional"].append("농업인 주택")
+    if restriction["verdict"] == "conditional" and facility:
+        # 이 질문의 특례 용도를 전체 용도표에도 명시해, 후속 답변이 용도지역
+        # 판정표상의 불가만 반복하지 않게 한다.
+        label = facility.strip()
+        for bucket in overview.values():
+            if label in bucket:
+                bucket.remove(label)
+        overview["conditional"].append(label)
 
     return {
         "verdict": verdict,
@@ -219,6 +233,9 @@ def lookup_zoning_rules(
         "legal_basis": basis,
         "reason": reason,
         "constraints": constraints,
+        # 개별법 용도구역 행위제한의 판정·근거 조문·충족해야 할 요건.
+        # 화면 근거 목록과 검토 의견이 조문을 인용할 수 있도록 그대로 넘긴다.
+        "district_restriction": restriction,
         # "다른 용도는 뭐가 되나" 류 질문에 답할 수 있도록, 이 용도지역의
         # 전체 용도 허용 현황을 함께 넘긴다 (판정표 9개 대분류 기준).
         "zone_use_overview": overview,

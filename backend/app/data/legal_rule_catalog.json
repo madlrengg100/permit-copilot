@@ -3,7 +3,7 @@
     "schema_version": 1,
     "name": "정형 인허가 규칙의 법령 근거 연결 카탈로그",
     "status": "reference_metadata",
-    "notice": "이 파일은 조문 원문을 대체하지 않는다. source_url의 현행 원문과 시행일 검증 결과를 함께 사용한다."
+    "notice": "이 파일은 조문 원문을 대체하지 않는다. source_url의 현행 원문과 시행일 검증 결과를 함께 사용한다. 인허가 절차 근거(제34조 등)와 용도구역 행위제한 근거(제32조 등)를 함께 담는다. 행위제한 참조는 district_use_rules.json 이 구역별로 연결한다."
   },
   "references": {
     "law.building_management.demolition": {
@@ -68,6 +68,55 @@
       "title": "건축신고",
       "jurisdiction": "전국",
       "source_url": "https://www.law.go.kr/법령/건축법"
+    },
+    "law.farmland.article_32": {
+      "law": "농지법",
+      "article": "제32조",
+      "title": "용도구역에서의 행위 제한",
+      "jurisdiction": "전국",
+      "source_url": "https://www.law.go.kr/법령/농지법"
+    },
+    "law.farmland.decree_29": {
+      "law": "농지법 시행령",
+      "article": "제29조",
+      "title": "농업진흥구역에서 할 수 있는 행위",
+      "jurisdiction": "전국",
+      "source_url": "https://www.law.go.kr/법령/농지법시행령"
+    },
+    "law.farmland.decree_30": {
+      "law": "농지법 시행령",
+      "article": "제30조",
+      "title": "농업보호구역에서 할 수 있는 행위",
+      "jurisdiction": "전국",
+      "source_url": "https://www.law.go.kr/법령/농지법시행령"
+    },
+    "law.mountainous_district.article_12": {
+      "law": "산지관리법",
+      "article": "제12조",
+      "title": "보전산지에서의 행위제한",
+      "jurisdiction": "전국",
+      "source_url": "https://www.law.go.kr/법령/산지관리법"
+    },
+    "law.national_land_planning.decree_71": {
+      "law": "국토의 계획 및 이용에 관한 법률 시행령",
+      "article": "제71조",
+      "title": "용도지역 안에서의 건축제한",
+      "jurisdiction": "전국",
+      "source_url": "https://www.law.go.kr/법령/국토의계획및이용에관한법률시행령"
+    },
+    "law.national_land_planning.decree_table_21": {
+      "law": "국토의 계획 및 이용에 관한 법률 시행령",
+      "article": "별표 21",
+      "title": "농림지역 안에서 건축할 수 있는 건축물",
+      "jurisdiction": "전국",
+      "source_url": "https://www.law.go.kr/법령/국토의계획및이용에관한법률시행령"
+    },
+    "law.national_land_planning.decree_table_22": {
+      "law": "국토의 계획 및 이용에 관한 법률 시행령",
+      "article": "별표 22",
+      "title": "자연환경보전지역 안에서 건축할 수 있는 건축물",
+      "jurisdiction": "전국",
+      "source_url": "https://www.law.go.kr/법령/국토의계획및이용에관한법률시행령"
     }
   }
 }
