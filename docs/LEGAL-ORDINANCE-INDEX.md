@@ -330,10 +330,38 @@ JSON만 저장소에 들어가며, 원본은 위 명령으로 재생성한다.
   느리므로 타임아웃 300초·재시도 2회이며, 실패한 페이지는 `OCR_FAILED` 로 남기고
   나머지 페이지 결과는 그대로 쓴다.
 
+### source_page 가 없는 지자체는 고시 목록에서 찾는다
+
+`collect_district_plans.py --discover 경산시 계양구 예산군` 이 토지이음 고시
+목록(`gvGosiList.jsp`)을 훑어 그 지자체의 지구단위계획 결정고시를 찾아
+`district_plan_sources.json` 에 `discovered: true` 로 등록한 뒤 수집한다.
+이름을 주지 않으면 `sources` 가 비어 있는 지자체를 전부 대상으로 한다.
+
+- 질의 문자열은 **euc-kr 로 인코딩**한다. UTF-8 이면 0건이 나온다.
+- 제목에 `지구단위계획` 이 있어도 `열람·공고·폐지·실효·취소` 는 제외한다.
+  계획 자체가 아니라 절차 고시라 원문에 계획 내용이 없다.
+- 계획명은 제목 괄호 안의 `…지구단위계획` 을 쓴다.
+
+### OCR 은 문서형만 태운다
+
+스캔본 24건 중 파일명이 `도면·결정도·종합도·총괄도·계획도·지형도` 인 14건
+(29페이지)은 지도라 텍스트 회수율이 낮고 페이지당 수 분이 걸린다. 실제로 도면을
+포함해 돌렸더니 52페이지에 20분 넘게 한 건도 끝나지 않았다. 문서형 10건(24페이지)
+만 태우면 몇 분에 끝난다. 도면의 획지 수치는 결정조서·시행지침 표에서 온다.
+
 ### 현재 수집 상태
 
-11개 지구 중 10곳, **527청크**(본문 423 · 표 104). 5개 지자체가 등록돼 있고
-경산시·계양구는 `sources` 가 비어 있다. 예산군은 목록에 없다.
+6개 지자체 **32개 지구, 1,119청크**(본문 1,009 · 표 110). 원본 152건 299MB.
+통합 색인 11,249청크.
+
+| 지자체 | 지구 | 등록 방식 |
+|---|---|---|
+| 아산시 | 3 | 수작업 |
+| 음성군 | 7 | 수작업 |
+| 영천시 | 1 | 수작업 |
+| 예산군 | 12 | `--discover` |
+| 경산시 | 12 | `--discover` |
+| 계양구 | 12 | `--discover` |
 
 ### scope 로 격리한다
 
@@ -418,7 +446,9 @@ OC=<키> ./.venv/bin/python scripts/collect_setback_tables.py
 
 # 지구단위계획 수집·정제·청킹 (원본은 .gitignore 대상)
 ./.venv/bin/python scripts/collect_district_plans.py
-./.venv/bin/python scripts/parse_district_plan_documents.py          # 스캔본은 --ocr
+./.venv/bin/python scripts/collect_district_plans.py --discover      # source_page 없는 지자체
+./.venv/bin/python scripts/parse_district_plan_documents.py
+./.venv/bin/python scripts/parse_district_plan_documents.py --ocr <스캔된 문서형 경로>
 ./.venv/bin/python scripts/build_district_plan_chunks.py
 
 # 조례·법령·지구단위계획 통합 색인 재생성

@@ -208,15 +208,105 @@ def collect_source(client: httpx.Client, sigungu: str, source: dict) -> list[Pat
     return saved
 
 
+EUM_LIST = "https://www.eum.go.kr/web/gs/gv/gvGosiList.jsp"
+_PLAN_TITLE = re.compile(r"지구단위계획")
+# 계획 자체가 아닌 고시는 원문에 지구단위계획 내용이 없다.
+_SKIP_TITLE = re.compile(r"열람|공고\s*$|폐지|실효|취소|재열람")
+_PLAN_NAME = re.compile(r"[(（]\s*([^)）]*지구단위계획[^)）]*)\s*[)）]")
+
+
+def discover_eum(client: httpx.Client, org: str, pages: int, limit: int) -> list[dict]:
+    """토지이음 고시 목록에서 그 지자체의 지구단위계획 결정고시를 찾는다.
+
+    source_page 가 등록돼 있지 않은 지자체를 위한 자동 탐색이다. 결과는
+    district_plan_sources.json 과 같은 모양으로 돌려준다.
+
+    질의 문자열은 euc-kr 로 인코딩해야 한다(사이트 인코딩).
+    """
+    found: list[dict] = []
+    seen: set[str] = set()
+    for page in range(1, pages + 1):
+        query = urllib.parse.urlencode(
+            {
+                "listSize": "50", "pageNo": str(page), "zonenm": "",
+                "startdt": "", "enddt": "", "chrgorg": org, "selSggCd": "",
+                "select2": "", "select_3": "", "gosino": "", "gosichrg": "",
+                "prj_nm": "", "prj_cat_cd": "", "geul_yn": "",
+                "gihyung_yn": "", "silsi_yn": "", "mobile_yn": "",
+            },
+            encoding="euc-kr",
+        )
+        html = _get(client, f"{EUM_LIST}?{query}").text
+        rows = re.findall(
+            r"gvGosiDet\.jsp\?seq=(\d+)[^>]*>(.*?)</a>", html, re.S
+        )
+        if not rows:
+            break
+        for seq, raw in rows:
+            title = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", raw)).strip()
+            if seq in seen or not _PLAN_TITLE.search(title):
+                continue
+            if _SKIP_TITLE.search(title):
+                continue
+            seen.add(seq)
+            inner = _PLAN_NAME.search(title)
+            name = inner.group(1).strip() if inner else title
+            found.append({
+                "plan_name": _safe(name)[:60],
+                "source_page": f"https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq={seq}",
+                "publisher": org,
+                "notice_title": title,
+                "discovered": True,
+            })
+            if len(found) >= limit:
+                return found
+    return found
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--only", default="", help="시군구명 부분일치만")
+    parser.add_argument(
+        "--discover",
+        nargs="*",
+        default=None,
+        metavar="시군구",
+        help="source_page 가 없는 지자체를 토지이음 고시 목록에서 찾아 수집한다. "
+             "이름을 주지 않으면 sources 가 비어 있는 지자체 전부.",
+    )
+    parser.add_argument("--discover-pages", type=int, default=8)
+    parser.add_argument("--discover-limit", type=int, default=12)
     args = parser.parse_args()
 
     catalog = json.loads(SOURCES.read_text(encoding="utf-8"))
+    jurisdictions = catalog.setdefault("jurisdictions", {})
     total = 0
     with httpx.Client(timeout=120, follow_redirects=True) as client:
-        for sigungu, entry in catalog.get("jurisdictions", {}).items():
+        if args.discover is not None:
+            targets = args.discover or [
+                name for name, entry in jurisdictions.items()
+                if not (entry.get("sources") or [])
+            ]
+            for org in targets:
+                entry = jurisdictions.setdefault(org, {"status": "collecting"})
+                existing = {
+                    item.get("source_page") for item in entry.get("sources") or []
+                }
+                discovered = discover_eum(
+                    client, org, args.discover_pages, args.discover_limit
+                )
+                fresh = [
+                    item for item in discovered
+                    if item["source_page"] not in existing
+                ]
+                entry.setdefault("sources", []).extend(fresh)
+                print(f"[{org}] 고시 탐색: {len(fresh)}건 추가", flush=True)
+            SOURCES.write_text(
+                json.dumps(catalog, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
+
+        for sigungu, entry in jurisdictions.items():
             if args.only and args.only not in sigungu:
                 continue
             for source in entry.get("sources") or []:

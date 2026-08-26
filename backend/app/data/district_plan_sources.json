@@ -1,17 +1,151 @@
 {
   "_meta": {
     "schema_version": 1,
-    "note": "지구단위계획 공식 원문 수집 목록. source_page와 첨부파일을 함께 보존하며 최신 변경고시 검증 전에는 판정에 사용하지 않는다."
+    "note": "지구단위계획 공식 원문 수집 목록. source_page와 첨부파일을 함께 보존하며 최신 변경고시 검증 전에는 판정에 사용하지 않는다. collect_district_plans.py --discover 가 토지이음 고시 목록에서 지구단위계획 결정고시를 찾아 sources 를 채운다(discovered:true)."
   },
   "jurisdictions": {
-    "경산시": {"sigungu_code": "47290", "sources": [], "status": "collecting"},
+    "경산시": {
+      "sigungu_code": "47290",
+      "sources": [
+        {
+          "plan_name": "옥산1, 대평택지, 사동2지구 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=636275",
+          "publisher": "경산시",
+          "notice_title": "[변경] 경산 도시관리계획(옥산1, 대평택지, 사동2지구 지구단위계획) 결정(변경) 및 지형도면 정정 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "정평·중산, 대평, 북사지구 지구단위계획구역·계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=636273",
+          "publisher": "경산시",
+          "notice_title": "[변경] 경산 도시관리계획(정평·중산, 대평, 북사지구 지구단위계획구역·계획) 결정(변경) 및 지형도면 정정 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "청천, 남하, 사탄, 환상, 고낭이, 현창, 금구지구 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=636272",
+          "publisher": "경산시",
+          "notice_title": "[변경] 경산 도시관리계획(청천, 남하, 사탄, 환상, 고낭이, 현창, 금구지구 지구단위계획) 결정(변경) 및 지형도면 정정 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "동서지구 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=636266",
+          "publisher": "경산시",
+          "notice_title": "[변경] 경산 도시관리계획(동서지구 지구단위계획) 결정(경미한 변경) 및 지형도면 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "압량지구 지구단위계획구역·계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=635931",
+          "publisher": "경산시",
+          "notice_title": "[변경] 경산 도시관리계획(압량지구 지구단위계획구역·계획) 결정(변경) 및 지형도면 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "용성지구 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=634820",
+          "publisher": "경산시",
+          "notice_title": "[변경] 경산 도시관리계획(용성지구 지구단위계획) 결정(변경) 및 지형도면 승인 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "청천, 남하, 사탄, 환상, 고낭이, 현창, 금구지구 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=630469",
+          "publisher": "경산시",
+          "notice_title": "[변경] 경산 도시관리계획(청천, 남하, 사탄, 환상, 고낭이, 현창, 금구지구 지구단위계획) 결정(변경) 및 지형도면 정정 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "청천, 남하, 사탄, 환상, 고낭이, 현창, 금구지구 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=630068",
+          "publisher": "경산시",
+          "notice_title": "[변경] 경산 도시관리계획(청천, 남하, 사탄, 환상, 고낭이, 현창, 금구지구 지구단위계획) 결정(변경) 및 지형도면 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "자인 서부지구 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=619586",
+          "publisher": "경산시",
+          "notice_title": "[변경] 경산 도시관리계획(자인 서부지구 지구단위계획) 결정(변경) 및 지형도면 승인 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "자인 서부지구 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=614308",
+          "publisher": "경산시",
+          "notice_title": "[신규] 경산 도시관리계획(자인 서부지구 지구단위계획) 결정(변경) 및 지형도면 승인 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "[변경] 경산 도시관리계획(대구연구개발특구 지식서비스 R&D 1지구(화장품 특화단지) 지구단위계획) 결정(변",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=619571",
+          "publisher": "경산시",
+          "notice_title": "[변경] 경산 도시관리계획(대구연구개발특구 지식서비스 R&D 1지구(화장품 특화단지) 지구단위계획) 결정(변경) 및 지형도면 등 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "[변경] 경산 도시관리계획(대구연구개발특구 지식서비스 R&D 1지구(화장품 특화단지) 지구단위계획) 결정(변",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=608916",
+          "publisher": "경산시",
+          "notice_title": "[변경] 경산 도시관리계획(대구연구개발특구 지식서비스 R&D 1지구(화장품 특화단지) 지구단위계획) 결정(변경) 및 지형도면 등 고시",
+          "discovered": true
+        }
+      ],
+      "status": "collecting"
+    },
     "아산시": {
       "sigungu_code": "44200",
       "status": "collecting",
       "sources": [
-        {"plan_name": "아산 탕정 택지개발지구", "source_page": "https://www.asan.go.kr/main/cms/?m_mode=view&no=59&pds_no=2017080915162998284&tb_nm=administrator_info", "publisher": "아산시", "match_any": ["아산 탕정", "탕정 택지개발지구", "탕정지구"], "document_types": ["결정조서", "시행지침", "획지계획도", "건축물결정도"], "needs_latest_notice_check": true},
-        {"plan_name": "아산 동암지구", "source_page": "https://www.asan.go.kr/main/cms/?m_mode=view&no=131&pds_no=2019061115350612798&tb_nm=city_news_notice", "publisher": "아산시", "match_any": ["아산 동암지구", "동암지구"], "document_types": ["결정조서", "시행지침", "결정도"], "needs_latest_notice_check": true},
-        {"plan_name": "배방 월천지구", "source_page": "https://www.asan.go.kr/main/cms/?m_mode=view&no=59&pds_no=2020080316232566352&tb_nm=administrator_info", "publisher": "아산시", "notice_no": "아산시 고시 제2020-320호", "match_any": ["배방 월천지구", "월천지구"], "document_types": ["고시문", "시행지침", "총괄도"], "needs_latest_notice_check": true}
+        {
+          "plan_name": "아산 탕정 택지개발지구",
+          "source_page": "https://www.asan.go.kr/main/cms/?m_mode=view&no=59&pds_no=2017080915162998284&tb_nm=administrator_info",
+          "publisher": "아산시",
+          "match_any": [
+            "아산 탕정",
+            "탕정 택지개발지구",
+            "탕정지구"
+          ],
+          "document_types": [
+            "결정조서",
+            "시행지침",
+            "획지계획도",
+            "건축물결정도"
+          ],
+          "needs_latest_notice_check": true
+        },
+        {
+          "plan_name": "아산 동암지구",
+          "source_page": "https://www.asan.go.kr/main/cms/?m_mode=view&no=131&pds_no=2019061115350612798&tb_nm=city_news_notice",
+          "publisher": "아산시",
+          "match_any": [
+            "아산 동암지구",
+            "동암지구"
+          ],
+          "document_types": [
+            "결정조서",
+            "시행지침",
+            "결정도"
+          ],
+          "needs_latest_notice_check": true
+        },
+        {
+          "plan_name": "배방 월천지구",
+          "source_page": "https://www.asan.go.kr/main/cms/?m_mode=view&no=59&pds_no=2020080316232566352&tb_nm=administrator_info",
+          "publisher": "아산시",
+          "notice_no": "아산시 고시 제2020-320호",
+          "match_any": [
+            "배방 월천지구",
+            "월천지구"
+          ],
+          "document_types": [
+            "고시문",
+            "시행지침",
+            "총괄도"
+          ],
+          "needs_latest_notice_check": true
+        }
       ]
     },
     "음성군": {
@@ -24,13 +158,33 @@
           "publisher": "음성군",
           "notice_no": "음성군 고시 제2023-72호",
           "notice_date": "2023-03-24",
-          "match_any": ["충북 혁신도시", "충북혁신도시"],
-          "document_types": ["고시문", "총괄도", "결정도", "시행지침"],
+          "match_any": [
+            "충북 혁신도시",
+            "충북혁신도시"
+          ],
+          "document_types": [
+            "고시문",
+            "총괄도",
+            "결정도",
+            "시행지침"
+          ],
           "documents": [
-            {"label": "고시문", "url": "https://www.eum.go.kr/web/ac/DownloadBig.jsp?isGosi=Y&filename=%C0%BD%BC%BA%20%B1%BA%B0%FC%B8%AE%B0%E8%C8%B9%28%C1%F6%B1%B8%B4%DC%C0%A7%B0%E8%C8%B9%20%BD%C3%C7%E0%C1%F6%C4%A7%29%20%B0%E1%C1%A4%28%BA%AF%B0%E6%29%20%B9%D7%20%C1%F6%C7%FC%B5%B5%B8%E9%20%B0%ED%BD%C3%B9%AE%20%5B%C3%E6%BA%CF%20%C7%F5%BD%C5%B5%B5%BD%C3%5D.pdf&filepath=%2F2023%2F03%2F31%2F560000%2F562306"},
-            {"label": "군관리계획 총괄도", "url": "https://www.eum.go.kr/web/ac/DownloadBig.jsp?isGosi=Y&filename=01-2_%20%B1%BA%B0%FC%B8%AE%B0%E8%C8%B9%20%C3%D1%B0%FD%B5%B5.pdf&filepath=%2F2023%2F03%2F31%2F560000%2F562306"},
-            {"label": "지구단위계획 결정(변경)도", "url": "https://www.eum.go.kr/web/ac/DownloadBig.jsp?isGosi=Y&filename=02-2_%28%B0%F8%B5%BF%29%C1%F6%B1%B8%B4%DC%C0%A7%B0%E8%C8%B9%B0%E1%C1%A4%28%BA%AF%B0%E6%29.pdf&filepath=%2F2023%2F03%2F31%2F560000%2F562306"},
-            {"label": "지구단위계획 시행지침", "url": "https://www.eum.go.kr/web/ac/DownloadBig.jsp?isGosi=Y&filename=%BA%B0%C3%B71%BA%D9%C0%D3_%C1%F6%B1%B8%B4%DC%C0%A7%B0%E8%C8%B9%BD%C3%C7%E0%C1%F6%C4%A7_221213%28%B9%DE%C0%BA%C6%C4%C0%CF%20%B1%E2%C1%A4%BA%AF%B0%E6%29_%BF%EB%B7%AE%C1%D9%C0%D3.pdf&filepath=%2F2023%2F03%2F31%2F560000%2F562306"}
+            {
+              "label": "고시문",
+              "url": "https://www.eum.go.kr/web/ac/DownloadBig.jsp?isGosi=Y&filename=%C0%BD%BC%BA%20%B1%BA%B0%FC%B8%AE%B0%E8%C8%B9%28%C1%F6%B1%B8%B4%DC%C0%A7%B0%E8%C8%B9%20%BD%C3%C7%E0%C1%F6%C4%A7%29%20%B0%E1%C1%A4%28%BA%AF%B0%E6%29%20%B9%D7%20%C1%F6%C7%FC%B5%B5%B8%E9%20%B0%ED%BD%C3%B9%AE%20%5B%C3%E6%BA%CF%20%C7%F5%BD%C5%B5%B5%BD%C3%5D.pdf&filepath=%2F2023%2F03%2F31%2F560000%2F562306"
+            },
+            {
+              "label": "군관리계획 총괄도",
+              "url": "https://www.eum.go.kr/web/ac/DownloadBig.jsp?isGosi=Y&filename=01-2_%20%B1%BA%B0%FC%B8%AE%B0%E8%C8%B9%20%C3%D1%B0%FD%B5%B5.pdf&filepath=%2F2023%2F03%2F31%2F560000%2F562306"
+            },
+            {
+              "label": "지구단위계획 결정(변경)도",
+              "url": "https://www.eum.go.kr/web/ac/DownloadBig.jsp?isGosi=Y&filename=02-2_%28%B0%F8%B5%BF%29%C1%F6%B1%B8%B4%DC%C0%A7%B0%E8%C8%B9%B0%E1%C1%A4%28%BA%AF%B0%E6%29.pdf&filepath=%2F2023%2F03%2F31%2F560000%2F562306"
+            },
+            {
+              "label": "지구단위계획 시행지침",
+              "url": "https://www.eum.go.kr/web/ac/DownloadBig.jsp?isGosi=Y&filename=%BA%B0%C3%B71%BA%D9%C0%D3_%C1%F6%B1%B8%B4%DC%C0%A7%B0%E8%C8%B9%BD%C3%C7%E0%C1%F6%C4%A7_221213%28%B9%DE%C0%BA%C6%C4%C0%CF%20%B1%E2%C1%A4%BA%AF%B0%E6%29_%BF%EB%B7%AE%C1%D9%C0%D3.pdf&filepath=%2F2023%2F03%2F31%2F560000%2F562306"
+            }
           ],
           "needs_latest_notice_check": true
         },
@@ -40,8 +194,16 @@
           "publisher": "음성군",
           "notice_no": "음성군 고시 제2026-82호",
           "notice_date": "2026-03-20",
-          "match_any": ["음성금석지구", "금석지구", "금왕읍 금석리 480"],
-          "document_types": ["고시문", "결정조서", "지형도면"],
+          "match_any": [
+            "음성금석지구",
+            "금석지구",
+            "금왕읍 금석리 480"
+          ],
+          "document_types": [
+            "고시문",
+            "결정조서",
+            "지형도면"
+          ],
           "needs_latest_notice_check": false
         },
         {
@@ -50,8 +212,16 @@
           "publisher": "음성군",
           "notice_no": "음성군 고시 제2025-114호",
           "notice_date": "2025-05-16",
-          "match_any": ["소이대장지구", "소이 대장지구", "소이면 대장리 321-6"],
-          "document_types": ["고시문", "결정조서", "지형도면"],
+          "match_any": [
+            "소이대장지구",
+            "소이 대장지구",
+            "소이면 대장리 321-6"
+          ],
+          "document_types": [
+            "고시문",
+            "결정조서",
+            "지형도면"
+          ],
           "needs_latest_notice_check": true
         },
         {
@@ -60,8 +230,16 @@
           "publisher": "음성군",
           "notice_no": "음성군 고시 제2020-243호",
           "notice_date": "2020-10-08",
-          "match_any": ["생극신양지구", "생극 신양지구", "생극면 신양리 445-3"],
-          "document_types": ["고시문", "결정조서", "지형도면"],
+          "match_any": [
+            "생극신양지구",
+            "생극 신양지구",
+            "생극면 신양리 445-3"
+          ],
+          "document_types": [
+            "고시문",
+            "결정조서",
+            "지형도면"
+          ],
           "needs_latest_notice_check": true
         },
         {
@@ -70,8 +248,16 @@
           "publisher": "음성군",
           "notice_no": "음성군 고시 제2019-215호",
           "notice_date": "2019-09-20",
-          "match_any": ["대소산업단지", "대소 산업단지", "대소면 대풍리 259"],
-          "document_types": ["고시문", "결정조서", "지형도면"],
+          "match_any": [
+            "대소산업단지",
+            "대소 산업단지",
+            "대소면 대풍리 259"
+          ],
+          "document_types": [
+            "고시문",
+            "결정조서",
+            "지형도면"
+          ],
           "needs_latest_notice_check": true
         },
         {
@@ -80,8 +266,15 @@
           "publisher": "음성군",
           "notice_no": "음성군 고시 제2019-130호",
           "notice_date": "2019-06-21",
-          "match_any": ["KW산업 외 6개사", "삼성면 용성리 102-15"],
-          "document_types": ["고시문", "결정조서", "지형도면"],
+          "match_any": [
+            "KW산업 외 6개사",
+            "삼성면 용성리 102-15"
+          ],
+          "document_types": [
+            "고시문",
+            "결정조서",
+            "지형도면"
+          ],
           "needs_latest_notice_check": true
         },
         {
@@ -90,18 +283,220 @@
           "publisher": "음성군",
           "notice_no": "음성군 고시 제2019-95호",
           "notice_date": "2019-05-03",
-          "match_any": ["알포메", "금왕읍 오선리 477"],
-          "document_types": ["고시문", "결정조서", "지형도면"],
+          "match_any": [
+            "알포메",
+            "금왕읍 오선리 477"
+          ],
+          "document_types": [
+            "고시문",
+            "결정조서",
+            "지형도면"
+          ],
           "needs_latest_notice_check": true
         }
       ]
     },
-    "계양구": {"sigungu_code": "28245", "sources": [], "status": "collecting"},
+    "계양구": {
+      "sigungu_code": "28245",
+      "sources": [
+        {
+          "plan_name": "효성 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=633177",
+          "publisher": "계양구",
+          "notice_title": "[변경] 도시관리계획(효성 지구단위계획) 결정(변경) 및 지형도면 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "선주지 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=633158",
+          "publisher": "계양구",
+          "notice_title": "[변경] 도시계획시설(도로: 소2-2호선 외 2개 노선)사업 실시계획(변경) 인가 및 도시관리계획(선주지 지구단위계획) 지형도면 정정 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "선주지 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=632913",
+          "publisher": "계양구",
+          "notice_title": "[변경] 도시계획시설(도로: 소2-2호선 외 2개 노선)사업 실시계획(변경) 인가 및 도시관리계획(선주지 지구단위계획) 지형도면 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "도로 및 둑실 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=618771",
+          "publisher": "계양구",
+          "notice_title": "[변경] 도시관리계획(도로 및 둑실 지구단위계획) 결정(경미한 변경) 및 지형도면 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "선주지 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=617419",
+          "publisher": "계양구",
+          "notice_title": "[변경] 도시관리계획(선주지 지구단위계획) 결정(경미한 변경) 및 지형도면 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "풍산금속 이전적지 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=617255",
+          "publisher": "계양구",
+          "notice_title": "[변경] 도시관리계획(풍산금속 이전적지 지구단위계획) 결정(경미한 변경) 및 지형도면 정정고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "풍산금속 이전적지 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=615255",
+          "publisher": "계양구",
+          "notice_title": "[변경] 도시관리계획(풍산금속 이전적지 지구단위계획) 결정(경미한 변경) 및 지형도면 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "효성 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=610002",
+          "publisher": "계양구",
+          "notice_title": "[변경] 도시관리계획(효성 지구단위계획) 결정(변경) 및 지형도면 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "풍산금속 이전적지 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=606573",
+          "publisher": "계양구",
+          "notice_title": "[변경] 도시관리계획(풍산금속 이전적지 지구단위계획) 결정(경미한 변경) 및 지형도면 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "둑실 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=600914",
+          "publisher": "계양구",
+          "notice_title": "[변경] 도시관리계획(둑실 지구단위계획) 결정(변경) 및 지형도면 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "풍산금속 이전적지 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=596719",
+          "publisher": "계양구",
+          "notice_title": "[변경] 도시관리계획(풍산금속 이전적지 지구단위계획) 결정(경미한 변경) 및 지형도면 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "다남5 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=589171",
+          "publisher": "계양구",
+          "notice_title": "[변경] 도시관리계획(다남5 지구단위계획) 결정(변경) 및 지형도면 고시",
+          "discovered": true
+        }
+      ],
+      "status": "collecting"
+    },
     "영천시": {
       "sigungu_code": "47230",
       "status": "collecting",
       "sources": [
-        {"plan_name": "화룡지구", "source_page": "https://www.gbdc.co.kr/privatefiles/BOARD/eedc461f-48cb-4b84-ba0f-f684a9e34581/0030f3aa-1378-43aa-a2ca-dce3686a4317.pdf", "publisher": "영천시", "notice_no": "영천시 고시 제2025-89호", "notice_date": "2025", "match_any": ["화룡지구", "화룡동 417-1"], "document_types": ["고시문", "결정조서", "획지표", "건축물기준"], "needs_latest_notice_check": true}
+        {
+          "plan_name": "화룡지구",
+          "source_page": "https://www.gbdc.co.kr/privatefiles/BOARD/eedc461f-48cb-4b84-ba0f-f684a9e34581/0030f3aa-1378-43aa-a2ca-dce3686a4317.pdf",
+          "publisher": "영천시",
+          "notice_no": "영천시 고시 제2025-89호",
+          "notice_date": "2025",
+          "match_any": [
+            "화룡지구",
+            "화룡동 417-1"
+          ],
+          "document_types": [
+            "고시문",
+            "결정조서",
+            "획지표",
+            "건축물기준"
+          ],
+          "needs_latest_notice_check": true
+        }
+      ]
+    },
+    "예산군": {
+      "status": "collecting",
+      "sources": [
+        {
+          "plan_name": "대술 화산지구 산업유통형 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=619199",
+          "publisher": "예산군",
+          "notice_title": "[변경] 예산 군관리계획(대술 화산지구 산업유통형 지구단위계획) 결정(경미한변경) 및 지형도면 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "대술 화산지구 산업유통형 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=619232",
+          "publisher": "예산군",
+          "notice_title": "[변경] 예산 군관리계획(대술 화산지구 산업유통형 지구단위계획) 결정(변경) 및 지형도면 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "간양지구 산업유통형 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=599235",
+          "publisher": "예산군",
+          "notice_title": "[변경] 예산 군관리계획(간양지구 산업유통형 지구단위계획) 결정(변경) 및 지형도면 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "교촌 관광휴양형 지구단위계획구역, 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=587568",
+          "publisher": "예산군",
+          "notice_title": "[변경] 예산군관리계획(교촌 관광휴양형 지구단위계획구역, 지구단위계획)결정(변경) 및 지형도면 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "예산지구 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=573155",
+          "publisher": "예산군",
+          "notice_title": "[변경] 예산 군관리계획(예산지구 지구단위계획) 결정(변경) 및 지형도면 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "원천지구 산업유통형 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=562731",
+          "publisher": "예산군",
+          "notice_title": "[변경] 예산군관리계획(원천지구 산업유통형 지구단위계획) 결정(변경) 및 지형도면 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "오가 신장지구 산업유통형 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=562328",
+          "publisher": "예산군",
+          "notice_title": "[변경] 예산군관리계획(오가 신장지구 산업유통형 지구단위계획)결정(변경) 및 지형도면 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "교촌 관광휴양형 지구단위계획구역, 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=534756",
+          "publisher": "예산군",
+          "notice_title": "[신규] 예산군관리계획(교촌 관광휴양형 지구단위계획구역, 지구단위계획)결정 및 지형도면 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "내포보부상촌 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=533870",
+          "publisher": "예산군",
+          "notice_title": "[변경] 예산 군관리계획(내포보부상촌 지구단위계획) 결정(변경) 및 지형도면 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=501677",
+          "publisher": "예산군",
+          "notice_title": "[변경] 충청남도(내포) 신도시 개발사업에 따른 개발계획(18차) 및 실시계획(16차) 변경 승인, 도시관리계획(지구단위계획) 지형도면 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "오가 신장지구 산업유통형 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=412140",
+          "publisher": "예산군",
+          "notice_title": "[변경] 예산군관리계획(오가 신장지구 산업유통형 지구단위계획) 결정(변경) 및 지형도면 고시",
+          "discovered": true
+        },
+        {
+          "plan_name": "오가 신장지구 산업유통형 지구단위계획",
+          "source_page": "https://www.eum.go.kr/web/gs/gv/gvGosiDet.jsp?seq=51017",
+          "publisher": "예산군",
+          "notice_title": "[변경] 예산군관리계획(오가 신장지구 산업유통형 지구단위계획) 결정(변경) 및 지형도면 고시",
+          "discovered": true
+        }
       ]
     }
   }
