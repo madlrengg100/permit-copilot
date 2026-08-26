@@ -743,11 +743,13 @@ def format_diagnosis_answer(d: dict) -> str:
     # 관할 조례 근거 조문 (벡터 검색으로 찾은 실제 조문 — 판정 근거 추적용)
     evidence = d.get("ordinance_evidence") or []
     district_plan_evidence = d.get("district_plan_evidence") or []
-    if evidence or district_plan_evidence:
+    district_plan_passages = d.get("district_plan_passages") or []
+    if evidence or district_plan_evidence or district_plan_passages:
         out.append("")
-        if evidence and district_plan_evidence:
+        has_plan = bool(district_plan_evidence or district_plan_passages)
+        if evidence and has_plan:
             local_evidence_title = "지자체 조례·지구단위계획 근거자료"
-        elif district_plan_evidence:
+        elif has_plan:
             local_evidence_title = "지구단위계획 근거자료"
         else:
             local_evidence_title = "지자체 조례 근거자료"
@@ -772,6 +774,13 @@ def format_diagnosis_answer(d: dict) -> str:
             for document in ev.get("documents") or []:
                 if document.get("url"):
                     out.append(f"  - [{document.get('label', '첨부자료')}]({document['url']})")
+        for passage in district_plan_passages:
+            plan = passage.get("plan_name") or passage.get("ordinance") or "지구단위계획"
+            article = passage.get("article") or ""
+            url = passage.get("url")
+            label = f"{plan} {article}".strip()
+            line = f"- [{label}]({url})" if url else f"- {label}"
+            out.append(line + " (원문 발췌 — 획지 확정 전 참고)")
 
     # 유의사항
     out.append("")
@@ -1793,6 +1802,20 @@ async def run_prediagnosis(
     # 토지이용계획에서 지구단위계획구역이 실제 확인된 필지는 조례 링크만 보여주지
     # 않고, 수집한 관할 고시문·결정조서·시행지침 원문도 함께 제공한다. 획지/PNU
     # 검증 전 자료는 링크로만 노출하며 계산값을 덮어쓰지는 않는다.
+    # 지구단위계획 원문 청크. 링크 목록(district_plan.evidence_for)과 별개로,
+    # 실제 시행지침·결정조서 조문을 근거로 인용한다. 획지·PNU 매핑 전이라
+    # 수치를 만들지 않고 근거로만 쓴다.
+    if jurisdiction and ordinance_index.available():
+        use = req.get("building_use") or ""
+        state["district_plan_passages"] = ordinance_index.search(
+            query=f"{zone} {use} 건폐율 용적률 최고층수 획지 건축한계선 용도",
+            jurisdiction=jurisdiction,
+            top_k=3,
+            scope="district_plan",
+        )
+    else:
+        state["district_plan_passages"] = []
+
     state["district_plan_evidence"] = district_plan.evidence_for(
         jurisdiction,
         state.get("land_use", {}).get("districts", []),

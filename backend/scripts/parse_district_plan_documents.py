@@ -14,6 +14,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 import tempfile
 import zipfile
 from html.parser import HTMLParser
@@ -44,7 +45,17 @@ def _hwpx_text(path: Path) -> str:
 
 
 def _hwp_text(path: Path) -> str:
-    proc = subprocess.run([str(ROOT / ".venv/bin/hwp5txt"), str(path)], capture_output=True, text=True, check=True)
+    try:
+        proc = subprocess.run(
+            [str(ROOT / ".venv/bin/hwp5txt"), str(path)],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=_HWP_TIMEOUT_SEC,
+        )
+    except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as exc:
+        print(f"   본문 추출 실패({type(exc).__name__}): {path.name}", flush=True)
+        return ""
     return proc.stdout
 
 
@@ -84,18 +95,33 @@ class _TableReader(HTMLParser):
             self.table = None
 
 
+# hwp5html 은 문서 전체를 HTML 로 변환하므로 큰 시행지침에서 수 분을 넘긴다.
+# 표는 보조 자료이므로 시간을 넘기면 포기하고 본문 텍스트만 살린다. 한 문서가
+# 전체 배치를 막게 두지 않는다.
+_HWP_TIMEOUT_SEC = 180
+
+
 def _hwp_tables(path: Path) -> list[list[list[str]]]:
     with tempfile.TemporaryDirectory() as tmp:
         html = Path(tmp) / "document.html"
-        subprocess.run(
-            [str(ROOT / ".venv/bin/hwp5html"), "--output", str(html), "--html", str(path)],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
+        try:
+            subprocess.run(
+                [str(ROOT / ".venv/bin/hwp5html"), "--output", str(html), "--html", str(path)],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=_HWP_TIMEOUT_SEC,
+            )
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as exc:
+            print(f"   표 추출 생략({type(exc).__name__}): {path.name}", flush=True)
+            return []
         reader = _TableReader()
         reader.feed(html.read_text(encoding="utf-8", errors="replace"))
         return reader.tables
+
+
+_OCR_TIMEOUT_SEC = 300
+_OCR_TRIES = 2
 
 
 def _vision_ocr(png: bytes) -> dict:
@@ -110,11 +136,28 @@ def _vision_ocr(png: bytes) -> dict:
         ]}],
         "max_tokens": 5000,
     }
-    with httpx.Client(timeout=90) as client:
-        response = client.post(base + "/chat/completions", headers={"Authorization": f"Bearer {OPENAI_API_KEY}"}, json=payload)
-        response.raise_for_status()
-        data = response.json()
-    return {"text": data["choices"][0]["message"].get("content", ""), "status": "OCR_COMPLETE"}
+    # 지구단위계획 도면은 한 장에 글자가 많아 응답이 느리다. 90초로는 대부분
+    # 끊긴다. 그리고 한 페이지 실패가 문서 전체를 버리게 두지 않는다 —
+    # 나머지 페이지의 판독 결과는 그대로 근거가 된다.
+    last: Exception | None = None
+    for attempt in range(_OCR_TRIES):
+        try:
+            with httpx.Client(timeout=_OCR_TIMEOUT_SEC) as client:
+                response = client.post(
+                    base + "/chat/completions",
+                    headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
+                    json=payload,
+                )
+                response.raise_for_status()
+                data = response.json()
+            return {
+                "text": data["choices"][0]["message"].get("content", ""),
+                "status": "OCR_COMPLETE",
+            }
+        except Exception as exc:  # noqa: BLE001
+            last = exc
+            time.sleep(2.0 * (attempt + 1))
+    return {"text": "", "status": f"OCR_FAILED: {type(last).__name__}"}
 
 
 def _lot_mentions(text: str) -> list[dict]:
@@ -171,7 +214,11 @@ def main() -> None:
     paths = args.paths or [p for p in SOURCE_ROOT.rglob("*") if p.suffix.lower() in {".pdf", ".hwp", ".hwpx"}]
     for path in paths:
         path = path.resolve()
-        result = parse_file(path, args.ocr)
+        try:
+            result = parse_file(path, args.ocr)
+        except Exception as exc:  # noqa: BLE001
+            print(f"실패 {path.name}: {type(exc).__name__} {exc}", flush=True)
+            continue
         try:
             rel = path.relative_to(SOURCE_ROOT)
         except ValueError:

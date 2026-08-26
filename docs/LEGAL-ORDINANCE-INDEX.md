@@ -291,6 +291,60 @@ LLM이 임의로 조문을 생성하게 하지 않는다.
 자격은 요건이 아니다. `building_use_rules.json`의 `단독주택`에 농림지역이
 빠져 있어 불가로 떨어졌고, 농업인 주택만 분기로 되살리고 있었다.
 
+## 지구단위계획 원문 수집·정제·청킹 (2026-08-26 신설)
+
+3단계다. 각 단계 산출은 다음 단계의 입력이다.
+
+```
+collect_district_plans.py        고시 페이지 -> data/source/district_plans/<시군구>/<계획명>/
+parse_district_plan_documents.py 원문 -> data/processed/district_plans/**/*.json (페이지·표 단위)
+build_district_plan_chunks.py    정제본 -> app/data/district_plan_chunks.json
+build_ordinance_index.py         조례·법령과 같은 TF-IDF 색인에 합친다
+```
+
+`data/source/`·`data/processed/` 는 `.gitignore` 대상이다(원본 156MB). 청크
+JSON만 저장소에 들어가며, 원본은 위 명령으로 재생성한다.
+
+### 수집에서 걸리는 것
+
+| 원본 | 방식 | 함정 |
+|---|---|---|
+| 토지이음(eum.go.kr) | 폼 POST `FileDownload.do` | **`gosi=Y` 히든 필드와 euc-kr 인코딩이 둘 다 맞아야 한다.** 하나라도 틀리면 HTTP 200 에 "첨부파일이 없습니다" 스크립트가 와서 빈 고시와 구분되지 않는다 |
+| 아산시 CMS | `download.php?...&uid=` | 링크에 확장자가 없다. 확장자로만 긁으면 본문과 무관한 사이드바 문서를 가져온다. 파일명은 앞의 `preview.php?file_nm=` 에 있다 |
+| 지자체 CMS 일반 | 직접 GET | 비브라우저 User-Agent 에 응답 없이 연결을 끊는 곳이 있다. 브라우저 UA + Referer + 재시도 |
+
+받은 바이트는 매직 넘버로 검사한다. 실패해도 200 에 HTML 경고문을 주는 사이트가
+있어 크기·헤더만으로는 성공을 판단할 수 없다.
+
+### 정제에서 걸리는 것
+
+- **HWP 는 `pyhwp` 가 필요하다**(`hwp5txt`·`hwp5html`). `six` 도 함께 있어야
+  임포트된다. 둘 다 `requirements.txt` 에 있다.
+- `hwp5html` 은 문서 전체를 HTML 로 변환하므로 큰 시행지침에서 3분을 넘긴다.
+  표 추출은 180초 타임아웃 후 포기하고 본문만 살린다. 한 문서가 배치를 막지 않게
+  파일 단위 예외도 잡는다.
+- **표를 반드시 함께 청킹한다.** 획지별 건폐율·용적률·최고층수는 대부분 표에만
+  있고 `hwp5txt` 본문에는 `<표>` 표시만 남는다. 아산 탕정 결정조서는 본문 864자,
+  표 68,545자다. 표를 빼면 핵심 수치가 통째로 색인에서 빠진다.
+- 스캔 PDF 는 `--ocr` 로 비전 모델을 태운다. 도면 한 장에 글자가 많아 응답이
+  느리므로 타임아웃 300초·재시도 2회이며, 실패한 페이지는 `OCR_FAILED` 로 남기고
+  나머지 페이지 결과는 그대로 쓴다.
+
+### 현재 수집 상태
+
+11개 지구 중 10곳, **527청크**(본문 423 · 표 104). 5개 지자체가 등록돼 있고
+경산시·계양구는 `sources` 가 비어 있다. 예산군은 목록에 없다.
+
+### scope 로 격리한다
+
+`ordinance_index.search(scope="district_plan")` 이 지구단위계획만 돌려준다.
+`scope="ordinance"` 는 지구단위계획을 제외한다 — 조례 근거 섹션에 다른 지구의
+시행지침이 섞이면 안 된다.
+
+`district_plan.evidence_for()` 의 링크 목록과 별개다. 링크는 지구명·대표 지번이
+필지와 일치할 때만 붙고, 원문 발췌는 관할 단위로 검색한다. **둘 다 획지·PNU
+매핑 전이므로 수치 판정 근거가 아니다.**
+
 ## 근거 카탈로그의 두 축 (legal_rule_catalog.json)
 
 `legal_rule_catalog.json`은 법령 목록이 아니라 **규칙 ↔ 법령 연결표**다. 생성
@@ -362,7 +416,12 @@ OC=<키> ./.venv/bin/python scripts/collect_setbacks.py
 OC=<키> ./.venv/bin/python scripts/collect_setback_tables.py
 ./.venv/bin/python scripts/parse_setbacks_grid.py
 
-# 조례 근거 색인 재생성
+# 지구단위계획 수집·정제·청킹 (원본은 .gitignore 대상)
+./.venv/bin/python scripts/collect_district_plans.py
+./.venv/bin/python scripts/parse_district_plan_documents.py          # 스캔본은 --ocr
+./.venv/bin/python scripts/build_district_plan_chunks.py
+
+# 조례·법령·지구단위계획 통합 색인 재생성
 ./.venv/bin/python scripts/build_ordinance_index.py
 
 # 회귀검사

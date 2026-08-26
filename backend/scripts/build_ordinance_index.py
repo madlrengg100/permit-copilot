@@ -33,6 +33,7 @@ DATA = BASE.parent / "app" / "data"
 AUTO = DATA / "ordinances_auto.json"
 SETBACKS = DATA / "setbacks_raw.json"
 LEGAL_CORPUS = DATA / "legal_corpus_chunks.json"
+DISTRICT_PLANS = DATA / "district_plan_chunks.json"
 
 _KEYWORDS = re.compile(
     r"건폐율|용적률|용도지역|높이|이격|공지|층수|용도|별표|건축선|일조|경관|지구단위|"
@@ -146,6 +147,27 @@ def build_chunks() -> list[dict]:
                 "effective_date": item.get("effective_date"),
                 "url": item.get("url"),
                 "kind": item.get("kind", "법령-조문"),
+            })
+
+    # 지구단위계획 청크(있으면). 조례·법령과 같은 색인에 넣어 한 번의 검색으로
+    # 함께 회수한다. 획지·PNU 매핑 전이라 근거 검색 전용이며 수치를 만들지 않는다.
+    if DISTRICT_PLANS.exists():
+        plans = json.loads(DISTRICT_PLANS.read_text(encoding="utf-8"))
+        for item in plans.get("chunks", []):
+            text = item.get("text", "")
+            if not text:
+                continue
+            chunks.append({
+                "chunk_id": item.get("chunk_id"),
+                "jurisdiction": item.get("jurisdiction"),
+                "ordinance": item.get("ordinance"),
+                "plan_name": item.get("plan_name"),
+                "article": item.get("article"),
+                "title": item.get("title"),
+                "text": text,
+                "effective_date": item.get("effective_date"),
+                "url": item.get("url"),
+                "kind": item.get("kind", "지구단위계획"),
             })
     return chunks
 

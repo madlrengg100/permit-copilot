@@ -116,6 +116,8 @@ def search(
 ) -> list[dict]:
     """질의와 가장 관련 있는 조례 조문/별표 청크를 근거로 돌려준다.
 
+    scope         "all" | "law"(국가 법령) | "ordinance"(지자체 조례)
+                  | "district_plan"(지구단위계획 원문).
     jurisdiction  지정 시 그 관할 조례만(관할 혼동 방지).
     effective_on  'YYYYMMDD' 지정 시 그 시점에 시행 중이던 조례만(시점 혼동 방지).
     반환: [{score, jurisdiction, ordinance, article, title, snippet, effective_date, url}]
@@ -132,10 +134,16 @@ def search(
     indptr, indices, data = ix["indptr"], ix["indices"], ix["data"]
     scored: list[tuple[float, int]] = []
     for i, ch in enumerate(chunks):
-        is_law = str(ch.get("kind") or "").startswith("법령-")
+        kind = str(ch.get("kind") or "")
+        is_law = kind.startswith("법령-")
+        is_plan = kind == "지구단위계획"
+        # 지구단위계획은 조례와 별개 원본이다. '조례 근거자료' 섹션에 다른 지구의
+        # 시행지침이 섞이지 않도록 scope 를 나눈다.
         if scope == "law" and not is_law:
             continue
-        if scope == "ordinance" and is_law:
+        if scope == "ordinance" and (is_law or is_plan):
+            continue
+        if scope == "district_plan" and not is_plan:
             continue
         # 국가 법령은 모든 관할에 공통 적용한다. 관할 조례만 선택 지자체로 격리한다.
         if (
