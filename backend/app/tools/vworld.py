@@ -11,6 +11,7 @@ VWORLD_KEY 가 없으면 목 데이터를 돌려주므로 키 없이도 파이�
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import re
 
@@ -74,6 +75,18 @@ async def _get(path: str, params: dict) -> dict:
         r = await client.get(f"{VWORLD_BASE}/{path}", params=params)
         r.raise_for_status()
         data = r.json()
+
+    # VWorld가 간헐적으로 JSON 객체를 JSON 문자열로 한 번 더 감싸 반환한다.
+    # 그대로 data.get(...)을 호출하면 사용자 화면에
+    # "'str' object has no attribute 'get'"가 노출된다. 공통 진입점에서
+    # 한 번 풀고, 그래도 객체가 아니면 정상적인 외부조회 오류로 처리한다.
+    if isinstance(data, str):
+        try:
+            data = json.loads(data)
+        except (TypeError, json.JSONDecodeError) as exc:
+            raise VWorldError("VWorld가 올바르지 않은 JSON 응답을 반환했습니다.") from exc
+    if not isinstance(data, dict):
+        raise VWorldError("VWorld 응답 형식이 올바르지 않습니다.")
 
     # VWorld 는 오류도 HTTP 200 으로 준다. status 를 직접 확인해야 한다.
     resp = data.get("response", {})
