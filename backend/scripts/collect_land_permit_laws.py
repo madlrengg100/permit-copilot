@@ -142,14 +142,38 @@ def fetch_body(oc: str, law: dict) -> str:
     return xml
 
 
+# 조문 본문은 <조문내용> 하나에 다 들어 있지 않다. 항·호가 있는 조문에서
+# <조문내용>은 "제32조(용도구역에서의 행위 제한)" 같은 제목 줄만 담고, 실제
+# 규범은 <항내용>·<호내용>·<목내용>에 나뉘어 들어간다. 제목만 뽑으면 예외
+# 열거(농지법 제32조제1항 각 호 등)가 통째로 사라진다.
+_BODY_TAGS = re.compile(
+    r"<(조문내용|항내용|호내용|목내용)>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?</\1>",
+    re.S,
+)
+
+
+def _article_text(unit: str) -> str:
+    """조문단위에서 조문·항·호·목 본문을 원문 순서대로 이어 붙인다."""
+    parts = []
+    for match in _BODY_TAGS.finditer(unit):
+        line = _clean(match.group(2))
+        if line:
+            parts.append(line)
+    return "\n".join(parts)
+
+
 def chunks(law: dict, xml: str) -> list[dict]:
     result = []
     source_url = f"https://www.law.go.kr/법령/{urllib.parse.quote(law['title'])}"
     units = re.findall(r"<조문단위(?:\s[^>]*)?>.*?</조문단위>", xml, re.S)
     for unit in units:
+        # 편·장·절·관 제목은 <조문여부>가 '전문'이며 조문번호를 뒤 조문과 공유한다.
+        # 그대로 두면 "제2절 농지의 전용"이 제34조 청크로 섞인다.
+        if _tag(unit, "조문여부") != "조문":
+            continue
         article = _tag(unit, "조문번호")
         title = _tag(unit, "조문제목")
-        text = _tag(unit, "조문내용") or _clean(unit)
+        text = _article_text(unit) or _clean(unit)
         if not text or not KEYWORDS.search(f"{title} {text}"):
             continue
         identifier = hashlib.sha256(
