@@ -1,8 +1,11 @@
-# Claude 변경 기록 (Codex 협업용)
+# 변경 기록 (Claude · Codex 공용)
 
-> Claude(Opus)가 수정한 지점을 남긴다. **Codex는 이 목록을 먼저 보고 같은 로직을
-> 중복 구현하지 말 것.** 규제 수치는 데이터파일에서만(하드코딩 금지),
+> Claude 와 Codex 가 수정한 지점을 함께 남긴다. **상대의 항목을 먼저 보고 같은
+> 로직을 중복 구현하지 말 것.** 규제 수치는 데이터파일에서만(하드코딩 금지),
 > 가능 모델 목록은 `orchestrator._model_options_for_diagnosis()`만 — CLAUDE.md 준수.
+>
+> 커밋 표식과 작업 절차는 CLAUDE.md「Claude·Codex 공동 작업 규약」을 따른다.
+> Codex 항목은 제목에 `codex:` 를 붙인다.
 
 ## 2026-08-27 — Codex 중단 작업 회수 및 임상도 전체 무결성 검사 완료
 
