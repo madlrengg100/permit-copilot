@@ -6,8 +6,9 @@
     "principle": "국토계획법 용도지역 판정과 별개로, 개별법이 용도구역에 건 행위제한을 조문 단위로 판정한다. 이 파일은 허용 여부와 근거 조문만 만들고 건폐율·용적률·이격 수치는 만들지 않는다.",
     "source": "농지법 제32조·시행령 제29조·제30조, 산지관리법 제12조 (legal_corpus_chunks.json 원문 대조), 국토의 계획 및 이용에 관한 법률 시행령 제71조·별표 21(농림지역)·별표 22(자연환경보전지역)",
     "caveat": "허용 열거에 해당해도 대부분 대통령령·부령의 면적·자격 요건을 함께 충족해야 하므로 판정은 conditional 이 상한이다. allowed 로 올리지 않는다.",
-    "axes": "용도지역 축(국토계획법 시행령 별표)과 개별법 용도구역 축(농지법·산지관리법)을 같은 구조로 담는다. 둘 다 걸리면 누적 적용하며 한 곳이라도 금지면 금지다.",
-    "match_policy": "allowance.match='facility' 이면 시설명이 명시돼야 예외가 성립한다. 농지법 제32조와 산지관리법 제12조는 건축법 용도가 아니라 시설의 성격으로 허용행위를 열거하므로, '창고시설' 같은 건축법 용도만으로 예외에 해당한다고 볼 수 없다. 국토계획법 시행령 별표 21·22 는 건축법 용도로 열거하므로 용도 매칭이 성립한다."
+    "axes": "용도지역 축(국토계획법 시행령 별표)과 개별법 용도구역 축(농지법·산지관리법)을 같은 구조로 담는다. 기본은 누적 적용이며 한 곳이라도 금지면 금지지만, supersedes 가 있으면 그 구역이 상위 용도지역 제한을 대체한다(국토계획법 제76조제5항).",
+    "match_policy": "allowance.match='facility' 이면 시설명이 명시돼야 예외가 성립한다. 농지법 제32조와 산지관리법 제12조는 건축법 용도가 아니라 시설의 성격으로 허용행위를 열거하므로, '창고시설' 같은 건축법 용도만으로 예외에 해당한다고 볼 수 없다. 국토계획법 시행령 별표 21·22 는 건축법 용도로 열거하므로 용도 매칭이 성립한다.",
+    "supersede_rule": "국토계획법 제76조제5항제3호: 농림지역 중 농업진흥지역·보전산지·초지인 경우에는 제1항부터 제4항까지의 규정에도 불구하고 각각 농지법·산지관리법·초지법이 정하는 바에 따른다. 별표 21 은 제1항 위임이므로 이 경우 적용되지 않는다. 누적이 아니라 대체다."
   },
   "districts": {
     "농업진흥구역": {
@@ -18,6 +19,7 @@
       "law": "농지법",
       "article": "제32조제1항",
       "legal_ref_ids": [
+        "law.national_land_planning.article_76",
         "law.farmland.article_32",
         "law.farmland.decree_29"
       ],
@@ -277,6 +279,9 @@
           ],
           "match": "facility"
         }
+      ],
+      "supersedes": [
+        "농림지역"
       ]
     },
     "농업보호구역": {
@@ -287,6 +292,7 @@
       "law": "농지법",
       "article": "제32조제2항",
       "legal_ref_ids": [
+        "law.national_land_planning.article_76",
         "law.farmland.article_32",
         "law.farmland.decree_30"
       ],
@@ -353,6 +359,9 @@
             "골프연습장은 제외"
           ]
         }
+      ],
+      "supersedes": [
+        "농림지역"
       ]
     },
     "임업용산지": {
@@ -363,6 +372,7 @@
       "law": "산지관리법",
       "article": "제12조제1항",
       "legal_ref_ids": [
+        "law.national_land_planning.article_76",
         "law.mountainous_district.article_12"
       ],
       "principle": "prohibited",
@@ -546,6 +556,9 @@
           ],
           "match": "facility"
         }
+      ],
+      "supersedes": [
+        "농림지역"
       ]
     },
     "공익용산지": {
@@ -556,6 +569,7 @@
       "law": "산지관리법",
       "article": "제12조제2항",
       "legal_ref_ids": [
+        "law.national_land_planning.article_76",
         "law.mountainous_district.article_12"
       ],
       "principle": "prohibited",
@@ -657,6 +671,9 @@
           ],
           "match": "facility"
         }
+      ],
+      "supersedes": [
+        "농림지역"
       ]
     },
     "농림지역": {

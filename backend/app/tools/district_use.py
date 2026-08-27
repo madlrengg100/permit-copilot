@@ -142,6 +142,41 @@ def narrower_paths(districts: list[str], building_use: str) -> list[dict]:
     return out
 
 
+def resolve_governing(districts: list[str]) -> dict:
+    """1단계 — 어느 법이 적용되는지 먼저 정한다.
+
+    용도지역과 개별법 용도구역이 겹칠 때 무조건 누적이 아니다. 국토계획법
+    제76조제5항제3호는 "농림지역 중 농업진흥지역, 보전산지 또는 초지인 경우에는
+    **제1항부터 제4항까지의 규정에도 불구하고** 각각 농지법·산지관리법·초지법에서
+    정하는 바에 따른다" 고 정한다. 별표 21 은 제1항 위임이므로 이때는 적용되지
+    않는다 — 누적이 아니라 **대체**다.
+
+    그래서 농림지역 + 농업진흥구역은 별표 21 의 "단독주택 1천㎡ 미만" 이 아니라
+    농지법 제32조의 "농업인 주택" 이 판정 기준이 된다.
+
+    반환:
+      applied     실제로 적용할 구역
+      superseded  대체돼 적용하지 않는 구역
+      basis       대체 근거 조문(대체가 없으면 빈 목록)
+    """
+    known = [d for d in districts if d in _ruleset()["districts"]]
+    superseded: list[str] = []
+    basis: list[str] = []
+    for district in known:
+        spec = _ruleset()["districts"][district]
+        for target in spec.get("supersedes") or []:
+            if target in known and target not in superseded:
+                superseded.append(target)
+                cite = "국토의 계획 및 이용에 관한 법률 제76조제5항제3호"
+                if cite not in basis:
+                    basis.append(cite)
+    return {
+        "applied": [d for d in known if d not in superseded],
+        "superseded": superseded,
+        "basis": basis,
+    }
+
+
 def evaluate(
     districts: list[str],
     facility: str = "",
@@ -154,7 +189,8 @@ def evaluate(
       not_allowed  — 원칙 금지에 걸리고 해당하는 예외가 없다.
       unknown      — 아는 용도구역이 없다(이 축이 판정을 만들지 않는다).
     """
-    known = [d for d in districts if d in _ruleset()["districts"]]
+    governing = resolve_governing(districts)
+    known = governing["applied"]
     if not known:
         return {
             "verdict": "unknown",
@@ -163,6 +199,7 @@ def evaluate(
             "legal_references": [],
             "conditions": [],
             "reason": "",
+            "governing": governing,
         }
 
     matched: list[dict] = []
@@ -203,8 +240,10 @@ def evaluate(
             "legal_references": _references(blocking),
             "conditions": [],
             "narrower_paths": paths,
+            "governing": governing,
             "reason": (
-                f"{names}은 원칙적으로 해당 구역 목적 외의 토지이용행위를 금지하며, "
+                _superseded_note(governing)
+                + f"{names}은 원칙적으로 해당 구역 목적 외의 토지이용행위를 금지하며, "
                 f"{target}은 허용행위 열거에 해당하지 않습니다." + suffix
             ),
         }
@@ -226,11 +265,24 @@ def evaluate(
         "matched": matched,
         "legal_references": _references([hit["checked_district"] for hit in matched]),
         "conditions": conditions,
+        "governing": governing,
         "reason": (
-            f"{' · '.join(known)}의 행위제한에서 {names}에 해당해 "
+            _superseded_note(governing)
+            + f"{' · '.join(known)}의 행위제한에서 {names}에 해당해 "
             f"{clauses}로 허용될 수 있습니다. 아래 요건 충족 여부를 확인해야 합니다."
         ),
     }
+
+
+def _superseded_note(governing: dict) -> str:
+    """어느 법으로 판정했는지 먼저 밝힌다. 판정만 보이면 근거를 알 수 없다."""
+    if not governing.get("superseded"):
+        return ""
+    return (
+        f"{' · '.join(governing['superseded'])}이지만 "
+        f"{' · '.join(governing['applied'])}이므로 "
+        f"{' · '.join(governing['basis'])}에 따라 개별법이 적용됩니다. "
+    )
 
 
 def use_overview(districts: list[str], building_uses: list[str]) -> dict | None:
@@ -246,7 +298,7 @@ def use_overview(districts: list[str], building_uses: list[str]) -> dict | None:
 
     아는 구역이 하나도 없으면 None — 호출부가 기존 판정표를 쓴다.
     """
-    known = [d for d in districts if d in _ruleset()["districts"]]
+    known = resolve_governing(districts)["applied"]
     if not known:
         return None
     result: dict[str, list[str]] = {

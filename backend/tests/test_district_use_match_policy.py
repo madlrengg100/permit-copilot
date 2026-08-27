@@ -71,3 +71,54 @@ class DistrictUseMatchPolicyTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SupersessionTest(unittest.TestCase):
+    """국토계획법 제76조제5항제3호 — 농림지역 중 농업진흥지역·보전산지는
+    제1항부터 제4항까지의 규정에도 불구하고 농지법·산지관리법에 따른다.
+
+    별표 21 은 제1항 위임이므로 이때 적용되지 않는다. 누적이 아니라 대체다.
+    """
+
+    def test_promotion_district_supersedes_farmforest_zone(self):
+        governing = district_use.resolve_governing(["농림지역", "농업진흥구역"])
+
+        self.assertEqual(governing["applied"], ["농업진흥구역"])
+        self.assertEqual(governing["superseded"], ["농림지역"])
+        self.assertIn("제76조제5항제3호", governing["basis"][0])
+
+    def test_farmforest_zone_alone_is_not_superseded(self):
+        governing = district_use.resolve_governing(["농림지역"])
+
+        self.assertEqual(governing["applied"], ["농림지역"])
+        self.assertEqual(governing["superseded"], [])
+
+    def test_farmer_house_is_possible_under_farmland_act(self):
+        """농업진흥구역에서 가능한 것은 별표 21 의 단독주택이 아니라
+        농지법 제32조제1항제3호의 농업인 주택이다."""
+        result = district_use.evaluate(
+            ["농림지역", "농업진흥구역"], "농업인 주택", "단독주택"
+        )
+
+        self.assertEqual(result["verdict"], "conditional")
+        self.assertEqual(result["matched"][0]["checked_district"], "농업진흥구역")
+        self.assertIn("제32조제1항제3호", result["matched"][0]["clause"])
+        # 어느 법으로 판정했는지 이유에 먼저 밝힌다.
+        self.assertIn("제76조제5항제3호", result["reason"])
+
+    def test_plain_house_loses_the_table21_allowance(self):
+        """농림지역 단독 판정에서는 별표 21 로 가능하지만,
+        농업진흥구역이 겹치면 그 근거가 사라진다."""
+        alone = district_use.evaluate(["농림지역"], "", "단독주택")
+        with_district = district_use.evaluate(
+            ["농림지역", "농업진흥구역"], "", "단독주택"
+        )
+
+        self.assertEqual(alone["verdict"], "conditional")
+        self.assertEqual(with_district["verdict"], "not_allowed")
+
+    def test_forest_district_supersedes_too(self):
+        governing = district_use.resolve_governing(["농림지역", "임업용산지"])
+
+        self.assertEqual(governing["applied"], ["임업용산지"])
+        self.assertEqual(governing["superseded"], ["농림지역"])

@@ -117,6 +117,13 @@
       "title": "자연환경보전지역 안에서 건축할 수 있는 건축물",
       "jurisdiction": "전국",
       "source_url": "https://www.law.go.kr/법령/국토의계획및이용에관한법률시행령"
+    },
+    "law.national_land_planning.article_76": {
+      "law": "국토의 계획 및 이용에 관한 법률",
+      "article": "제76조제5항",
+      "title": "용도지역에서의 건축 제한 — 농업진흥지역·보전산지는 개별법에 따름",
+      "jurisdiction": "전국",
+      "source_url": "https://www.law.go.kr/법령/국토의계획및이용에관한법률"
     }
   }
 }
