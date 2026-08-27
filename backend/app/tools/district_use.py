@@ -97,15 +97,49 @@ def _allowances(district: str, seen: set[str] | None = None) -> list[dict]:
 
 
 def _matches(allowance: dict, facility: str, building_use: str) -> str | None:
-    """시설명이 맞으면 'facility', 건축물 용도만 맞으면 'building_use'."""
+    """시설명이 맞으면 'facility', 건축물 용도만 맞으면 'building_use'.
+
+    `match: "facility"` 인 허용행위는 건축법 용도만으로는 매칭하지 않는다.
+    농지법 제32조와 산지관리법 제12조는 "농업인이 자기가 생산한 농산물을
+    건조·보관하기 위하여 설치하는 시설"처럼 **시설의 성격**으로 열거한다.
+    조문에 '창고시설'이라는 건축법 용도는 나오지 않으므로, 일반 창고시설
+    질문을 농업용 시설로 가정해 예외를 열어 주면 안 된다.
+
+    국토계획법 시행령 별표 21·22 는 건축법 용도로 열거하므로 용도 매칭이
+    성립한다(예: 별표 21 제1호라목 "제18호가목의 창고").
+    """
     compact = _compact(facility)
     if compact:
         for keyword in allowance.get("facilities") or []:
             if _compact(keyword) and _compact(keyword) in compact:
                 return "facility"
+    if allowance.get("match") == "facility":
+        return None
     if building_use and building_use in (allowance.get("building_uses") or []):
         return "building_use"
     return None
+
+
+def narrower_paths(districts: list[str], building_use: str) -> list[dict]:
+    """그 용도와 관련은 있으나 시설명이 있어야 열리는 허용행위.
+
+    "일반 창고시설은 불가" 로 끝내지 않고 "농업인이 자기 생산 농산물을
+    건조·보관하는 농업용 시설이면 제32조제1항제3호로 가능" 이라는 경로를
+    함께 안내하기 위한 것이다. 이것 자체가 허용 판정은 아니다.
+    """
+    if not building_use:
+        return []
+    out: list[dict] = []
+    for district in districts:
+        if district not in _ruleset()["districts"]:
+            continue
+        for allowance in _allowances(district):
+            if allowance.get("match") != "facility":
+                continue
+            if building_use not in (allowance.get("building_uses") or []):
+                continue
+            out.append({**allowance, "checked_district": district})
+    return out
 
 
 def evaluate(
@@ -150,15 +184,28 @@ def evaluate(
     if blocking:
         names = " · ".join(blocking)
         target = facility or building_use or "요청 용도"
+        # 같은 용도라도 시설의 성격이 맞으면 열리는 경로가 있으면 함께 알린다.
+        # "창고시설 불가" 로 끝내면 농업용 건조·보관 시설 경로를 놓치게 된다.
+        paths = narrower_paths(blocking, building_use)
+        suffix = ""
+        if paths:
+            cites = " · ".join(
+                f"{hit['name']}({hit['clause']})" for hit in paths[:3]
+            )
+            suffix = (
+                f" 다만 {cites}에 해당하면 허용될 수 있으므로, 해당 시설로 "
+                "검토할지 지정해 주세요."
+            )
         return {
             "verdict": "not_allowed",
             "districts": known,
             "matched": matched,
             "legal_references": _references(blocking),
             "conditions": [],
+            "narrower_paths": paths,
             "reason": (
                 f"{names}은 원칙적으로 해당 구역 목적 외의 토지이용행위를 금지하며, "
-                f"{target}은 허용행위 열거에 해당하지 않습니다."
+                f"{target}은 허용행위 열거에 해당하지 않습니다." + suffix
             ),
         }
 
@@ -184,6 +231,49 @@ def evaluate(
             f"{clauses}로 허용될 수 있습니다. 아래 요건 충족 여부를 확인해야 합니다."
         ),
     }
+
+
+def use_overview(districts: list[str], building_uses: list[str]) -> dict | None:
+    """용도구역 행위제한으로 본 용도별 허용 현황.
+
+    `building_use_rules.json` 의 용도지역 판정표를 대체한다. 그 표는 국토계획법
+    용도지역만 알아서, 농림지역의 창고시설을 조건 없는 '조건부'로 내보내고
+    별표 21 이 허용하는 단독주택을 불가로 내보낸다. 그대로 LLM 에 넘기면
+    "창고시설이나 교육연구시설 등 예외적으로 허용되는 시설" 같은 문장이 나온다.
+
+    조건부 항목은 **허용행위 이름**으로 표기한다("창고시설"이 아니라
+    "창고(농업·임업·축산업·수산업용)"). 뭉뚱그린 용도명이 근거처럼 읽히면 안 된다.
+
+    아는 구역이 하나도 없으면 None — 호출부가 기존 판정표를 쓴다.
+    """
+    known = [d for d in districts if d in _ruleset()["districts"]]
+    if not known:
+        return None
+    result: dict[str, list[str]] = {
+        "allowed": [], "conditional": [], "not_allowed": [],
+        # 건축법 용도만으로는 안 되고 시설의 성격이 맞아야 열리는 항목.
+        # 농업진흥구역처럼 모든 일반 용도가 불가인 구역에서 "그럼 뭐가 되나" 를
+        # 답하는 유일한 목록이다.
+        "facility_specific": [],
+    }
+    for use in building_uses:
+        verdict = evaluate(known, "", use)
+        if verdict["verdict"] == "conditional":
+            names = [hit["name"] for hit in verdict["matched"]]
+            # 여러 구역이 겹치면 가장 좁은(마지막) 이름을 쓴다.
+            result["conditional"].append(names[-1] if names else use)
+        else:
+            result["not_allowed"].append(use)
+    seen: set[str] = set()
+    for district in known:
+        for allowance in _allowances(district):
+            if allowance.get("match") != "facility":
+                continue
+            name = allowance.get("name") or ""
+            if name and name not in seen:
+                seen.add(name)
+                result["facility_specific"].append(name)
+    return result
 
 
 def _references(districts: list[str]) -> list[str]:

@@ -94,13 +94,22 @@ def _match_constraints(districts: list[str], facility: str = "") -> list[dict]:
     return out
 
 
-def uses_for_zone(zone: str) -> dict:
-    """용도지역 하나에서 각 건축물 용도의 허용 상태. USE_MATRIX 를 역산한다.
+def uses_for_zone(zone: str, land_districts: list[str] | None = None) -> dict:
+    """용도지역 하나에서 각 건축물 용도의 허용 상태.
 
     "이 필지에 뭘 지을 수 있어?" 류의 열거형 질문에 답하기 위한 것.
     특정 용도 1건만 검토하는 lookup_zoning_rules 로는 다른 용도들이
     되는지 안 되는지를 모델이 알 길이 없다.
+
+    행위제한 축이 아는 구역(농림지역·자연환경보전지역·농업진흥구역 등)이면 그
+    룰셋이 단일 원본이다. `building_use_rules.json` 의 간이 판정표는 국토계획법
+    용도지역만 알아서, 농림지역 창고시설을 조건 없는 '조건부'로 내보내고 별표 21
+    이 허용하는 단독주택을 불가로 내보낸다.
     """
+    districts = district_use.districts_for(land_districts or [], zone=zone)
+    overview = district_use.use_overview(districts, list(_use_matrix()))
+    if overview is not None:
+        return overview
     out: dict[str, list[str]] = {"allowed": [], "conditional": [], "not_allowed": []}
     for use, matrix in _use_matrix().items():
         if zone in matrix["allowed"]:
@@ -159,15 +168,35 @@ def lookup_zoning_rules(
     )
     matrix = _use_matrix().get(building_use)
     if building_use == "시설물":
-        overview = uses_for_zone(zone)
-        possible_count = len(overview["allowed"]) + len(overview["conditional"])
-        total_count = sum(len(items) for items in overview.values())
-        verdict = "conditional"
-        reason = (
-            f"시설물은 지원하는 전체 건축물 용도를 포괄해 검토합니다. {zone}에서는 "
-            f"{total_count}개 용도 대분류 중 {possible_count}개가 가능 또는 조건부 범위이며, "
-            "용도별 상세 결과는 전체 용도 판정표를 따릅니다."
-        )
+        # '시설물'은 용도 미지정을 뜻하는 내부 표식이지 건축물 용도가 아니다.
+        # 행위제한 열거에서 이 이름을 찾을 수 없으니 evaluate 결과를 그대로
+        # 쓰면 안 되고, 용도별 판정을 모은 overview 로 판단한다.
+        overview = uses_for_zone(zone, land_districts)
+        possible = overview["allowed"] + overview["conditional"]
+        narrow = overview.get("facility_specific") or []
+        total_count = len(possible) + len(overview["not_allowed"])
+        if possible:
+            verdict = "conditional"
+            reason = (
+                f"시설물은 지원하는 전체 건축물 용도를 포괄해 검토합니다. {zone}에서는 "
+                f"{total_count}개 용도 대분류 중 {len(possible)}개가 가능 또는 조건부 "
+                f"범위입니다: {' · '.join(possible)}. 용도별 상세 결과는 전체 용도 "
+                "판정표를 따릅니다."
+            )
+        elif narrow:
+            # 일반 건축물 용도는 전부 불가지만 시설의 성격이 맞으면 열리는 구역.
+            verdict = "conditional"
+            reason = (
+                f"{' · '.join(restriction['districts'])}에서는 일반 건축물 용도로는 "
+                "건축할 수 없고, 개별법이 열거한 시설에 해당할 때만 허용됩니다: "
+                f"{' · '.join(narrow[:6])}. 어느 시설로 검토할지 지정하면 요건을 "
+                "확인해 드립니다."
+            )
+        else:
+            verdict = "not_allowed"
+            reason = restriction["reason"] or (
+                f"{zone}에서 건축할 수 있는 용도가 확인되지 않습니다."
+            )
     elif matrix is None:
         verdict = "unknown"
         reason = f"{josa(chr(39) + str(building_use) + chr(39), '은')} 판정표에 없는 용도입니다. 건축법 시행령 별표1 확인 필요."
@@ -213,7 +242,7 @@ def lookup_zoning_rules(
             "의뢰받으시기 바랍니다."
         )
 
-    overview = uses_for_zone(zone)
+    overview = uses_for_zone(zone, land_districts)
     if restriction["verdict"] == "conditional" and facility:
         # 이 질문의 특례 용도를 전체 용도표에도 명시해, 후속 답변이 용도지역
         # 판정표상의 불가만 반복하지 않게 한다.
