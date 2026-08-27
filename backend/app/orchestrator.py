@@ -2742,6 +2742,21 @@ class Orchestrator:
                             "text": await self._natural_followup_answer(user_query)
                         },
                     }
+                    # 같은 필지를 다시 물으면 카드는 중복이라 안 띄우지만
+                    # (emit_card=False) 모델 버튼까지 빠지면 안 된다. 프런트는 필지가
+                    # 바뀌거나 지도를 클릭하면 기존 모델 버튼을 지우므로, 여기서 다시
+                    # 내지 않으면 가능 판정인데도 모델을 영영 못 고르게 된다.
+                    _same_models = _model_options_for_diagnosis(
+                        self.diagnosis, include_alternatives=True
+                    )
+                    if _same_models:
+                        yield {
+                            "event": "message",
+                            "data": {
+                                "text": "**가능 모델**\n허용되는 용도 중 준비된 모델만 보여드립니다.",
+                                "options": _same_models,
+                            },
+                        }
             except Exception as exc:
                 logger.exception("명시 주소 사전진단 실패: query=%r", user_query)
                 yield {
