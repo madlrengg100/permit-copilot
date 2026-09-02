@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { MapSurface } from "../lib/mapSurface";
+import type { MapBridge } from "../lib/mapBridge";
 
 /**
  * 오른쪽 위 나침반 + 해 방향 위젯.
@@ -36,7 +36,7 @@ function sunPosition(lat: number, lon: number, date: Date): { azimuth: number; e
   return { azimuth, elevation: alt / rad };
 }
 
-export function MapCompass({ bridge }: { bridge: MapSurface | null }) {
+export function MapCompass({ bridge }: { bridge: MapBridge | null }) {
   const [heading, setHeading] = useState(0);
   // 시각은 1분마다 갱신(태양 방위가 서서히 이동)
   const [now, setNow] = useState<number>(() => Date.now());

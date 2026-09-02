@@ -678,43 +678,6 @@ body {
 .map-tool-items button:first-child { border-radius: 8px 8px 0 0; }
 .map-tool-menu button:hover { border-color: #4f9fb4; background: #dceff3; color: #173642; }
 
-.map-fallback-note {
-  position: absolute;
-  /* 상단 컨트롤(.map-mode-controls, top 12px + 높이 ~38px)을 가리지 않게 그 아래로. */
-  top: 60px;
-  left: 12px;
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  max-width: min(640px, calc(100% - 32px));
-  padding: 8px 14px;
-  border-radius: 8px;
-  background: rgba(20, 40, 52, 0.92);
-  border: 1px solid #3fa7c4;
-  color: #dceff3;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.map-fallback-note strong {
-  flex: none;
-  padding: 2px 8px;
-  border-radius: 5px;
-  background: #3fa7c4;
-  color: #08222c;
-  font-size: 11px;
-}
-
-/* OpenLayers 는 컨테이너 배경을 칠하지 않아, 타일이 오기 전 흰 판이 번쩍인다. */
-#vmap2d {
-  background: #0d1b22;
-}
-
-#vmap2d .ol-viewport {
-  border-radius: inherit;
-}
-
 .map-error-remedies {
   margin: 12px 0 0;
   padding-left: 20px;

@@ -8,8 +8,7 @@ import {
   setSessionParcelSelection,
   streamChat,
 } from "./lib/api";
-import type { HousingModelType, MapCommand } from "./lib/mapBridge";
-import type { MapSurface } from "./lib/mapSurface";
+import type { HousingModelType, MapBridge, MapCommand } from "./lib/mapBridge";
 
 /**
  * 세션 ID.
@@ -134,7 +133,7 @@ export default function App() {
 
   // 결과 패널을 건물 위에 띄우기 위한 상태.
   // 지도 위 한 지점의 화면 좌표를 카메라가 움직일 때마다 다시 계산한다.
-  const [bridge, setBridge] = useState<MapSurface | null>(null);
+  const [bridge, setBridge] = useState<MapBridge | null>(null);
   const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
   // 결과 팝업 접힘 상태 (접으면 치수선·라벨도 숨긴다)
   const [panelCollapsed, setPanelCollapsed] = useState(false);

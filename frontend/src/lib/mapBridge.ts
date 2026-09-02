@@ -24,8 +24,6 @@ declare global {
   }
 }
 
-import type { MapCapabilities, MapSurface } from "./mapSurface";
-
 export type MapCommand =
   | { type: "clear_mass" }
   // 분할 오버레이(분할 대상·제외 조각 + 면적·분할선)만 지운다. 건물 매스·치수선을
@@ -506,7 +504,7 @@ function toRing(ring: number[][], height = 0): any {
   return new vw.Collection(pts.map(([lon, lat]) => new vw.CoordZ(lon, lat, height)));
 }
 
-export class MapBridge implements MapSurface {
+export class MapBridge {
   /**
    * 명령별 실행 결과. 콘솔을 열지 않고도 화면에서 원인을 볼 수 있게 남긴다.
    * 이 엔진은 실패해도 예외를 안 던지는 경우가 많아, 결과를 명시적으로 기록한다.
@@ -755,15 +753,6 @@ export class MapBridge implements MapSurface {
   // 3D 카메라의 기울기와 화면 중심까지의 거리만 보관한다.
   private saved3DView: { pitch: number; range: number } | null = null;
   private readonly vworldKey: string;
-
-  /** 3D 엔진은 모든 표현을 지원한다. 2D 폴백(`Map2DBridge`)이 이 값을 낮춘다. */
-  readonly capabilities: MapCapabilities = {
-    massing: true,
-    earthwork: true,
-    slope: true,
-    viewModeToggle: true,
-    heightMeasure: true,
-  };
 
   constructor(viewer: any, vworldKey: string) {
     this.viewer = viewer;
