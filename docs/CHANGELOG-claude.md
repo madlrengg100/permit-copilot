@@ -7,6 +7,40 @@
 > 커밋 표식과 작업 절차는 CLAUDE.md「Claude·Codex 공동 작업 규약」을 따른다.
 > Codex 항목은 제목에 `codex:` 를 붙인다.
 
+## 2026-09-02 — 지도가 안 뜰 때 원인이 WebGL 이라는 사실이 가려지던 문제
+
+화면에 `지도를 준비하지 못했습니다 / Cannot read properties of undefined
+(reading 'scene')` 만 뜨고, 이 문구로는 어디를 봐야 할지 알 수 없었다.
+
+- **원인은 WebGL 이다.** VWorld 엔진이 Cesium 위젯 생성 실패를 삼킨다.
+  `ci.initViewer` 안에서 `new tee(...)` 가 실패해도 그대로 진행하다가
+  `uo.extend` 에서 `undefined.scene` 을 읽고 죽는다. 그래서 진짜 원인인
+  `RuntimeError: The browser supports WebGL, but initialization failed` 는
+  콘솔 한 줄 위에만 남고 화면에는 무관한 TypeError 만 보인다.
+- 헤드리스 크로미움으로 재현해 확정했다. `--disable-3d-apis` 로 띄우면
+  사용자 화면과 **글자까지 같은** 스택이 나온다.
+  `uo.extend → ci.initViewer → _Map.start`.
+- 서버·키는 결백하다. 지오코더·연속지적도 WFS·WMTS 타일·엔진 스크립트 3종을
+  모두 직접 호출해 `status: OK` / HTTP 200 을 확인했다.
+- `map.start()` 를 try 로 감싸고, `ws3d.viewer` 가 없으면 `MapUnsupportedError`
+  로 바꿔 던진다. 화면에는 원인 문장과 조치 4단계(그래픽 가속 켜기,
+  `chrome://gpu` 확인, `ignore-gpu-blocklist`, VDI 면 로컬 PC)를 함께 띄운다.
+
+**함정 — 초기화 전에 WebGL 을 미리 검사하면 안 된다.** 처음엔 엔진(5.2MB)을
+받기 전에 프로브 컨텍스트로 확인하게 짰는데, 그 컨텍스트를 우리가 쥐고 있는
+동안 Cesium 이 자기 컨텍스트를 못 얻어서 **WebGL 이 멀쩡한 브라우저에서도
+지도가 죽었다.** WebGL2 가 1.0 으로 강등되는 것으로 드러난다.
+`WEBGL_lose_context.loseContext()` 로 놓아줘도 마찬가지다. 그래서 검사는
+실패한 뒤에만 한다 — 그 시점엔 Cesium 이 이미 손을 뗐다.
+
+함께 고친 것: 타일 호스트를 https 로 고정했다. 부트스트랩 원본은 페이지가
+http 면 `cdn.vworld.kr:8080` · `2d.vworld.kr:8895` 를 쓰는데 사내망·VPN 이 흔히
+막는 포트다. 세 호스트 모두 443 으로 동일 응답(같은 타일, 25704B)을 확인했다.
+
+회귀 검증: GPU 없는 서버라 SwiftShader 로 돌렸더니 성공률이 원래부터
+불안정하다 — **원본 코드 5회 중 2회, 수정 후 3회 중 1회로 차이가 없다.**
+실패했을 때 나오는 문구만 달라진다. 백엔드 테스트 181건 통과.
+
 ## 2026-08-27 — 같은 필지를 다시 물으면 가능 모델이 사라지던 문제
 
 경산시 사동 231(제1종전용주거지역)에서 "조건부로 건축 가능"이라고 답하면서도

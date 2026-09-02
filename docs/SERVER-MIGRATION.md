@@ -71,6 +71,37 @@ for i in 1 2 3 4 5; do curl -s -G "https://api.vworld.kr/req/data" \
 5/5 OK 여야 한다. 지도 타일은 브라우저 Referer 로 따로 검증되므로 **지도가 떠도
 백엔드가 거부당할 수 있다** — 둘은 별개 경로다.
 
+### 지도가 안 뜬다 — 키를 의심하기 전에 WebGL 부터 본다
+
+화면에 이 문구가 뜨면 **서버·키 문제가 아니다.**
+
+```
+지도를 준비하지 못했습니다.
+Cannot read properties of undefined (reading 'scene')
+```
+
+VWorld 엔진이 Cesium 위젯 생성 실패를 삼킨 뒤 `undefined.scene` 을 읽고 죽는
+것이라, 화면 문구가 진짜 원인을 가린다. 콘솔을 위로 한 줄만 올리면
+`RuntimeError: The browser supports WebGL, but initialization failed` 가 있다.
+
+브라우저 콘솔에서 확인한다.
+
+```js
+document.createElement('canvas').getContext('webgl2') ??
+document.createElement('canvas').getContext('webgl')
+```
+
+`null` 이면 WebGL 이 없는 것이다. 조치 순서는 화면 안내와 같다 —
+그래픽 가속 켜고 재시작 → `chrome://gpu` 확인 →
+`chrome://flags/#ignore-gpu-blocklist` → VDI·원격데스크톱이면 로컬 PC 에서 접속.
+
+서버 쪽을 굳이 확인하려면 위 `VWORLD_DOMAIN` 절의 5회 호출로 충분하다.
+그게 5/5 OK 인데 지도만 안 뜬다면 원인은 브라우저다.
+
+**주의:** 초기화 전에 WebGL 프로브 컨텍스트를 만드는 식으로 "미리 검사"하면
+안 된다. 그 컨텍스트가 살아 있는 동안 Cesium 이 자기 컨텍스트를 못 얻어서
+멀쩡한 브라우저에서도 지도가 죽는다. 검사는 실패한 뒤에만 한다.
+
 ### 국가법령정보센터 — OC 는 이메일 앞부분이 아니다
 
 `LAW_OPEN_API_OC` 는 **OPEN API 신청 시 직접 지정한 활용 ID** 다(마이페이지 →
