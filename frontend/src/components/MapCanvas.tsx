@@ -1,13 +1,15 @@
 import jQuery from "jquery";
 import { useEffect, useRef, useState } from "react";
 import { MapBridge, type MapCommand } from "../lib/mapBridge";
+import type { Map2DBridge } from "../lib/map2dBridge";
+import type { MapSurface } from "../lib/mapSurface";
 import { MapCompass } from "./MapCompass";
 
 interface Props {
   vworldKey: string;
   commands: MapCommand[];
   /** 지도가 준비되면 bridge 를 넘긴다. 패널을 건물 위에 띄우는 데 쓴다. */
-  onReady?: (bridge: MapBridge) => void;
+  onReady?: (bridge: MapSurface) => void;
   onMapSelect?: (lon: number, lat: number, jibun: string, pnu: string) => void;
 }
 
@@ -402,7 +404,7 @@ function initMapOnce(key: string): Promise<any> {
 type Status = "loading" | "ready" | "error";
 
 export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) {
-  const bridgeRef = useRef<MapBridge | null>(null);
+  const bridgeRef = useRef<MapSurface | null>(null);
   const appliedRef = useRef(0);
   // 결과 팝업은 카메라를 따라 매 프레임 App을 다시 렌더한다. onMapSelect 함수
   // identity를 effect 의존성으로 쓰면 클릭 핸들러도 매 프레임 파괴/재생성되어
@@ -429,7 +431,10 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
     resolutionM: number;
   } | null>(null);
   // 나침반·해 방향 위젯에 넘길 준비된 bridge
-  const [readyBridge, setReadyBridge] = useState<MapBridge | null>(null);
+  const [readyBridge, setReadyBridge] = useState<MapSurface | null>(null);
+  // WebGL 이 없어 3D 를 못 띄운 경우, 왜 2D 로 내려왔는지 화면에 남긴다.
+  const [fallbackReason, setFallbackReason] = useState<string | null>(null);
+  const twoDRef = useRef<Map2DBridge | null>(null);
   // 측정 도구가 켜져 있으면 지도 클릭이 필지 선택(새 진단)으로 새 나가지 않게 막는다.
   const measuringRef = useRef(false);
 
@@ -446,6 +451,25 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
   //  없어 항상 '준비되지 않았습니다'만 떴다 — 실제 API 로 교정)
   function runMapTool(action: "measureLine" | "measureArea" | "measureHeight" | "erase"): void {
     stopCameraAnimations();
+
+    // 2D 는 VWorld 내장 도구가 없다(엔진에 묶여 있다). OpenLayers 로 직접 잰다.
+    const twoD = twoDRef.current;
+    if (twoD) {
+      if (action === "erase") {
+        twoD.eraseMeasure();
+        measuringRef.current = false;
+        setLocMsg("");
+        return;
+      }
+      if (action === "measureHeight") {
+        setLocMsg("높이 측정은 3D 지도에서만 됩니다. 거리·면적은 쓸 수 있습니다.");
+        return;
+      }
+      twoD.startMeasure(action === "measureLine" ? "line" : "area", setLocMsg);
+      measuringRef.current = true;
+      return;
+    }
+
     const vw = (window as any).vw;
     const ws3d = (window as any).ws3d;
     const stopAll = () => {
@@ -501,9 +525,15 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
       })
       .catch((err) => {
         if (cancelled) return;
-        console.error("[MapCanvas] 지도 준비 실패:", err);
+        console.error("[MapCanvas] 3D 지도 준비 실패:", err);
+        // WebGL 이 없어서 못 뜬 것뿐이면 지도를 포기하지 않는다. 같은 데이터로
+        // 2D 를 그린다 — 회사 정책·VDI 로 WebGL 이 막힌 자리에서도 써야 한다.
+        if (err instanceof MapUnsupportedError) {
+          setFallbackReason(err.message);
+          return; // 컨테이너가 그려진 뒤 아래 effect 가 2D 를 만든다.
+        }
         setErrorDetail(String(err?.message ?? err));
-        setErrorRemedies(err instanceof MapUnsupportedError ? err.remedies : []);
+        setErrorRemedies([]);
         setStatus("error");
       });
 
@@ -511,6 +541,50 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
       cancelled = true;
     };
   }, [vworldKey]);
+
+  // 2D 폴백 생성. fallbackReason 이 정해진 뒤에야 #vmap2d 가 그려지므로,
+  // 컨테이너가 실제 크기를 가진 시점에 OpenLayers 를 만든다(0 크기로 만들면
+  // 타일이 한 장도 안 깔린다).
+  useEffect(() => {
+    if (!fallbackReason) return;
+    const container = document.getElementById("vmap2d");
+    if (!container) {
+      setErrorDetail("2D 지도 컨테이너를 찾지 못했습니다.");
+      setStatus("error");
+      return;
+    }
+    // OpenLayers 는 여기서만 쓰므로 갈라진 청크로 미룬다. WebGL 이 되는
+    // 사용자는 2D 코드를 아예 내려받지 않는다(번들 +360KB 절약).
+    let disposed = false;
+    let created: Map2DBridge | null = null;
+    void import("../lib/map2dBridge")
+      .then(({ Map2DBridge }) => {
+        if (disposed) return;
+        const bridge = new Map2DBridge(container);
+        created = bridge;
+        twoDRef.current = bridge;
+        bridgeRef.current = bridge;
+        setStatus("ready");
+        onReady?.(bridge);
+        setReadyBridge(bridge);
+        console.info("[MapCanvas] WebGL 없이 2D 지도로 전환했습니다.");
+      })
+      .catch((error) => {
+        console.error("[MapCanvas] 2D 지도 생성 실패:", error);
+        setErrorDetail(
+          `2D 지도도 준비하지 못했습니다: ${error instanceof Error ? error.message : error}`,
+        );
+        setStatus("error");
+      });
+    return () => {
+      disposed = true;
+      twoDRef.current = null;
+      created?.dispose();
+    };
+    // onReady 는 매 렌더 새 함수일 수 있어 의존성에서 뺀다 — 넣으면 2D 지도가
+    // 매 렌더 파괴·재생성된다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fallbackReason]);
 
   useEffect(() => {
     if (!bridgeRef.current || status !== "ready") return;
@@ -529,11 +603,17 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
   // 되돌리는 경우가 있다. 부모 영역 크기를 관찰해 Cesium 뷰어를 즉시 맞춘다.
   useEffect(() => {
     if (status !== "ready") return;
-    const container = document.getElementById("vmap");
+    const twoD = twoDRef.current;
+    const container = document.getElementById(twoD ? "vmap2d" : "vmap");
     const viewer = (window as any).ws3d?.viewer;
-    if (!container || !viewer) return;
+    if (!container || (!viewer && !twoD)) return;
     const resize = () => {
       try {
+        // OpenLayers 도 컨테이너 크기 변화를 스스로 못 잡는 경우가 있어 같이 민다.
+        if (twoD) {
+          twoD.updateSize();
+          return;
+        }
         viewer.resize?.();
         viewer.scene?.requestRender?.();
       } catch {
@@ -706,9 +786,20 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
     }, 3000);
   }, [commands, status]);
 
+  // 어떤 지도가 붙었느냐에 따라 버튼을 감춘다 — 눌러도 아무 일이 없는 버튼을
+  // 남기면 고장으로 보인다.
+  const caps = readyBridge?.capabilities ?? {
+    massing: true,
+    earthwork: true,
+    slope: true,
+    viewModeToggle: true,
+    heightMeasure: true,
+  };
+
   return (
     <>
-      <div id="vmap" className="map-canvas" />
+      <div id="vmap" className="map-canvas" style={fallbackReason ? { display: "none" } : undefined} />
+      {fallbackReason && <div id="vmap2d" className="map-canvas" />}
 
       {status === "loading" && (
         <div className="map-loading" role="status" aria-live="polite">
@@ -732,6 +823,7 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
         <>
           <div className="map-mode-controls">
             <button onClick={goToMyLocation} title="IP 기반 대략적 위치로 이동">◎ 내 위치</button>
+            {caps.viewModeToggle && (
             <button
             onClick={() => {
               const next = viewMode === "3d" ? "2d" : "3d";
@@ -753,6 +845,7 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
           >
             {viewMode === "3d" ? "2D 지적도" : "3D 지도"}
             </button>
+            )}
             <button
               className={cadastreOn ? "is-active" : ""}
               onClick={() => {
@@ -815,11 +908,19 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
             <div className="map-tool-items" aria-hidden={!toolsOpen}>
               <button type="button" onClick={() => runMapTool("measureLine")}>거리</button>
               <button type="button" onClick={() => runMapTool("measureArea")}>면적</button>
-              <button type="button" onClick={() => runMapTool("measureHeight")}>높이</button>
+              {caps.heightMeasure && (
+                <button type="button" onClick={() => runMapTool("measureHeight")}>높이</button>
+              )}
               <button type="button" onClick={() => runMapTool("erase")}>초기화</button>
             </div>
           </div>
         </>
+      )}
+      {status === "ready" && fallbackReason && (
+        <div className="map-fallback-note" role="status">
+          <strong>2D 지도</strong>
+          <span>필지·용도지역·경사도·치수는 그대로 보입니다. 건물 3D 매싱·절토·높이 측정만 빠집니다.</span>
+        </div>
       )}
       {status === "ready" && <MapCompass bridge={readyBridge} />}
       {slopeOn && slopeInfo && (
