@@ -58,6 +58,64 @@ const VW_ENGINE_SCRIPTS = [
   "/js/ws3dmap/WS3DRelease3/vw.ol3WebGL.v30.js?ver=2024061902",
 ];
 
+/**
+ * 지도가 못 뜨는 원인 중 압도적 1위는 WebGL 이다.
+ *
+ * VWorld 엔진은 Cesium 위젯 생성이 실패해도 그 RuntimeError 를 삼키고
+ * 계속 진행하다가 `undefined.scene` 을 읽고 죽는다. 그러면 화면에는
+ * "Cannot read properties of undefined (reading 'scene')" 만 남아서
+ * 원인이 WebGL 이라는 사실이 완전히 가려진다(2026-09-02 재현 확인).
+ *
+ * 그래서 초기화가 실패하면 원인을 다시 판별해, 사용자가 바로 조치할 수 있는
+ * 문장과 절차로 바꿔서 던진다.
+ */
+export class MapUnsupportedError extends Error {
+  readonly remedies: string[];
+  constructor(message: string, remedies: string[]) {
+    super(message);
+    this.name = "MapUnsupportedError";
+    this.remedies = remedies;
+  }
+}
+
+const WEBGL_REMEDIES = [
+  "크롬 설정 → 시스템 → '가능한 경우 그래픽 가속 사용'을 켜고 브라우저를 완전히 종료 후 재시작",
+  "chrome://gpu 에서 WebGL 항목이 Disabled/Software only 인지 확인",
+  "그래도 안 되면 chrome://flags/#ignore-gpu-blocklist 를 Enabled 로 변경",
+  "원격데스크톱·가상데스크톱(VDI)으로 접속 중이라면 로컬 PC 브라우저에서 접속",
+];
+
+/**
+ * 엔진 초기화가 실패한 *뒤에* 원인을 가려낸다.
+ *
+ * 초기화 전에 미리 프로브 컨텍스트를 만들면 안 된다. 그 컨텍스트를 우리가
+ * 붙잡고 있는 동안 Cesium 이 자기 컨텍스트를 못 얻어서, WebGL 이 멀쩡한
+ * 브라우저에서도 지도가 죽는다(2026-09-02 SwiftShader 로 재현).
+ * 실패한 시점에는 Cesium 이 이미 손을 뗐으므로 그때 확인하는 것이 안전하다.
+ */
+function describeWebGLFailure(): string {
+  const canvas = document.createElement("canvas");
+  try {
+    const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
+    if (!gl) {
+      return "이 브라우저에서 WebGL을 쓸 수 없어 3D 지도를 그릴 수 없습니다.";
+    }
+    const info = (gl as any).getExtension("WEBGL_debug_renderer_info");
+    const renderer = info
+      ? (gl as any).getParameter(info.UNMASKED_RENDERER_WEBGL)
+      : "(비공개)";
+    return (
+      `WebGL은 동작하는데(${renderer}) 3D 지도 엔진이 화면을 만들지 못했습니다. ` +
+      "브라우저 콘솔의 'Error constructing CesiumWidget' 줄이 실제 원인입니다."
+    );
+  } catch (error) {
+    return (
+      "WebGL 확인 중 오류가 발생했습니다: " +
+      (error instanceof Error ? error.message : String(error))
+    );
+  }
+}
+
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const el = document.createElement("script");
@@ -86,12 +144,16 @@ async function loadEngine(key: string): Promise<void> {
   }
 
   // (1) 부트스트랩이 세팅하던 전역들
-  const https = location.protocol === "https:";
-  w.v_protocol = https ? "https://" : "http://";
-  w.vworldUrl = https ? "https://map.vworld.kr" : "http://map.vworld.kr";
-  w.vworld2DCache = https ? "https://2d.vworld.kr/2DCache" : "http://2d.vworld.kr:8895/2DCache";
-  w.vworldBaseMapUrl = https ? "https://cdn.vworld.kr/2d" : "http://cdn.vworld.kr:8080/2d";
-  w.vworldStyledMapUrl = https ? "https://2d.vworld.kr/stmap" : "http://2d.vworld.kr:8895/stmap";
+  //
+  // 부트스트랩 원본은 페이지가 http 면 타일 호스트를 8080/8895 로 잡는다.
+  // 그 포트는 사내망·VPN 이 흔히 막아서 엔진은 뜨는데 타일만 안 깔린다.
+  // 세 호스트 모두 443 으로 같은 응답을 주므로 프로토콜과 무관하게 https 로
+  // 고정한다. https 리소스는 http 페이지에서도 그대로 로드된다.
+  w.v_protocol = "https://";
+  w.vworldUrl = "https://map.vworld.kr";
+  w.vworld2DCache = "https://2d.vworld.kr/2DCache";
+  w.vworldBaseMapUrl = "https://cdn.vworld.kr/2d";
+  w.vworldStyledMapUrl = "https://2d.vworld.kr/stmap";
   w.vworldIsValid = "true";
   w.vworldErrMsg = "";
   w.vworldApiKey = key;
@@ -314,7 +376,17 @@ function initMapOnce(key: string): Promise<any> {
 
     const map = new vw.Map(opts);
     map.setMapId("vmap");
-    map.start();
+    try {
+      map.start();
+    } catch (error) {
+      // 엔진은 Cesium 위젯 생성 실패를 삼킨 뒤 undefined.scene 을 읽고 죽는다.
+      // ws3d.viewer 가 없으면 원인은 사실상 WebGL 이다 — 그 문장으로 바꿔 던진다.
+      if (!(window as any).ws3d?.viewer) {
+        console.error("[MapCanvas] 엔진 초기화 실패 원문:", error);
+        throw new MapUnsupportedError(describeWebGLFailure(), WEBGL_REMEDIES);
+      }
+      throw error;
+    }
     engineMap = map;
 
     return waitForViewer().then(async (viewer) => {
@@ -338,6 +410,7 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
   const onMapSelectRef = useRef(onMapSelect);
   const [status, setStatus] = useState<Status>("loading");
   const [errorDetail, setErrorDetail] = useState("");
+  const [errorRemedies, setErrorRemedies] = useState<string[]>([]);
   const [locMsg, setLocMsg] = useState("");
   const [viewMode, setViewMode] = useState<"2d" | "3d">("3d");
   const [toolsOpen, setToolsOpen] = useState(false);
@@ -430,6 +503,7 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
         if (cancelled) return;
         console.error("[MapCanvas] 지도 준비 실패:", err);
         setErrorDetail(String(err?.message ?? err));
+        setErrorRemedies(err instanceof MapUnsupportedError ? err.remedies : []);
         setStatus("error");
       });
 
@@ -772,6 +846,13 @@ export function MapCanvas({ vworldKey, commands, onReady, onMapSelect }: Props) 
           지도를 준비하지 못했습니다.
           <br />
           <small>{errorDetail}</small>
+          {errorRemedies.length > 0 && (
+            <ol className="map-error-remedies">
+              {errorRemedies.map((remedy) => (
+                <li key={remedy}>{remedy}</li>
+              ))}
+            </ol>
+          )}
         </div>
       )}
     </>
