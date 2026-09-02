@@ -91,7 +91,11 @@ document.createElement('canvas').getContext('webgl2') ??
 document.createElement('canvas').getContext('webgl')
 ```
 
-`null` 이면 WebGL 이 없는 것이다. 조치 순서는 화면 안내와 같다 —
+`null` 이면 WebGL 이 없는 것이다. 이 경우 화면은 **2D 지도로 자동 전환**되므로
+지도를 못 쓰게 되지는 않는다(필지·용도지역·경사도·치수는 그대로, 건물 3D 매싱·
+절토·높이 측정만 빠진다). 상단에 "2D 지도" 배너가 뜬다.
+
+3D 를 되살리려면 조치 순서는 화면 안내와 같다 —
 그래픽 가속 켜고 재시작 → `chrome://gpu` 확인 →
 `chrome://flags/#ignore-gpu-blocklist` → VDI·원격데스크톱이면 로컬 PC 에서 접속.
 

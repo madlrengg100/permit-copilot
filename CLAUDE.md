@@ -54,6 +54,13 @@
 2026-08-27 이전 커밋에는 이 규약이 적용되지 않았다. 트레일러가 없는 `2e34c08`
 (임상도 무결성 검사)이 Codex 작업이며, 이미 푸시됐으므로 소급 표시하지 않는다.
 
+지도 기능을 추가할 때는 **`frontend/src/lib/mapSurface.ts`의 `MapSurface` 하나만
+호출부에 노출한다.** 3D(`mapBridge.ts`, VWorld ws3d/Cesium)와 WebGL 없는 환경용
+2D(`map2dBridge.ts`, OpenLayers)가 이걸 함께 구현하며, `App.tsx`·`MapCanvas.tsx`·
+`MapCompass.tsx`는 구체 구현을 알지 못한다. 3D 전용 기능은 `MapSurface` 에 넣지
+말고 `capabilities` 로 알린다 — 화면이 그 값으로 버튼을 감춘다. `MapBridge` 를
+직접 타입으로 받으면 WebGL 이 막힌 사용자에게서 그 화면이 통째로 깨진다.
+
 공간규제 연결 상태를 수정하기 전에 `docs/spatial-ogc.md`와
 `backend/app/data/spatial_layers.json`을 함께 확인한다. 재해위험지구는
 VWorld WFS `lt_c_up201`, 생태·자연도는 2026 정기고시 로컬 SQLite가 현재

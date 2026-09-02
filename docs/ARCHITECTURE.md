@@ -27,7 +27,7 @@ flowchart TB
     subgraph FE["프론트엔드 (React + Vite, :5173)"]
         CP["ChatPanel<br/>질의 입력 · 대화 로그"]
         MC["MapCanvas<br/>VWorld 3D 엔진 부트스트랩"]
-        MB["MapBridge<br/>지도 명령 실행기"]
+        MB["MapSurface<br/>3D MapBridge / 2D Map2DBridge"]
         RP["ResultPanel<br/>건물 위에 부착"]
     end
 
@@ -196,7 +196,11 @@ extract_request(client, query)   # "테헤란로 152에 업무시설" → (주�
   용도지역 조각(`show_zone_pieces`), 결과 패널(`show_panel`)
 - **3D(매스)** — 건축 가능 규모의 3D 입체(`extrude_mass`), 치수선(`show_dimensions`),
   용도별 건물 모델(`show_housing_model`: 주택/공장/상가/창고). **실제 3D 렌더링은
-  백엔드가 아니라 프론트 `lib/mapBridge.ts` 가 VWorld 3D(ws3d/Cesium)에서** 한다.
+  백엔드가 아니라 프론트가** 한다. 호출부는 `lib/mapSurface.ts` 의 `MapSurface`
+  하나만 보고, 구현은 두 갈래다 — 기본은 `lib/mapBridge.ts`(VWorld 3D,
+  ws3d/Cesium), WebGL 을 못 쓰는 브라우저에서는 `lib/map2dBridge.ts`(OpenLayers)
+  로 자동 전환한다. 2D 는 필지·용도지역·경사도·치수를 같은 데이터로 그리고,
+  건물 매싱·절토·높이 측정만 빠진다(`capabilities` 로 알려 버튼을 감춘다).
   치수선은 가로·세로에 더해 두 치수선이 만나는 모서리에서 매스 지면 기준으로 `height_m`
   만큼 **수직 높이선(노랑)** 을 세워 3축(가로·세로·높이)을 완성한다.
 - **선 오버레이** — `show_dimensions` 세그먼트로 특정 선만 얹는다. 도로 접촉선(마젠타),
