@@ -28,6 +28,24 @@
 근거 조문을 추가하면 `legal_rule_catalog.json`에도 참조를 함께 등록한다.
 이 축은 허용 여부와 근거 조문만 만들고 건폐율·용적률·이격 수치는 만들지 않는다.
 
+「검토 의견」은 두 경로 모두 LLM이 쓴다 — 특정 용도는
+`orchestrator._verdict_judgment()`, 용도 미지정·시설물은
+`_all_uses_verdict_judgment_with_llm()`. **결정적 문장
+(`_concise_verdict_judgment`·`_all_uses_verdict_judgment`)으로 되돌리지 않는다.**
+한 번 그렇게 고정한 적이 있는데(`6b45638`) 화면에서 늘 같은 두 문장만 나와
+LLM이 죽은 것처럼 보였다. 그 함수들은 타임아웃·실패 시 폴백으로만 쓴다.
+
+검토 의견의 시간 예산은 `JUDGMENT_CALL_TIMEOUT`(호출 1회)과
+`JUDGMENT_TOTAL_TIMEOUT`(바깥 `asyncio.wait_for`) **한 쌍으로만 고친다.**
+호출당 제한이 바깥 대기보다 길면 SDK 재시도(`max_retries=2`)가 도는 도중
+바깥에서 잘려 매번 폴백 문장만 나온다 — 실제로 그 상태였다. 한쪽만 바꾸지 말 것.
+
+`placement_restricted` 필지의 검토 의견은 두 LLM 프롬프트가 모두 '실질 배치 불가'로
+단정해야 하고, 사유는 데이터에 있는 것(기존 건축물·협소 대지)만 쓴다. 없는 사유를
+붙이면 안 된다 — 2만㎡ 필지를 '협소 대지'로 설명한 전례가 있다.
+`render_pending_judgment()`의 lead 덧붙이기는 프롬프트를 안 따를 때의 안전장치이지
+정상 경로가 아니다.
+
 # Claude·Codex 공동 작업 규약
 
 이 저장소는 Claude 세션과 Codex 세션이 같은 `main` 에 직접 커밋한다. 브랜치를
