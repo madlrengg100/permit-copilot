@@ -991,6 +991,15 @@ def _deterministic_verdict_judgment(diagnosis: dict | None) -> str:
     return f"{first} {second} {third}"
 
 
+# 검토 의견 LLM 의 시간 예산. 둘은 한 쌍이어야 한다 — 호출당 제한시간(JUDGMENT_CALL_TIMEOUT)
+# 이 바깥 대기(JUDGMENT_TOTAL_TIMEOUT)보다 길면, SDK 재시도(max_retries=2)가 도는 도중
+# 바깥에서 잘려 매번 결정적 폴백 문장만 나온다. 실제로 그랬다 — 단일 용도는 SDK 기본
+# 20s×3회, 전체 용도는 50s 를 쓰면서 바깥은 14s 였다(측정: 정상 응답 1.5~8.5s, gemini
+# 무료 티어가 간헐적으로 503 을 내면 재시도로 그 몇 배). 한쪽만 고치지 말 것.
+JUDGMENT_CALL_TIMEOUT = 11.0   # 호출 1회 제한 — 정상 응답(최대 8.5s)은 넉넉히 통과
+JUDGMENT_TOTAL_TIMEOUT = 24.0  # 바깥 대기 — 1회 실패 후 재시도 1회까지 담긴다
+
+
 def _concise_verdict_judgment(diagnosis: dict | None) -> str:
     """상세 보고서 아래에는 결론과 핵심 선행조건만 중복 없이 표시한다."""
     diagnosis = diagnosis or {}
@@ -4625,6 +4634,13 @@ class Orchestrator:
                     "말고 명확하게 표현하라(allowed=건축 가능, conditional=조건부 가능이며 "
                     "선행조건 명시, not_allowed=건축 불가이며 사유 명시, "
                     "unknown=추가 확인 필요). "
+                    "단, placement_restricted 가 true 이면 용도지역상 조건부라도 이 필지는 "
+                    "실질적으로 신축 배치가 불가하므로, 첫 문장을 '가능/조건부 가능' 으로 "
+                    "끝내지 말고 '실질적으로 신축 배치가 불가합니다' 로 단정하라. 그 사유는 "
+                    "데이터에 실제로 있는 것만 한국어로 써라 — 기존 건축물이 있으면 '기존 "
+                    "건축물 N건', 최소 대지면적 미달이면 '협소 대지'다. 둘 다 없으면 사유를 "
+                    "지어내지 말고 '배치 요건을 충족하지 못해'라고만 하라(없는 '협소 대지'를 "
+                    "붙이지 마라). 판정 필드명이나 true/false 를 답변에 그대로 쓰지 마라. "
                     "판단 근거는 데이터의 용도지역, regulation.zone_use_overview 의 "
                     "allowed(건축 가능)·conditional(조건부 가능), use_restriction(개별 제한), "
                     "건폐율·용적률, 도로 접함, site_constraints 이격과 "
@@ -4666,6 +4682,7 @@ class Orchestrator:
                 max_tokens=2400,
                 model=LLM_MODEL_HEAVY,  # 검토 의견은 판독·추론이 무거워 상위(flash) 모델
                 reasoning_effort="low",  # thinking 최소화로 지연 제어(6~8s)
+                request_timeout=JUDGMENT_CALL_TIMEOUT,
             )
             text = _strip_internal_field_names(" ".join(response.texts).strip())
             text = _ensure_query_evidence(text, diagnosis, user_query)
@@ -4771,7 +4788,7 @@ class Orchestrator:
                 max_tokens=3000,
                 model=LLM_MODEL_HEAVY,  # 검토 의견은 판독·추론이 무거워 상위(flash) 모델
                 reasoning_effort="low",  # thinking 최소화로 지연 제어(6~8s)
-                request_timeout=50.0,
+                request_timeout=JUDGMENT_CALL_TIMEOUT,
             )
             text = _strip_internal_field_names(" ".join(response.texts).strip())
             return _limit_review_length(text, max_sentences=4)
@@ -4804,7 +4821,7 @@ class Orchestrator:
             # _limit_review_length(4문장)로 잡으므로 보고서 재서술 걱정은 없다.
             try:
                 judgment = await asyncio.wait_for(
-                    self._verdict_judgment(query), timeout=14.0
+                    self._verdict_judgment(query), timeout=JUDGMENT_TOTAL_TIMEOUT
                 )
             except asyncio.TimeoutError:
                 logger.warning("single-use verdict judgment timeout; 결정적 fallback 사용")
@@ -4816,7 +4833,7 @@ class Orchestrator:
         else:
             try:
                 judgment = await asyncio.wait_for(
-                    self._all_uses_verdict_judgment_with_llm(query), timeout=14.0
+                    self._all_uses_verdict_judgment_with_llm(query), timeout=JUDGMENT_TOTAL_TIMEOUT
                 )
             except asyncio.TimeoutError:
                 logger.warning("all-uses verdict judgment timeout; 결정적 fallback 사용")
@@ -4854,7 +4871,15 @@ class Orchestrator:
                     "멸실 요건과 소유·권리관계는 건축 담당 부서에서 확인해야 합니다."
                 )
             else:
-                lead = lot.get("note") or "이 필지는 실질적으로 신축 배치가 불가합니다."
+                # note 만 붙이면 '법정 최소 대지면적 60㎡에 못 미칩니다.' 같은 조각이라
+                # 뒤따르는 판단 문단의 '조건부 가능'과 한 화면에서 모순돼 보인다.
+                # 사유와 결론(배치 불가)을 함께 낸다.
+                note = _as_sentence(str(lot.get("note") or "").strip())
+                lead = (
+                    f"{note} 이 사유로 실질적으로 신축 배치가 불가합니다."
+                    if note
+                    else "이 필지는 실질적으로 신축 배치가 불가합니다."
+                )
             judgment = f"{lead}\n\n{judgment}".strip()
         if not judgment:
             return None
