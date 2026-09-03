@@ -4606,8 +4606,11 @@ class Orchestrator:
             or (diagnosis.get("location") or {}).get("matched_address")
             or "선택한 필지"
         )
+        # 화면에 보여줄 검토 용도는 내부 건축물 분류보다 요청 시설명이 우선이다
+        # (내부 분류 '창고' → 표시 '창고시설'). _concise_verdict_judgment 와 같은 규칙.
         use = (
-            (diagnosis.get("request") or {}).get("building_use")
+            (diagnosis.get("request") or {}).get("requested_facility")
+            or (diagnosis.get("request") or {}).get("building_use")
             or (diagnosis.get("regulation") or {}).get("building_use")
             or "요청 용도"
         )
@@ -4795,9 +4798,21 @@ class Orchestrator:
         )
         judgment = ""
         if names_specific_use:
-            # 상세 내용은 바로 위 진단 보고서에 있으므로 특정 용도의 검토 의견은
-            # AI 장문 재서술 대신 결론+핵심 조건 두 문장으로 고정한다.
-            judgment = _concise_verdict_judgment(diagnosis)
+            # 특정 용도도 LLM 이 진단 데이터를 읽어 인과관계로 설명한다. 한때
+            # '결론+핵심 조건 두 문장' 결정적 문장으로 고정했는데(6b45638), 화면에서
+            # 검토 의견이 늘 같은 틀로만 나와 LLM 이 죽은 것처럼 보였다. 분량은
+            # _limit_review_length(4문장)로 잡으므로 보고서 재서술 걱정은 없다.
+            try:
+                judgment = await asyncio.wait_for(
+                    self._verdict_judgment(query), timeout=14.0
+                )
+            except asyncio.TimeoutError:
+                logger.warning("single-use verdict judgment timeout; 결정적 fallback 사용")
+            except Exception:
+                # 503·연결오류 등도 삼켜 fallback 으로 간다(무한 '검토 의견 작성 중' 방지).
+                logger.warning("single-use verdict judgment 실패; 결정적 fallback 사용", exc_info=True)
+            if not judgment:
+                judgment = _concise_verdict_judgment(diagnosis)
         else:
             try:
                 judgment = await asyncio.wait_for(
